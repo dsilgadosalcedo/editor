@@ -18,6 +18,7 @@ export interface CanvasElementData {
   shadowColor?: string;
   selected: boolean;
   cornerRadius?: number;
+  name?: string;
 }
 
 export const useCanvasElements = (artboardDimensions: {
@@ -83,7 +84,8 @@ export const useCanvasElements = (artboardDimensions: {
       shadowBlur: 0,
       shadowColor: "#000000",
       selected: true,
-      ...(type === "rectangle" ? { cornerRadius: 0 } : {}),
+      cornerRadius: type === "rectangle" ? 0 : undefined,
+      name: type === "rectangle" ? "Rectangle" : "Text",
     };
     updateElements((prev) => [
       ...prev.map((el) => ({ ...el, selected: false })),
@@ -254,6 +256,13 @@ export const useCanvasElements = (artboardDimensions: {
     );
   };
 
+  // Update element name
+  const handleUpdateName = (id: string, name: string) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, name } : el))
+    );
+  };
+
   // Handler to delete an element by ID
   const handleDeleteElement = (id: string) => {
     updateElements((els) => els.filter((el) => el.id !== id));
@@ -285,5 +294,6 @@ export const useCanvasElements = (artboardDimensions: {
     handleUpdateShadowBlur,
     handleUpdateShadowColor,
     handleDeleteElement,
+    handleUpdateName,
   };
 };

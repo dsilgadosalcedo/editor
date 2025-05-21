@@ -17,6 +17,7 @@ interface PropertiesSidebarProps {
   handleUpdateBorderColor?: (id: string, color: string) => void;
   handleUpdateShadowBlur?: (id: string, blur: number) => void;
   handleUpdateShadowColor?: (id: string, color: string) => void;
+  handleUpdateName?: (id: string, name: string) => void;
 }
 
 export default function PropertiesSidebar({
@@ -33,6 +34,7 @@ export default function PropertiesSidebar({
   handleUpdateBorderColor,
   handleUpdateShadowBlur,
   handleUpdateShadowColor,
+  handleUpdateName,
 }: PropertiesSidebarProps) {
   return (
     <div className="z-20 m-4 p-1 bg-properties-blue/20 dark:bg-white/10 rounded-2xl shadow flex flex-col backdrop-blur-sm">
@@ -78,14 +80,21 @@ export default function PropertiesSidebar({
           </>
         ) : (
           <div className="space-y-6">
-            <div className="text-properties-text dark:text-foreground font-medium flex items-center justify-between">
-              <span>
-                {selectedElementData.type === "rectangle"
-                  ? "Rectangle"
-                  : "Text"}{" "}
-                Properties
-              </span>
-            </div>
+            {/* Element Name Input */}
+            <section>
+              <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                Name
+              </div>
+              <Input
+                value={selectedElementData.name || ""}
+                onChange={(e) =>
+                  handleUpdateName &&
+                  handleUpdateName(selectedElementData.id, e.target.value)
+                }
+                className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                aria-label="Element name"
+              />
+            </section>
             {selectedElementData.type === "text" ? (
               <div>
                 <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">

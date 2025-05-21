@@ -96,7 +96,8 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
                     }`}
                   >
                     <span className="text-sm text-properties-text dark:text-foreground">
-                      {el.type.charAt(0).toUpperCase() + el.type.slice(1)}
+                      {el.name ||
+                        el.type.charAt(0).toUpperCase() + el.type.slice(1)}
                     </span>
                     <span className="text-xs text-gray-500">{actualIdx}</span>
                   </li>

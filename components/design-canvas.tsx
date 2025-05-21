@@ -51,6 +51,7 @@ export default function DesignCanvas() {
     handleUpdateShadowBlur,
     handleUpdateShadowColor,
     handleDeleteElement,
+    handleUpdateName,
   } = useCanvasElements(artboardDimensions);
 
   // Keyboard shortcuts: Backspace => Delete element; Ctrl/Cmd+Z => Undo; Ctrl/Cmd+Shift+Z => Redo
@@ -288,6 +289,7 @@ export default function DesignCanvas() {
           handleUpdateBorderColor={handleUpdateBorderColor}
           handleUpdateShadowBlur={handleUpdateShadowBlur}
           handleUpdateShadowColor={handleUpdateShadowColor}
+          handleUpdateName={handleUpdateName}
         />
       </div>
     </div>
