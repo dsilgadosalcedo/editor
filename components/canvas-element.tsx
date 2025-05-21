@@ -325,7 +325,7 @@ export default function CanvasElement({
         <>
           {/* Resize handle */}
           <div
-            className="absolute bottom-0 rounded-xs shadow-sm right-0 w-3 h-3 hover:scale-110 transition-all duration-100 cursor-nwse-resize bg-white"
+            className="absolute -bottom-1.5 rounded-xs shadow-sm -right-1.5 w-3 h-3 hover:scale-110 transition-all duration-100 cursor-nwse-resize bg-white"
             onMouseDown={handleResizeStart}
             onTouchStart={handleResizeTouchStart}
           />
