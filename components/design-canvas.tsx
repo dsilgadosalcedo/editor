@@ -2,12 +2,10 @@
 
 import type React from "react";
 
-import { useRef, useState } from "react";
-import { Hand, Minus, Plus, RotateCcw, Square, Type } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Minus, Plus, Eraser, RotateCcw, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import Artboard from "./artboard";
 import { useCanvasElements, ToolType } from "@/hooks/useCanvasElements";
 import { useCanvasPanZoom } from "@/hooks/useCanvasPanZoom";
@@ -37,6 +35,10 @@ export default function DesignCanvas() {
     handleResizeElement,
     handleUpdateTextContent,
     handleResetCanvas,
+    handleUndo,
+    handleRedo,
+    canUndo,
+    canRedo,
     getSelectedElementData,
     setElements,
     setSelectedElement,
@@ -44,6 +46,25 @@ export default function DesignCanvas() {
     handleClearSelection,
     handleReorderElements,
   } = useCanvasElements(artboardDimensions);
+
+  // Keyboard shortcuts: Ctrl/Cmd+Z => Undo, Ctrl/Cmd+Shift+Z => Redo
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const modifier = e.ctrlKey || e.metaKey;
+      if (!modifier) return;
+      const key = e.key.toLowerCase();
+      if (key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      if (key === "z" && e.shiftKey) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [handleUndo, handleRedo]);
 
   // Pan/zoom logic
   const {
@@ -173,10 +194,39 @@ export default function DesignCanvas() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleResetCanvas}
-              className="h-8 w-8 text-white ml-2"
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className="h-8 w-8 text-white"
+              aria-label="Undo"
             >
               <RotateCcw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className="h-8 w-8 text-white"
+              aria-label="Redo"
+            >
+              <RotateCw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "Are you sure you want to reset the canvas? All changes will be lost."
+                  )
+                ) {
+                  handleResetCanvas();
+                }
+              }}
+              className="h-8 w-8 text-white ml-2"
+              aria-label="Reset Canvas"
+            >
+              <Eraser className="h-4 w-4" />
             </Button>
           </div>
 
