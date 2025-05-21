@@ -12,6 +12,10 @@ export interface CanvasElementData {
   height: number;
   content?: string;
   color: string;
+  borderWidth?: number;
+  borderColor?: string;
+  shadowBlur?: number;
+  shadowColor?: string;
   selected: boolean;
   cornerRadius?: number;
 }
@@ -74,6 +78,10 @@ export const useCanvasElements = (artboardDimensions: {
       height: type === "rectangle" ? 100 : 40,
       content: type === "text" ? "New Text" : undefined,
       color: type === "rectangle" ? "#d9f99d" : "#ffffff",
+      borderWidth: 0,
+      borderColor: "#000000",
+      shadowBlur: 0,
+      shadowColor: "#000000",
       selected: true,
       ...(type === "rectangle" ? { cornerRadius: 0 } : {}),
     };
@@ -211,6 +219,41 @@ export const useCanvasElements = (artboardDimensions: {
     }, 300);
   };
 
+  // Update fill color of element
+  const handleUpdateFillColor = (id: string, color: string) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, color } : el))
+    );
+  };
+
+  // Update border width of element
+  const handleUpdateBorderWidth = (id: string, borderWidth: number) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, borderWidth } : el))
+    );
+  };
+
+  // Update border color of element
+  const handleUpdateBorderColor = (id: string, borderColor: string) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, borderColor } : el))
+    );
+  };
+
+  // Update shadow blur of element
+  const handleUpdateShadowBlur = (id: string, shadowBlur: number) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, shadowBlur } : el))
+    );
+  };
+
+  // Update shadow color of element
+  const handleUpdateShadowColor = (id: string, shadowColor: string) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, shadowColor } : el))
+    );
+  };
+
   return {
     elements,
     selectedElement,
@@ -230,5 +273,10 @@ export const useCanvasElements = (artboardDimensions: {
     handleUpdateCornerRadius,
     handleClearSelection,
     handleReorderElements,
+    handleUpdateFillColor,
+    handleUpdateBorderWidth,
+    handleUpdateBorderColor,
+    handleUpdateShadowBlur,
+    handleUpdateShadowColor,
   };
 };

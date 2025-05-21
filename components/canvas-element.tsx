@@ -17,6 +17,10 @@ interface CanvasElementProps {
     color: string;
     selected: boolean;
     cornerRadius?: number;
+    borderWidth?: number;
+    borderColor?: string;
+    shadowBlur?: number;
+    shadowColor?: string;
   };
   onSelect: () => void;
   onMove: (deltaX: number, deltaY: number) => void;
@@ -295,6 +299,12 @@ export default function CanvasElement({
           element.type === "rectangle"
             ? `${element.cornerRadius || 0}px`
             : undefined,
+        borderWidth: element.borderWidth ?? 0,
+        borderStyle: element.borderWidth ? "solid" : undefined,
+        borderColor: element.borderColor ?? "transparent",
+        boxShadow: element.shadowBlur
+          ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
+          : undefined,
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}

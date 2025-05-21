@@ -12,6 +12,11 @@ interface PropertiesSidebarProps {
   handleResizeElement: (id: string, width: number, height: number) => void;
   handleMoveElement: (id: string, dx: number, dy: number) => void;
   handleUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
+  handleUpdateFillColor?: (id: string, color: string) => void;
+  handleUpdateBorderWidth?: (id: string, width: number) => void;
+  handleUpdateBorderColor?: (id: string, color: string) => void;
+  handleUpdateShadowBlur?: (id: string, blur: number) => void;
+  handleUpdateShadowColor?: (id: string, color: string) => void;
 }
 
 export default function PropertiesSidebar({
@@ -23,6 +28,11 @@ export default function PropertiesSidebar({
   handleResizeElement,
   handleMoveElement,
   handleUpdateCornerRadius,
+  handleUpdateFillColor,
+  handleUpdateBorderWidth,
+  handleUpdateBorderColor,
+  handleUpdateShadowBlur,
+  handleUpdateShadowColor,
 }: PropertiesSidebarProps) {
   return (
     <div className="z-20 m-4 p-1 bg-properties-blue/20 dark:bg-white/10 rounded-2xl shadow flex flex-col backdrop-blur-sm">
@@ -67,14 +77,19 @@ export default function PropertiesSidebar({
             </div>
           </>
         ) : (
-          <div className="space-y-2">
-            <div className="text-properties-text dark:text-foreground font-medium">
-              Element Properties
+          <div className="space-y-6">
+            <div className="text-properties-text dark:text-foreground font-medium flex items-center justify-between">
+              <span>
+                {selectedElementData.type === "rectangle"
+                  ? "Rectangle"
+                  : "Text"}{" "}
+                Properties
+              </span>
             </div>
             {selectedElementData.type === "text" ? (
               <div>
-                <div className="text-properties-text dark:text-foreground mb-2">
-                  Text Content
+                <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                  Content
                 </div>
                 <Input
                   value={selectedElementData.content || ""}
@@ -83,125 +98,254 @@ export default function PropertiesSidebar({
                 />
               </div>
             ) : (
-              <div>
-                <div className="text-properties-text dark:text-foreground mb-2">
-                  Rectangle Size
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center">
-                    <span className="text-properties-text dark:text-foreground mr-2">
-                      w
-                    </span>
-                    <NumberInput
-                      value={selectedElementData.width}
-                      onChange={(val) =>
-                        handleResizeElement(
-                          selectedElementData.id,
-                          val,
-                          selectedElementData.height
-                        )
-                      }
-                      onInstantChange={(val) =>
-                        handleResizeElement(
-                          selectedElementData.id,
-                          val,
-                          selectedElementData.height
-                        )
-                      }
-                      className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
-                      aria-label="Rectangle width"
-                    />
+              <>
+                {/* Background Color Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Background Color
                   </div>
-                  <div className="flex items-center">
-                    <span className="text-properties-text dark:text-foreground mr-2">
-                      h
-                    </span>
-                    <NumberInput
-                      value={selectedElementData.height}
-                      onChange={(val) =>
-                        handleResizeElement(
-                          selectedElementData.id,
-                          selectedElementData.width,
-                          val
-                        )
-                      }
-                      onInstantChange={(val) =>
-                        handleResizeElement(
-                          selectedElementData.id,
-                          selectedElementData.width,
-                          val
-                        )
-                      }
-                      className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
-                      aria-label="Rectangle height"
-                    />
+                  <Input
+                    type="color"
+                    value={selectedElementData.color}
+                    onChange={(e) =>
+                      handleUpdateFillColor &&
+                      handleUpdateFillColor(
+                        selectedElementData.id,
+                        e.target.value
+                      )
+                    }
+                    className="w-full h-8 p-0 rounded"
+                    aria-label="Background color"
+                  />
+                </section>
+
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Dimensions
                   </div>
-                </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Width
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.width}
+                        onChange={(val) =>
+                          handleResizeElement(
+                            selectedElementData.id,
+                            val,
+                            selectedElementData.height
+                          )
+                        }
+                        onInstantChange={(val) =>
+                          handleResizeElement(
+                            selectedElementData.id,
+                            val,
+                            selectedElementData.height
+                          )
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Rectangle width"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Height
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.height}
+                        onChange={(val) =>
+                          handleResizeElement(
+                            selectedElementData.id,
+                            selectedElementData.width,
+                            val
+                          )
+                        }
+                        onInstantChange={(val) =>
+                          handleResizeElement(
+                            selectedElementData.id,
+                            selectedElementData.width,
+                            val
+                          )
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Rectangle height"
+                      />
+                    </div>
+                  </div>
+                </section>
+
                 {/* Corner Radius Input */}
-                <div className="mt-2">
-                  <div className="text-properties-text dark:text-foreground mb-2">
-                    Corner Radius
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Appearance
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Radius
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.cornerRadius || 0}
+                        min={0}
+                        max={Math.floor(
+                          Math.min(
+                            selectedElementData.width,
+                            selectedElementData.height
+                          ) / 2
+                        )}
+                        onChange={(val) =>
+                          handleUpdateCornerRadius &&
+                          handleUpdateCornerRadius(
+                            selectedElementData.id,
+                            Math.max(
+                              0,
+                              Math.min(
+                                val,
+                                Math.floor(
+                                  Math.min(
+                                    selectedElementData.width,
+                                    selectedElementData.height
+                                  ) / 2
+                                )
+                              )
+                            )
+                          )
+                        }
+                        onInstantChange={(val) =>
+                          handleUpdateCornerRadius &&
+                          handleUpdateCornerRadius(
+                            selectedElementData.id,
+                            Math.max(
+                              0,
+                              Math.min(
+                                val,
+                                Math.floor(
+                                  Math.min(
+                                    selectedElementData.width,
+                                    selectedElementData.height
+                                  ) / 2
+                                )
+                              )
+                            )
+                          )
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Corner radius"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Opacity
+                      </span>
+                      <NumberInput
+                        value={100}
+                        onChange={() => {
+                          console.log("opacity changed");
+                        }}
+                        onInstantChange={() => {
+                          console.log("opacity changed");
+                        }}
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Opacity"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Border Width Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Border Width
                   </div>
                   <NumberInput
-                    value={selectedElementData.cornerRadius || 0}
+                    value={selectedElementData.borderWidth || 0}
                     min={0}
-                    max={Math.floor(
-                      Math.min(
-                        selectedElementData.width,
-                        selectedElementData.height
-                      ) / 2
-                    )}
                     onChange={(val) =>
-                      handleUpdateCornerRadius &&
-                      handleUpdateCornerRadius(
-                        selectedElementData.id,
-                        Math.max(
-                          0,
-                          Math.min(
-                            val,
-                            Math.floor(
-                              Math.min(
-                                selectedElementData.width,
-                                selectedElementData.height
-                              ) / 2
-                            )
-                          )
-                        )
-                      )
+                      handleUpdateBorderWidth &&
+                      handleUpdateBorderWidth(selectedElementData.id, val)
                     }
                     onInstantChange={(val) =>
-                      handleUpdateCornerRadius &&
-                      handleUpdateCornerRadius(
+                      handleUpdateBorderWidth &&
+                      handleUpdateBorderWidth(selectedElementData.id, val)
+                    }
+                    className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                    aria-label="Border width"
+                  />
+                </section>
+
+                {/* Border Color Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Border Color
+                  </div>
+                  <Input
+                    type="color"
+                    value={selectedElementData.borderColor || "#000000"}
+                    onChange={(e) =>
+                      handleUpdateBorderColor &&
+                      handleUpdateBorderColor(
                         selectedElementData.id,
-                        Math.max(
-                          0,
-                          Math.min(
-                            val,
-                            Math.floor(
-                              Math.min(
-                                selectedElementData.width,
-                                selectedElementData.height
-                              ) / 2
-                            )
-                          )
-                        )
+                        e.target.value
                       )
                     }
-                    className="h-8 w-24 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
-                    aria-label="Rectangle corner radius"
+                    className="w-full h-8 p-0 rounded"
+                    aria-label="Border color"
                   />
-                </div>
-              </div>
+                </section>
+
+                {/* Shadow Blur Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Shadow Blur
+                  </div>
+                  <NumberInput
+                    value={selectedElementData.shadowBlur || 0}
+                    min={0}
+                    onChange={(val) =>
+                      handleUpdateShadowBlur &&
+                      handleUpdateShadowBlur(selectedElementData.id, val)
+                    }
+                    onInstantChange={(val) =>
+                      handleUpdateShadowBlur &&
+                      handleUpdateShadowBlur(selectedElementData.id, val)
+                    }
+                    className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                    aria-label="Shadow blur"
+                  />
+                </section>
+
+                {/* Shadow Color Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Shadow Color
+                  </div>
+                  <Input
+                    type="color"
+                    value={selectedElementData.shadowColor || "#000000"}
+                    onChange={(e) =>
+                      handleUpdateShadowColor &&
+                      handleUpdateShadowColor(
+                        selectedElementData.id,
+                        e.target.value
+                      )
+                    }
+                    className="w-full h-8 p-0 rounded"
+                    aria-label="Shadow color"
+                  />
+                </section>
+              </>
             )}
 
-            <div>
-              <div className="text-properties-text dark:text-foreground text-sm mb-2">
+            <section>
+              <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
                 Position
               </div>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center">
-                  <span className="text-properties-text dark:text-foreground mr-2">
-                    x
+                  <span className="text-xs text-properties-text dark:text-foreground mr-2">
+                    X
                   </span>
                   <NumberInput
                     value={selectedElementData.x}
@@ -224,8 +368,8 @@ export default function PropertiesSidebar({
                   />
                 </div>
                 <div className="flex items-center">
-                  <span className="text-properties-text dark:text-foreground mr-2">
-                    y
+                  <span className="text-xs text-properties-text dark:text-foreground mr-2">
+                    Y
                   </span>
                   <NumberInput
                     value={selectedElementData.y}
@@ -248,7 +392,7 @@ export default function PropertiesSidebar({
                   />
                 </div>
               </div>
-            </div>
+            </section>
           </div>
         )}
       </div>

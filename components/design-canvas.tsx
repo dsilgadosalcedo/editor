@@ -45,6 +45,11 @@ export default function DesignCanvas() {
     handleUpdateCornerRadius,
     handleClearSelection,
     handleReorderElements,
+    handleUpdateFillColor,
+    handleUpdateBorderWidth,
+    handleUpdateBorderColor,
+    handleUpdateShadowBlur,
+    handleUpdateShadowColor,
   } = useCanvasElements(artboardDimensions);
 
   // Keyboard shortcuts: Ctrl/Cmd+Z => Undo, Ctrl/Cmd+Shift+Z => Redo
@@ -256,6 +261,11 @@ export default function DesignCanvas() {
           handleResizeElement={handleResizeElement}
           handleMoveElement={handleMoveElement}
           handleUpdateCornerRadius={handleUpdateCornerRadius}
+          handleUpdateFillColor={handleUpdateFillColor}
+          handleUpdateBorderWidth={handleUpdateBorderWidth}
+          handleUpdateBorderColor={handleUpdateBorderColor}
+          handleUpdateShadowBlur={handleUpdateShadowBlur}
+          handleUpdateShadowColor={handleUpdateShadowColor}
         />
       </div>
     </div>
