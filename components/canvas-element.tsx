@@ -16,12 +16,14 @@ interface CanvasElementProps {
     content?: string;
     color: string;
     selected: boolean;
+    cornerRadius?: number;
   };
   onSelect: () => void;
   onMove: (deltaX: number, deltaY: number) => void;
   onResize: (width: number, height: number) => void;
   onTextChange: (content: string) => void;
   isPanMode?: boolean;
+  onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
 }
 
 export default function CanvasElement({
@@ -31,6 +33,7 @@ export default function CanvasElement({
   onResize,
   onTextChange,
   isPanMode = false,
+  onUpdateCornerRadius,
 }: CanvasElementProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -44,6 +47,12 @@ export default function CanvasElement({
     y: 0,
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [isCornerRadiusDragging, setIsCornerRadiusDragging] = useState(false);
+  const [cornerRadiusStart, setCornerRadiusStart] = useState({
+    x: 0,
+    y: 0,
+    cornerRadius: 0,
+  });
 
   // Remove the local content state to prevent the infinite loop
   // We'll use the element.content directly
@@ -221,6 +230,52 @@ export default function CanvasElement({
     };
   }, [isDragging, isResizing, dragStart, resizeStart, onMove, onResize]);
 
+  // Handle corner radius drag start
+  const handleCornerRadiusDragStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsCornerRadiusDragging(true);
+    setCornerRadiusStart({
+      x: e.clientX,
+      y: e.clientY,
+      cornerRadius: element.cornerRadius || 0,
+    });
+  };
+
+  // Handle corner radius drag move
+  useEffect(() => {
+    if (!isCornerRadiusDragging) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - cornerRadiusStart.x;
+      const dy = e.clientY - cornerRadiusStart.y;
+      let newRadius = cornerRadiusStart.cornerRadius + (dx + dy) / 2;
+      newRadius = Math.max(
+        0,
+        Math.min(newRadius, element.width / 2, element.height / 2)
+      );
+      if (
+        element.cornerRadius !== newRadius &&
+        typeof onUpdateCornerRadius === "function"
+      ) {
+        onUpdateCornerRadius(element.id, newRadius);
+      }
+    };
+    const handleMouseUp = () => {
+      setIsCornerRadiusDragging(false);
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [
+    isCornerRadiusDragging,
+    cornerRadiusStart,
+    element,
+    onUpdateCornerRadius,
+  ]);
+
   return (
     <div
       ref={elementRef}
@@ -236,6 +291,10 @@ export default function CanvasElement({
         backgroundColor:
           element.type === "rectangle" ? element.color : "transparent",
         zIndex: element.selected ? 10 : 1,
+        borderRadius:
+          element.type === "rectangle"
+            ? `${element.cornerRadius || 0}px`
+            : undefined,
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
@@ -268,6 +327,20 @@ export default function CanvasElement({
           className="absolute bottom-0 right-0 w-3 h-3 bg-white cursor-nwse-resize"
           onMouseDown={handleResizeStart}
           onTouchStart={handleResizeTouchStart}
+        />
+      )}
+
+      {/* Corner radius handle for rectangles */}
+      {element.type === "rectangle" && element.selected && (
+        <div
+          className="absolute w-4 h-4 rounded-full bg-green-400 border-2 border-white cursor-pointer z-20"
+          style={{
+            left: (element.cornerRadius || 0) - 8, // 8 = handle radius for centering
+            top: (element.cornerRadius || 0) - 8,
+            boxShadow: "0 0 0 2px #4ade80",
+          }}
+          onMouseDown={handleCornerRadiusDragStart}
+          title="Drag to adjust corner radius"
         />
       )}
     </div>

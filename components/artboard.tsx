@@ -1,21 +1,22 @@
-import React from "react"
-import CanvasElement from "./canvas-element"
-import { cn } from "@/lib/utils"
+import React from "react";
+import CanvasElement from "./canvas-element";
+import { cn } from "@/lib/utils";
 
 interface ArtboardProps {
-  artboardDimensions: { width: number; height: number }
-  zoom: number
-  transformOrigin: string
-  showGuides: boolean
-  elements: any[]
-  onSelectElement: (id: string) => void
-  onMoveElement: (id: string, dx: number, dy: number) => void
-  onResizeElement: (id: string, w: number, h: number) => void
-  onTextChange: (id: string, content: string) => void
-  selectedTool: string | null
-  canvasPosition: { x: number; y: number }
-  artboardRef: React.RefObject<HTMLDivElement | null>
-  canvasContainerRef: React.RefObject<HTMLDivElement | null>
+  artboardDimensions: { width: number; height: number };
+  zoom: number;
+  transformOrigin: string;
+  showGuides: boolean;
+  elements: any[];
+  onSelectElement: (id: string) => void;
+  onMoveElement: (id: string, dx: number, dy: number) => void;
+  onResizeElement: (id: string, w: number, h: number) => void;
+  onTextChange: (id: string, content: string) => void;
+  selectedTool: string | null;
+  canvasPosition: { x: number; y: number };
+  artboardRef: React.RefObject<HTMLDivElement | null>;
+  canvasContainerRef: React.RefObject<HTMLDivElement | null>;
+  onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
 }
 
 const Artboard: React.FC<ArtboardProps> = ({
@@ -32,6 +33,7 @@ const Artboard: React.FC<ArtboardProps> = ({
   canvasPosition,
   artboardRef,
   canvasContainerRef,
+  onUpdateCornerRadius,
 }) => {
   return (
     <div
@@ -79,6 +81,7 @@ const Artboard: React.FC<ArtboardProps> = ({
             onResize={(w, h) => onResizeElement(element.id, w, h)}
             onTextChange={(content) => onTextChange(element.id, content)}
             isPanMode={selectedTool === "hand"}
+            onUpdateCornerRadius={onUpdateCornerRadius}
           />
         ))}
         {showGuides && (
@@ -91,7 +94,7 @@ const Artboard: React.FC<ArtboardProps> = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Artboard 
+export default Artboard;

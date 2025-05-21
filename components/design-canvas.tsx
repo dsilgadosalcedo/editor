@@ -38,6 +38,7 @@ export default function DesignCanvas() {
     getSelectedElementData,
     setElements,
     setSelectedElement,
+    handleUpdateCornerRadius,
   } = useCanvasElements(artboardDimensions);
 
   // Pan/zoom logic
@@ -123,6 +124,7 @@ export default function DesignCanvas() {
               canvasContainerRef={
                 canvasContainerRef as React.RefObject<HTMLDivElement>
               }
+              onUpdateCornerRadius={handleUpdateCornerRadius}
             />
           </div>
 
@@ -175,6 +177,7 @@ export default function DesignCanvas() {
           onTextChange={handleTextInputChange}
           handleResizeElement={handleResizeElement}
           handleMoveElement={handleMoveElement}
+          handleUpdateCornerRadius={handleUpdateCornerRadius}
         />
       </div>
     </div>
