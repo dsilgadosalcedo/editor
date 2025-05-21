@@ -281,7 +281,7 @@ export default function CanvasElement({
       ref={elementRef}
       className={cn(
         "absolute cursor-move",
-        element.selected && "outline-2 outline-white"
+        element.selected ? "outline-2 outline-white" : ""
       )}
       style={{
         left: `${element.x}px`,
@@ -320,28 +320,29 @@ export default function CanvasElement({
         </div>
       )}
 
-      {/* Resize handle */}
-      {/* {element.selected && !isPanMode && ( */}
+      {/* Selection UI: Only show when selected */}
       {element.selected && (
-        <div
-          className="absolute bottom-0 right-0 w-3 h-3 bg-white cursor-nwse-resize"
-          onMouseDown={handleResizeStart}
-          onTouchStart={handleResizeTouchStart}
-        />
-      )}
-
-      {/* Corner radius handle for rectangles */}
-      {element.type === "rectangle" && element.selected && (
-        <div
-          className="absolute w-4 h-4 rounded-full bg-green-400 border-2 border-white cursor-pointer z-20"
-          style={{
-            left: (element.cornerRadius || 0) - 8, // 8 = handle radius for centering
-            top: (element.cornerRadius || 0) - 8,
-            boxShadow: "0 0 0 2px #4ade80",
-          }}
-          onMouseDown={handleCornerRadiusDragStart}
-          title="Drag to adjust corner radius"
-        />
+        <>
+          {/* Resize handle */}
+          <div
+            className="absolute bottom-0 right-0 w-3 h-3 bg-white cursor-nwse-resize"
+            onMouseDown={handleResizeStart}
+            onTouchStart={handleResizeTouchStart}
+          />
+          {/* Corner radius handle for rectangles */}
+          {element.type === "rectangle" && (
+            <div
+              className="absolute w-4 h-4 rounded-full bg-green-400 border-2 border-white cursor-pointer z-20"
+              style={{
+                left: (element.cornerRadius || 0) - 8, // 8 = handle radius for centering
+                top: (element.cornerRadius || 0) - 8,
+                boxShadow: "0 0 0 2px #4ade80",
+              }}
+              onMouseDown={handleCornerRadiusDragStart}
+              title="Drag to adjust corner radius"
+            />
+          )}
+        </>
       )}
     </div>
   );

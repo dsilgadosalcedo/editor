@@ -100,6 +100,11 @@ export const useCanvasElements = (artboardDimensions: {
     setSelectedElement(null);
   };
 
+  const handleClearSelection = () => {
+    setElements((prev) => prev.map((el) => ({ ...el, selected: false })));
+    setSelectedElement(null);
+  };
+
   const getSelectedElementData = () =>
     elements.find((el) => el.id === selectedElement);
 
@@ -132,5 +137,6 @@ export const useCanvasElements = (artboardDimensions: {
     setElements,
     setSelectedElement,
     handleUpdateCornerRadius,
+    handleClearSelection,
   };
 };

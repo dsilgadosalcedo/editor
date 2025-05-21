@@ -8,7 +8,7 @@ interface ArtboardProps {
   transformOrigin: string;
   showGuides: boolean;
   elements: any[];
-  onSelectElement: (id: string) => void;
+  onSelectElement: (id: string | null) => void;
   onMoveElement: (id: string, dx: number, dy: number) => void;
   onResizeElement: (id: string, w: number, h: number) => void;
   onTextChange: (id: string, content: string) => void;
@@ -60,6 +60,12 @@ const Artboard: React.FC<ArtboardProps> = ({
           top: "50%",
           marginLeft: `-${artboardDimensions.width / 2}px`,
           marginTop: `-${artboardDimensions.height / 2}px`,
+        }}
+        onMouseDown={(e) => {
+          if (selectedTool !== "hand") onSelectElement(null);
+        }}
+        onTouchStart={(e) => {
+          if (selectedTool !== "hand") onSelectElement(null);
         }}
       >
         {showGuides && (

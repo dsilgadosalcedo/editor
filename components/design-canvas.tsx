@@ -39,6 +39,7 @@ export default function DesignCanvas() {
     setElements,
     setSelectedElement,
     handleUpdateCornerRadius,
+    handleClearSelection,
   } = useCanvasElements(artboardDimensions);
 
   // Pan/zoom logic
@@ -83,7 +84,7 @@ export default function DesignCanvas() {
           selectedTool={selectedTool}
           onSelectTool={setSelectedTool}
           onAddElement={handleAddElement}
-          clearSelection={() => setSelectedElement(null)}
+          clearSelection={handleClearSelection}
         />
 
         {/* Main Canvas Area */}
@@ -104,6 +105,12 @@ export default function DesignCanvas() {
                 : "none",
               backgroundSize: "20px 20px",
             }}
+            onMouseDown={(e) => {
+              if (selectedTool !== "hand") handleClearSelection();
+            }}
+            onTouchStart={(e) => {
+              if (selectedTool !== "hand") handleClearSelection();
+            }}
           >
             {/* Canvas Container for Panning and Artboard */}
             <Artboard
@@ -112,9 +119,10 @@ export default function DesignCanvas() {
               transformOrigin={transformOrigin}
               showGuides={showGuides}
               elements={elements}
-              onSelectElement={(id) =>
-                handleSelectElement(id, selectedTool as ToolType)
-              }
+              onSelectElement={(id) => {
+                if (id === null) handleClearSelection();
+                else handleSelectElement(id, selectedTool as ToolType);
+              }}
               onMoveElement={handleMoveElement}
               onResizeElement={handleResizeElement}
               onTextChange={handleUpdateTextContent}
