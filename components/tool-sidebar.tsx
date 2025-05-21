@@ -1,5 +1,5 @@
 import React from "react";
-import { Hand, Square, Type } from "lucide-react";
+import { Hand, Square, Type, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ToolType, ElementType } from "@/hooks/useCanvasElements";
@@ -11,6 +11,8 @@ interface ToolSidebarProps {
   onSelectTool: (tool: ToolType) => void;
   onAddElement: (type: ElementType) => void;
   clearSelection: () => void;
+  onToggleLayers: () => void;
+  layersOpen: boolean;
 }
 
 export default function ToolSidebar({
@@ -18,6 +20,8 @@ export default function ToolSidebar({
   onSelectTool,
   onAddElement,
   clearSelection,
+  onToggleLayers,
+  layersOpen,
 }: ToolSidebarProps) {
   return (
     <div className="z-20 m-4 p-1 bg-properties-blue/20 dark:bg-white/10 rounded-2xl shadow flex flex-col backdrop-blur-sm">
@@ -61,6 +65,21 @@ export default function ToolSidebar({
           <ToolIcon
             icon={Hand}
             className={cn(selectedTool === "hand" && "text-properties-gold")}
+          />
+        </ToolButton>
+        <ToolButton
+          className={cn(
+            layersOpen &&
+              "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
+          )}
+          onClick={() => {
+            onToggleLayers();
+            clearSelection();
+          }}
+        >
+          <ToolIcon
+            icon={Layers}
+            className={cn(layersOpen && "text-properties-gold")}
           />
         </ToolButton>
       </div>

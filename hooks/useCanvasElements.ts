@@ -105,6 +105,15 @@ export const useCanvasElements = (artboardDimensions: {
     setSelectedElement(null);
   };
 
+  const handleReorderElements = (oldIndex: number, newIndex: number) => {
+    setElements((prev) => {
+      const updated = [...prev];
+      const [moved] = updated.splice(oldIndex, 1);
+      updated.splice(newIndex, 0, moved);
+      return updated;
+    });
+  };
+
   const getSelectedElementData = () =>
     elements.find((el) => el.id === selectedElement);
 
@@ -138,5 +147,6 @@ export const useCanvasElements = (artboardDimensions: {
     setSelectedElement,
     handleUpdateCornerRadius,
     handleClearSelection,
+    handleReorderElements,
   };
 };

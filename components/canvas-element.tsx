@@ -325,21 +325,20 @@ export default function CanvasElement({
         <>
           {/* Resize handle */}
           <div
-            className="absolute bottom-0 right-0 w-3 h-3 bg-white cursor-nwse-resize"
+            className="absolute bottom-0 rounded-xs shadow-sm right-0 w-3 h-3 hover:scale-110 transition-all duration-100 cursor-nwse-resize bg-white"
             onMouseDown={handleResizeStart}
             onTouchStart={handleResizeTouchStart}
           />
           {/* Corner radius handle for rectangles */}
           {element.type === "rectangle" && (
             <div
-              className="absolute w-4 h-4 rounded-full bg-green-400 border-2 border-white cursor-pointer z-20"
+              className="absolute w-4 h-4 rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer z-20"
+              onMouseDown={handleCornerRadiusDragStart}
+              title="Drag to adjust corner radius"
               style={{
                 left: (element.cornerRadius || 0) - 8, // 8 = handle radius for centering
                 top: (element.cornerRadius || 0) - 8,
-                boxShadow: "0 0 0 2px #4ade80",
               }}
-              onMouseDown={handleCornerRadiusDragStart}
-              title="Drag to adjust corner radius"
             />
           )}
         </>

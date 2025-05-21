@@ -13,6 +13,7 @@ import { useCanvasElements, ToolType } from "@/hooks/useCanvasElements";
 import { useCanvasPanZoom } from "@/hooks/useCanvasPanZoom";
 import ToolSidebar from "./tool-sidebar";
 import PropertiesSidebar from "./properties-sidebar";
+import LayersPanel from "@/components/layers-panel";
 
 export default function DesignCanvas() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -24,6 +25,7 @@ export default function DesignCanvas() {
     height: 400,
   });
   const [selectedTool, setSelectedTool] = useState<ToolType>(null);
+  const [layersOpen, setLayersOpen] = useState(false);
 
   // Elements logic
   const {
@@ -40,6 +42,7 @@ export default function DesignCanvas() {
     setSelectedElement,
     handleUpdateCornerRadius,
     handleClearSelection,
+    handleReorderElements,
   } = useCanvasElements(artboardDimensions);
 
   // Pan/zoom logic
@@ -85,6 +88,8 @@ export default function DesignCanvas() {
           onSelectTool={setSelectedTool}
           onAddElement={handleAddElement}
           clearSelection={handleClearSelection}
+          onToggleLayers={() => setLayersOpen((prev) => !prev)}
+          layersOpen={layersOpen}
         />
 
         {/* Main Canvas Area */}
@@ -174,6 +179,21 @@ export default function DesignCanvas() {
               <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Layers Panel */}
+          {layersOpen && (
+            <LayersPanel
+              elements={elements}
+              selectedElement={selectedElement}
+              onSelect={(id: string) =>
+                handleSelectElement(id, selectedTool as ToolType)
+              }
+              onReorder={(oldIndex: number, newIndex: number) =>
+                handleReorderElements(oldIndex, newIndex)
+              }
+              className="z-20 absolute bottom-6 right-4"
+            />
+          )}
         </div>
 
         {/* Right Sidebar */}
