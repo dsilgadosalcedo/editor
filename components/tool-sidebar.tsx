@@ -37,60 +37,20 @@ export default function ToolSidebar({
         </Button>
         <ThemeToggle />
         <div className="w-full h-px bg-properties-blue/30 dark:bg-slate-100/30 my-1"></div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "rounded-md",
-            selectedTool === "text"
-              ? "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
-              : "bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20"
-          )}
+        <ToolButton onClick={() => onAddElement("text")}>
+          <ToolIcon icon={Type} />
+        </ToolButton>
+        <ToolButton
           onClick={() => {
-            onSelectTool("text");
-            onAddElement("text");
-          }}
-        >
-          <Type
-            className={cn(
-              "h-6 w-6",
-              selectedTool === "text"
-                ? "text-properties-gold"
-                : "text-properties-text dark:text-foreground"
-            )}
-          />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "rounded-md",
-            selectedTool === "rectangle"
-              ? "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
-              : "bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20"
-          )}
-          onClick={() => {
-            onSelectTool("rectangle");
             onAddElement("rectangle");
           }}
         >
-          <Square
-            className={cn(
-              "h-6 w-6",
-              selectedTool === "rectangle"
-                ? "text-properties-gold"
-                : "text-properties-text dark:text-foreground"
-            )}
-          />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
+          <ToolIcon icon={Square} />
+        </ToolButton>
+        <ToolButton
           className={cn(
-            "rounded-md",
-            selectedTool === "hand"
-              ? "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
-              : "bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20"
+            selectedTool === "hand" &&
+              "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
           )}
           onClick={() => {
             const next = selectedTool === "hand" ? null : "hand";
@@ -98,16 +58,54 @@ export default function ToolSidebar({
             clearSelection();
           }}
         >
-          <Hand
-            className={cn(
-              "h-6 w-6",
-              selectedTool === "hand"
-                ? "text-properties-gold"
-                : "text-properties-text dark:text-foreground"
-            )}
+          <ToolIcon
+            icon={Hand}
+            className={cn(selectedTool === "hand" && "text-properties-gold")}
           />
-        </Button>
+        </ToolButton>
       </div>
     </div>
   );
 }
+
+const ToolButton = ({
+  onClick,
+  className,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+  className?: string;
+}) => {
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className={cn(
+        "rounded-md group bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20 dark:active:bg-white/30 active:bg-white/60",
+        className
+      )}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
+};
+
+const ToolIcon = ({
+  icon,
+  className,
+}: {
+  icon: React.ElementType;
+  className?: string;
+}) => {
+  const Icon = icon;
+  return (
+    <Icon
+      className={cn(
+        "h-6 w-6 group-active:text-properties-gold dark:group-active:text-properties-gold group-active:scale-90 transition-all duration-200 text-properties-text dark:text-foreground",
+        className
+      )}
+    />
+  );
+};
