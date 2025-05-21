@@ -63,6 +63,7 @@ export default function CanvasElement({
     y: 0,
     cornerRadius: 0,
   });
+  const [resizeDir, setResizeDir] = useState<string | null>(null);
 
   // Remove the local content state to prevent the infinite loop
   // We'll use the element.content directly
@@ -98,13 +99,14 @@ export default function CanvasElement({
     setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
 
-  // Handle element resizing
-  const handleResizeStart = (e: React.MouseEvent) => {
+  // Handle element resizing, track which handle (direction)
+  const handleResizeStart = (dir: string, e: React.MouseEvent) => {
     // if (isPanMode) return;
 
     e.stopPropagation();
     e.preventDefault();
     setIsResizing(true);
+    setResizeDir(dir);
     setResizeStart({
       width: element.width,
       height: element.height,
@@ -113,12 +115,13 @@ export default function CanvasElement({
     });
   };
 
-  const handleResizeTouchStart = (e: React.TouchEvent) => {
+  const handleResizeTouchStart = (dir: string, e: React.TouchEvent) => {
     // if (isPanMode) return;
 
     e.stopPropagation();
     e.preventDefault();
     setIsResizing(true);
+    setResizeDir(dir);
     setResizeStart({
       width: element.width,
       height: element.height,
@@ -189,13 +192,63 @@ export default function CanvasElement({
         const deltaY = e.clientY - dragStart.y;
         onMove(deltaX, deltaY);
         setDragStart({ x: e.clientX, y: e.clientY });
-      } else if (isResizing) {
-        const deltaX = e.clientX - resizeStart.x;
-        const deltaY = e.clientY - resizeStart.y;
-        onResize(
-          Math.max(20, resizeStart.width + deltaX),
-          Math.max(20, resizeStart.height + deltaY)
-        );
+      } else if (isResizing && resizeDir) {
+        const dx = e.clientX - resizeStart.x;
+        const dy = e.clientY - resizeStart.y;
+        let newWidth = resizeStart.width;
+        let newHeight = resizeStart.height;
+        let moveX = 0;
+        let moveY = 0;
+        switch (resizeDir) {
+          case "e":
+            newWidth = resizeStart.width + dx;
+            break;
+          case "w":
+            newWidth = resizeStart.width - dx;
+            moveX = dx;
+            break;
+          case "s":
+            newHeight = resizeStart.height + dy;
+            break;
+          case "n":
+            newHeight = resizeStart.height - dy;
+            moveY = dy;
+            break;
+          case "ne":
+            newWidth = resizeStart.width + dx;
+            newHeight = resizeStart.height - dy;
+            moveY = dy;
+            break;
+          case "nw":
+            newWidth = resizeStart.width - dx;
+            newHeight = resizeStart.height - dy;
+            moveX = dx;
+            moveY = dy;
+            break;
+          case "se":
+            newWidth = resizeStart.width + dx;
+            newHeight = resizeStart.height + dy;
+            break;
+          case "sw":
+            newWidth = resizeStart.width - dx;
+            newHeight = resizeStart.height + dy;
+            moveX = dx;
+            break;
+        }
+        newWidth = Math.max(20, newWidth);
+        newHeight = Math.max(20, newHeight);
+        // Apply size change then position change
+        onResize(newWidth, newHeight);
+        if (moveX || moveY) {
+          onMove(moveX, moveY);
+        }
+        // Update base for next incremental resize
+        setResizeStart({
+          width: newWidth,
+          height: newHeight,
+          x: e.clientX,
+          y: e.clientY,
+        });
       }
     };
 
@@ -205,24 +258,76 @@ export default function CanvasElement({
         const deltaY = e.touches[0].clientY - dragStart.y;
         onMove(deltaX, deltaY);
         setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-      } else if (isResizing) {
-        const deltaX = e.touches[0].clientX - resizeStart.x;
-        const deltaY = e.touches[0].clientY - resizeStart.y;
-        onResize(
-          Math.max(20, resizeStart.width + deltaX),
-          Math.max(20, resizeStart.height + deltaY)
-        );
+      } else if (isResizing && resizeDir) {
+        const dx = e.touches[0].clientX - resizeStart.x;
+        const dy = e.touches[0].clientY - resizeStart.y;
+        let newWidth = resizeStart.width;
+        let newHeight = resizeStart.height;
+        let moveX = 0;
+        let moveY = 0;
+        switch (resizeDir) {
+          case "e":
+            newWidth = resizeStart.width + dx;
+            break;
+          case "w":
+            newWidth = resizeStart.width - dx;
+            moveX = dx;
+            break;
+          case "s":
+            newHeight = resizeStart.height + dy;
+            break;
+          case "n":
+            newHeight = resizeStart.height - dy;
+            moveY = dy;
+            break;
+          case "ne":
+            newWidth = resizeStart.width + dx;
+            newHeight = resizeStart.height - dy;
+            moveY = dy;
+            break;
+          case "nw":
+            newWidth = resizeStart.width - dx;
+            newHeight = resizeStart.height - dy;
+            moveX = dx;
+            moveY = dy;
+            break;
+          case "se":
+            newWidth = resizeStart.width + dx;
+            newHeight = resizeStart.height + dy;
+            break;
+          case "sw":
+            newWidth = resizeStart.width - dx;
+            newHeight = resizeStart.height + dy;
+            moveX = dx;
+            break;
+        }
+        newWidth = Math.max(20, newWidth);
+        newHeight = Math.max(20, newHeight);
+        // Apply size change then position change
+        onResize(newWidth, newHeight);
+        if (moveX || moveY) {
+          onMove(moveX, moveY);
+        }
+        // Update base for next incremental resize
+        setResizeStart({
+          width: newWidth,
+          height: newHeight,
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+        });
       }
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
       setIsResizing(false);
+      setResizeDir(null);
     };
 
     const handleTouchEnd = () => {
       setIsDragging(false);
       setIsResizing(false);
+      setResizeDir(null);
     };
 
     if (isDragging || isResizing) {
@@ -238,7 +343,15 @@ export default function CanvasElement({
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isDragging, isResizing, dragStart, resizeStart, onMove, onResize]);
+  }, [
+    isDragging,
+    isResizing,
+    resizeDir,
+    dragStart,
+    resizeStart,
+    onMove,
+    onResize,
+  ]);
 
   // Handle corner radius drag start
   const handleCornerRadiusDragStart = (e: React.MouseEvent) => {
@@ -309,10 +422,7 @@ export default function CanvasElement({
   return (
     <div
       ref={elementRef}
-      className={cn(
-        "absolute cursor-move",
-        element.selected ? "outline-2 outline-white" : ""
-      )}
+      className="absolute cursor-move"
       style={{
         left: `${element.x}px`,
         top: `${element.y}px`,
@@ -377,11 +487,63 @@ export default function CanvasElement({
       {/* Selection UI: Only show when selected */}
       {element.selected && (
         <>
-          {/* Resize handle */}
+          {/* Selection frame */}
+          <div className="absolute inset-0 border border-blue-500 rounded-none pointer-events-none" />
+          {/* Resize handles */}
+          {/* top-left */}
           <div
-            className="absolute -bottom-1.5 rounded-xs shadow-sm -right-1.5 w-3 h-3 hover:scale-110 transition-all duration-100 cursor-nwse-resize bg-white"
-            onMouseDown={handleResizeStart}
-            onTouchStart={handleResizeTouchStart}
+            className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-nwse-resize"
+            onMouseDown={(e) => handleResizeStart("nw", e)}
+            onTouchStart={(e) => handleResizeTouchStart("nw", e)}
+            onDoubleClick={handleResizeDoubleClick}
+          />
+          {/* top-center */}
+          <div
+            className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-ns-resize"
+            onMouseDown={(e) => handleResizeStart("n", e)}
+            onTouchStart={(e) => handleResizeTouchStart("n", e)}
+            onDoubleClick={handleResizeDoubleClick}
+          />
+          {/* top-right */}
+          <div
+            className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-nesw-resize"
+            onMouseDown={(e) => handleResizeStart("ne", e)}
+            onTouchStart={(e) => handleResizeTouchStart("ne", e)}
+            onDoubleClick={handleResizeDoubleClick}
+          />
+          {/* middle-left */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-ew-resize"
+            onMouseDown={(e) => handleResizeStart("w", e)}
+            onTouchStart={(e) => handleResizeTouchStart("w", e)}
+            onDoubleClick={handleResizeDoubleClick}
+          />
+          {/* middle-right */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-ew-resize"
+            onMouseDown={(e) => handleResizeStart("e", e)}
+            onTouchStart={(e) => handleResizeTouchStart("e", e)}
+            onDoubleClick={handleResizeDoubleClick}
+          />
+          {/* bottom-left */}
+          <div
+            className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-nesw-resize"
+            onMouseDown={(e) => handleResizeStart("sw", e)}
+            onTouchStart={(e) => handleResizeTouchStart("sw", e)}
+            onDoubleClick={handleResizeDoubleClick}
+          />
+          {/* bottom-center */}
+          <div
+            className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-ns-resize"
+            onMouseDown={(e) => handleResizeStart("s", e)}
+            onTouchStart={(e) => handleResizeTouchStart("s", e)}
+            onDoubleClick={handleResizeDoubleClick}
+          />
+          {/* bottom-right */}
+          <div
+            className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-nwse-resize"
+            onMouseDown={(e) => handleResizeStart("se", e)}
+            onTouchStart={(e) => handleResizeTouchStart("se", e)}
             onDoubleClick={handleResizeDoubleClick}
           />
           {/* Corner radius handle for rectangles */}

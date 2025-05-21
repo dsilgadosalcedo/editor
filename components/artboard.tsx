@@ -1,6 +1,5 @@
 import React from "react";
 import CanvasElement from "./canvas-element";
-import { cn } from "@/lib/utils";
 
 interface ArtboardProps {
   artboardDimensions: { width: number; height: number };
