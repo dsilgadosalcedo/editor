@@ -254,6 +254,12 @@ export const useCanvasElements = (artboardDimensions: {
     );
   };
 
+  // Handler to delete an element by ID
+  const handleDeleteElement = (id: string) => {
+    updateElements((els) => els.filter((el) => el.id !== id));
+    setSelectedElement(null);
+  };
+
   return {
     elements,
     selectedElement,
@@ -278,5 +284,6 @@ export const useCanvasElements = (artboardDimensions: {
     handleUpdateBorderColor,
     handleUpdateShadowBlur,
     handleUpdateShadowColor,
+    handleDeleteElement,
   };
 };

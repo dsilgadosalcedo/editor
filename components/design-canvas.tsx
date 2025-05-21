@@ -50,11 +50,33 @@ export default function DesignCanvas() {
     handleUpdateBorderColor,
     handleUpdateShadowBlur,
     handleUpdateShadowColor,
+    handleDeleteElement,
   } = useCanvasElements(artboardDimensions);
 
-  // Keyboard shortcuts: Ctrl/Cmd+Z => Undo, Ctrl/Cmd+Shift+Z => Redo
+  // Keyboard shortcuts: Backspace => Delete element; Ctrl/Cmd+Z => Undo; Ctrl/Cmd+Shift+Z => Redo
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Delete selected element on Backspace (when not typing in inputs or contentEditable)
+      if (
+        e.key === "Backspace" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.shiftKey &&
+        !e.altKey
+      ) {
+        const target = e.target as HTMLElement;
+        const isTyping =
+          target instanceof HTMLElement &&
+          (target.isContentEditable ||
+            target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA");
+        if (!isTyping && selectedElement) {
+          e.preventDefault();
+          handleDeleteElement(selectedElement);
+        }
+        return;
+      }
+      // Undo/Redo with Ctrl/Cmd+Z
       const modifier = e.ctrlKey || e.metaKey;
       if (!modifier) return;
       const key = e.key.toLowerCase();
@@ -69,7 +91,7 @@ export default function DesignCanvas() {
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [handleUndo, handleRedo]);
+  }, [handleUndo, handleRedo, handleDeleteElement, selectedElement]);
 
   // Pan/zoom logic
   const {
