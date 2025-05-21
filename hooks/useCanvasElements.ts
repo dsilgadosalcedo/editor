@@ -19,6 +19,12 @@ export interface CanvasElementData {
   selected: boolean;
   cornerRadius?: number;
   name?: string;
+  fontSize?: number;
+  fontWeight?: number;
+  letterSpacing?: number;
+  lineHeight?: number;
+  horizontalAlign?: "left" | "center" | "right";
+  verticalAlign?: "top" | "middle" | "bottom";
 }
 
 export const useCanvasElements = (artboardDimensions: {
@@ -78,7 +84,7 @@ export const useCanvasElements = (artboardDimensions: {
       width: type === "rectangle" ? 100 : 80,
       height: type === "rectangle" ? 100 : 40,
       content: type === "text" ? "New Text" : undefined,
-      color: type === "rectangle" ? "#d9f99d" : "#ffffff",
+      color: type === "rectangle" ? "#d9f99d" : "#000000",
       borderWidth: 0,
       borderColor: "#000000",
       shadowBlur: 0,
@@ -86,6 +92,12 @@ export const useCanvasElements = (artboardDimensions: {
       selected: true,
       cornerRadius: type === "rectangle" ? 0 : undefined,
       name: type === "rectangle" ? "Rectangle" : "Text",
+      fontSize: type === "text" ? 16 : undefined,
+      fontWeight: type === "text" ? 400 : undefined,
+      letterSpacing: type === "text" ? 0 : undefined,
+      lineHeight: type === "text" ? 20 : undefined,
+      horizontalAlign: type === "text" ? "left" : undefined,
+      verticalAlign: type === "text" ? "top" : undefined,
     };
     updateElements((prev) => [
       ...prev.map((el) => ({ ...el, selected: false })),
@@ -269,6 +281,54 @@ export const useCanvasElements = (artboardDimensions: {
     setSelectedElement(null);
   };
 
+  // Update font size
+  const handleUpdateFontSize = (id: string, fontSize: number) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, fontSize } : el))
+    );
+  };
+
+  // Update font weight
+  const handleUpdateFontWeight = (id: string, fontWeight: number) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, fontWeight } : el))
+    );
+  };
+
+  // Update letter spacing
+  const handleUpdateLetterSpacing = (id: string, letterSpacing: number) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, letterSpacing } : el))
+    );
+  };
+
+  // Update line height
+  const handleUpdateLineHeight = (id: string, lineHeight: number) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, lineHeight } : el))
+    );
+  };
+
+  // Update horizontal alignment of text
+  const handleUpdateHorizontalAlign = (
+    id: string,
+    horizontalAlign: "left" | "center" | "right"
+  ) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, horizontalAlign } : el))
+    );
+  };
+
+  // Update vertical alignment of text
+  const handleUpdateVerticalAlign = (
+    id: string,
+    verticalAlign: "top" | "middle" | "bottom"
+  ) => {
+    updateElements((els) =>
+      els.map((el) => (el.id === id ? { ...el, verticalAlign } : el))
+    );
+  };
+
   return {
     elements,
     selectedElement,
@@ -295,5 +355,11 @@ export const useCanvasElements = (artboardDimensions: {
     handleUpdateShadowColor,
     handleDeleteElement,
     handleUpdateName,
+    handleUpdateFontSize,
+    handleUpdateFontWeight,
+    handleUpdateLetterSpacing,
+    handleUpdateLineHeight,
+    handleUpdateHorizontalAlign,
+    handleUpdateVerticalAlign,
   };
 };

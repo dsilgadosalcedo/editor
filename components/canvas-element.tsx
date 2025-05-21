@@ -21,6 +21,12 @@ interface CanvasElementProps {
     borderColor?: string;
     shadowBlur?: number;
     shadowColor?: string;
+    fontSize?: number;
+    fontWeight?: number;
+    letterSpacing?: number;
+    lineHeight?: number;
+    horizontalAlign?: "left" | "center" | "right";
+    verticalAlign?: "top" | "middle" | "bottom";
   };
   onSelect: () => void;
   onMove: (deltaX: number, deltaY: number) => void;
@@ -280,6 +286,26 @@ export default function CanvasElement({
     onUpdateCornerRadius,
   ]);
 
+  // Double-click resize handle to fit text
+  const handleResizeDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (element.type === "text" && textRef.current) {
+      // Use scrollWidth/scrollHeight for content size
+      const node = textRef.current;
+      const rect = node.getBoundingClientRect();
+      // Temporarily set width/height to auto to measure
+      const prevWidth = node.style.width;
+      const prevHeight = node.style.height;
+      node.style.width = "auto";
+      node.style.height = "auto";
+      const fitWidth = node.scrollWidth;
+      const fitHeight = node.scrollHeight;
+      node.style.width = prevWidth;
+      node.style.height = prevHeight;
+      onResize(fitWidth, fitHeight);
+    }
+  };
+
   return (
     <div
       ref={elementRef}
@@ -315,16 +341,34 @@ export default function CanvasElement({
       {element.type === "text" && (
         <div
           ref={textRef}
-          // contentEditable={isEditing && !isPanMode}
-          contentEditable={isEditing}
+          contentEditable={isEditing && !isPanMode}
           suppressContentEditableWarning
           onBlur={handleTextBlur}
           onInput={handleTextChange}
           onKeyDown={handleTextKeyDown}
           className={cn(
-            "w-full h-full flex items-center justify-center text-white outline-none",
+            "w-full h-full flex outline-none",
+            // Dynamic horizontal alignment
+            element.horizontalAlign === "left" && "justify-start",
+            element.horizontalAlign === "center" && "justify-center",
+            element.horizontalAlign === "right" && "justify-end",
+            // Dynamic vertical alignment
+            element.verticalAlign === "top" && "items-start",
+            element.verticalAlign === "middle" && "items-center",
+            element.verticalAlign === "bottom" && "items-end",
             isEditing && "bg-blue-600/30"
           )}
+          style={{
+            color: element.color,
+            fontSize: element.fontSize ? `${element.fontSize}px` : undefined,
+            fontWeight: element.fontWeight,
+            letterSpacing: element.letterSpacing
+              ? `${element.letterSpacing}px`
+              : undefined,
+            lineHeight: element.lineHeight
+              ? `${element.lineHeight}px`
+              : undefined,
+          }}
         >
           {element.content}
         </div>
@@ -338,6 +382,7 @@ export default function CanvasElement({
             className="absolute -bottom-1.5 rounded-xs shadow-sm -right-1.5 w-3 h-3 hover:scale-110 transition-all duration-100 cursor-nwse-resize bg-white"
             onMouseDown={handleResizeStart}
             onTouchStart={handleResizeTouchStart}
+            onDoubleClick={handleResizeDoubleClick}
           />
           {/* Corner radius handle for rectangles */}
           {element.type === "rectangle" && (

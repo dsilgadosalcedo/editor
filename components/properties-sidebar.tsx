@@ -1,6 +1,15 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/number-input";
+import { Button } from "@/components/ui/button";
+import {
+  AlignStartHorizontal,
+  AlignHorizontalJustifyCenter,
+  AlignEndHorizontal,
+  AlignStartVertical,
+  AlignVerticalJustifyCenter,
+  AlignEndVertical,
+} from "lucide-react";
 import type { CanvasElementData } from "@/hooks/useCanvasElements";
 
 interface PropertiesSidebarProps {
@@ -18,6 +27,18 @@ interface PropertiesSidebarProps {
   handleUpdateShadowBlur?: (id: string, blur: number) => void;
   handleUpdateShadowColor?: (id: string, color: string) => void;
   handleUpdateName?: (id: string, name: string) => void;
+  handleUpdateFontSize?: (id: string, fontSize: number) => void;
+  handleUpdateFontWeight?: (id: string, fontWeight: number) => void;
+  handleUpdateLetterSpacing?: (id: string, letterSpacing: number) => void;
+  handleUpdateLineHeight?: (id: string, lineHeight: number) => void;
+  handleUpdateHorizontalAlign?: (
+    id: string,
+    horizontalAlign: "left" | "center" | "right"
+  ) => void;
+  handleUpdateVerticalAlign?: (
+    id: string,
+    verticalAlign: "top" | "middle" | "bottom"
+  ) => void;
 }
 
 export default function PropertiesSidebar({
@@ -35,10 +56,16 @@ export default function PropertiesSidebar({
   handleUpdateShadowBlur,
   handleUpdateShadowColor,
   handleUpdateName,
+  handleUpdateFontSize,
+  handleUpdateFontWeight,
+  handleUpdateLetterSpacing,
+  handleUpdateLineHeight,
+  handleUpdateHorizontalAlign,
+  handleUpdateVerticalAlign,
 }: PropertiesSidebarProps) {
   return (
     <div className="z-20 m-4 p-1 bg-properties-blue/20 dark:bg-white/10 rounded-2xl shadow flex flex-col backdrop-blur-sm">
-      <div className="flex-1 bg-white/15 dark:bg-white/10 border border-properties-blue dark:border-white/20 rounded-xl p-4 w-64">
+      <div className="flex-1 overflow-y-auto bg-white/15 dark:bg-white/10 border border-properties-blue dark:border-white/20 rounded-xl p-4 w-64">
         {!selectedElementData ? (
           <>
             <div className="text-properties-text dark:text-foreground font-medium mb-4">
@@ -96,16 +123,279 @@ export default function PropertiesSidebar({
               />
             </section>
             {selectedElementData.type === "text" ? (
-              <div>
-                <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
-                  Content
-                </div>
-                <Input
-                  value={selectedElementData.content || ""}
-                  onChange={onTextChange}
-                  className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
-                />
-              </div>
+              <>
+                {/* Content Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Content
+                  </div>
+                  <Input
+                    value={selectedElementData.content || ""}
+                    onChange={onTextChange}
+                    className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                  />
+                </section>
+                {/* Text Color Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Text Color
+                  </div>
+                  <Input
+                    type="color"
+                    value={selectedElementData.color}
+                    onChange={(e) =>
+                      handleUpdateFillColor &&
+                      handleUpdateFillColor(
+                        selectedElementData.id,
+                        e.target.value
+                      )
+                    }
+                    className="w-full h-8 p-0 rounded"
+                    aria-label="Text color"
+                  />
+                </section>
+                {/* Font Size & Font Weight Row */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Font
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Size
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.fontSize || 16}
+                        min={1}
+                        onChange={(val) =>
+                          handleUpdateFontSize &&
+                          handleUpdateFontSize(selectedElementData.id, val)
+                        }
+                        onInstantChange={(val) =>
+                          handleUpdateFontSize &&
+                          handleUpdateFontSize(selectedElementData.id, val)
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Font size"
+                      />
+                    </div>
+
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Weight
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.fontWeight || 400}
+                        min={100}
+                        max={900}
+                        step={100}
+                        onChange={(val) =>
+                          handleUpdateFontWeight &&
+                          handleUpdateFontWeight(selectedElementData.id, val)
+                        }
+                        onInstantChange={(val) =>
+                          handleUpdateFontWeight &&
+                          handleUpdateFontWeight(selectedElementData.id, val)
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Font weight"
+                      />
+                    </div>
+                  </div>
+                </section>
+                {/* Width & Height for Text */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Dimensions
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Width
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.width}
+                        onChange={(val) =>
+                          handleResizeElement(
+                            selectedElementData.id,
+                            val,
+                            selectedElementData.height
+                          )
+                        }
+                        onInstantChange={(val) =>
+                          handleResizeElement(
+                            selectedElementData.id,
+                            val,
+                            selectedElementData.height
+                          )
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Text width"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Height
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.height}
+                        onChange={(val) =>
+                          handleResizeElement(
+                            selectedElementData.id,
+                            selectedElementData.width,
+                            val
+                          )
+                        }
+                        onInstantChange={(val) =>
+                          handleResizeElement(
+                            selectedElementData.id,
+                            selectedElementData.width,
+                            val
+                          )
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Text height"
+                      />
+                    </div>
+                  </div>
+                </section>
+                {/* Letter Spacing Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Letter Spacing
+                  </div>
+                  <NumberInput
+                    value={selectedElementData.letterSpacing || 0}
+                    onChange={(val) =>
+                      handleUpdateLetterSpacing &&
+                      handleUpdateLetterSpacing(selectedElementData.id, val)
+                    }
+                    onInstantChange={(val) =>
+                      handleUpdateLetterSpacing &&
+                      handleUpdateLetterSpacing(selectedElementData.id, val)
+                    }
+                    className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                    aria-label="Letter spacing"
+                  />
+                </section>
+                {/* Line Height Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Line Height
+                  </div>
+                  <NumberInput
+                    value={selectedElementData.lineHeight || 20}
+                    min={1}
+                    onChange={(val) =>
+                      handleUpdateLineHeight &&
+                      handleUpdateLineHeight(selectedElementData.id, val)
+                    }
+                    onInstantChange={(val) =>
+                      handleUpdateLineHeight &&
+                      handleUpdateLineHeight(selectedElementData.id, val)
+                    }
+                    className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                    aria-label="Line height"
+                  />
+                </section>
+                {/* Alignment Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Alignment
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        handleUpdateHorizontalAlign &&
+                        handleUpdateHorizontalAlign(
+                          selectedElementData.id,
+                          "left"
+                        )
+                      }
+                      className="h-8 w-8 text-properties-text dark:text-foreground"
+                      aria-label="Align left"
+                    >
+                      <AlignStartVertical className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        handleUpdateHorizontalAlign &&
+                        handleUpdateHorizontalAlign(
+                          selectedElementData.id,
+                          "center"
+                        )
+                      }
+                      className="h-8 w-8 text-properties-text dark:text-foreground"
+                      aria-label="Align center"
+                    >
+                      <AlignHorizontalJustifyCenter className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        handleUpdateHorizontalAlign &&
+                        handleUpdateHorizontalAlign(
+                          selectedElementData.id,
+                          "right"
+                        )
+                      }
+                      className="h-8 w-8 text-properties-text dark:text-foreground"
+                      aria-label="Align right"
+                    >
+                      <AlignEndVertical className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center space-x-1 mt-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        handleUpdateVerticalAlign &&
+                        handleUpdateVerticalAlign(selectedElementData.id, "top")
+                      }
+                      className="h-8 w-8 text-properties-text dark:text-foreground"
+                      aria-label="Align top"
+                    >
+                      <AlignStartHorizontal className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        handleUpdateVerticalAlign &&
+                        handleUpdateVerticalAlign(
+                          selectedElementData.id,
+                          "middle"
+                        )
+                      }
+                      className="h-8 w-8 text-properties-text dark:text-foreground"
+                      aria-label="Align middle"
+                    >
+                      <AlignVerticalJustifyCenter className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        handleUpdateVerticalAlign &&
+                        handleUpdateVerticalAlign(
+                          selectedElementData.id,
+                          "bottom"
+                        )
+                      }
+                      className="h-8 w-8 text-properties-text dark:text-foreground"
+                      aria-label="Align bottom"
+                    >
+                      <AlignEndHorizontal className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </section>
+              </>
             ) : (
               <>
                 {/* Background Color Input */}

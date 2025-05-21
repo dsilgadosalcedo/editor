@@ -52,6 +52,12 @@ export default function DesignCanvas() {
     handleUpdateShadowColor,
     handleDeleteElement,
     handleUpdateName,
+    handleUpdateFontSize,
+    handleUpdateFontWeight,
+    handleUpdateLetterSpacing,
+    handleUpdateLineHeight,
+    handleUpdateHorizontalAlign,
+    handleUpdateVerticalAlign,
   } = useCanvasElements(artboardDimensions);
 
   // Keyboard shortcuts: Backspace => Delete element; Ctrl/Cmd+Z => Undo; Ctrl/Cmd+Shift+Z => Redo
@@ -290,6 +296,12 @@ export default function DesignCanvas() {
           handleUpdateShadowBlur={handleUpdateShadowBlur}
           handleUpdateShadowColor={handleUpdateShadowColor}
           handleUpdateName={handleUpdateName}
+          handleUpdateFontSize={handleUpdateFontSize}
+          handleUpdateFontWeight={handleUpdateFontWeight}
+          handleUpdateLetterSpacing={handleUpdateLetterSpacing}
+          handleUpdateLineHeight={handleUpdateLineHeight}
+          handleUpdateHorizontalAlign={handleUpdateHorizontalAlign}
+          handleUpdateVerticalAlign={handleUpdateVerticalAlign}
         />
       </div>
     </div>
