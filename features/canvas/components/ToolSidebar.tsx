@@ -1,16 +1,15 @@
 import React from "react";
-import { Hand, Square, Type, Layers } from "lucide-react";
+import { Hand, Square, Type, Layers, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ToolType, ElementType } from "@/hooks/useCanvasElements";
+import type { ToolType, ElementType } from "../store/useCanvasStore";
 import Image from "next/image";
-import { ThemeToggle } from "./theme-toggle";
+import { ThemeToggle } from "./ThemeToggle";
+import { useCanvasStore } from "../store/useCanvasStore";
 
 interface ToolSidebarProps {
   selectedTool: ToolType;
   onSelectTool: (tool: ToolType) => void;
-  onAddElement: (type: ElementType) => void;
-  clearSelection: () => void;
   onToggleLayers: () => void;
   layersOpen: boolean;
 }
@@ -18,11 +17,11 @@ interface ToolSidebarProps {
 export default function ToolSidebar({
   selectedTool,
   onSelectTool,
-  onAddElement,
-  clearSelection,
   onToggleLayers,
   layersOpen,
 }: ToolSidebarProps) {
+  const { addElement, clearSelection } = useCanvasStore();
+
   return (
     <div className="z-20 m-4 p-1 bg-properties-blue/20 dark:bg-white/10 rounded-2xl shadow flex flex-col backdrop-blur-sm">
       <div className="flex-1 bg-white/15 dark:bg-white/10 border border-properties-blue dark:border-white/20 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
@@ -41,15 +40,18 @@ export default function ToolSidebar({
         </Button>
         <ThemeToggle />
         <div className="w-full h-px bg-properties-blue/30 dark:bg-slate-100/30 my-1"></div>
-        <ToolButton onClick={() => onAddElement("text")}>
+        <ToolButton onClick={() => addElement("text")}>
           <ToolIcon icon={Type} />
         </ToolButton>
         <ToolButton
           onClick={() => {
-            onAddElement("rectangle");
+            addElement("rectangle");
           }}
         >
           <ToolIcon icon={Square} />
+        </ToolButton>
+        <ToolButton onClick={() => addElement("image")}>
+          <ToolIcon icon={ImageIcon} />
         </ToolButton>
         <div className="w-full h-px bg-properties-blue/30 dark:bg-slate-100/30 my-1"></div>
         <ToolButton

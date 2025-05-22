@@ -1,0 +1,433 @@
+import { create } from "zustand";
+
+export type ElementType = "rectangle" | "text" | "image";
+export type ToolType = ElementType | "hand" | null;
+
+export interface CanvasElementData {
+  id: string;
+  type: ElementType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  content?: string;
+  src?: string; // For image elements
+  color: string;
+  borderWidth?: number;
+  borderColor?: string;
+  shadowBlur?: number;
+  shadowColor?: string;
+  selected: boolean;
+  cornerRadius?: number;
+  name?: string;
+  fontSize?: number;
+  fontWeight?: number;
+  letterSpacing?: number;
+  lineHeight?: number;
+  horizontalAlign?: "left" | "center" | "right";
+  verticalAlign?: "top" | "middle" | "bottom";
+}
+
+interface CanvasStoreState {
+  elements: CanvasElementData[];
+  selectedElement: string | null;
+  artboardDimensions: { width: number; height: number };
+  past: CanvasElementData[][];
+  future: CanvasElementData[][];
+  clipboard: CanvasElementData | null;
+  // Actions
+  setArtboardDimensions: (dims: { width: number; height: number }) => void;
+  addElement: (type: ElementType) => void;
+  selectElement: (id: string) => void;
+  moveElement: (id: string, dx: number, dy: number) => void;
+  resizeElement: (id: string, width: number, height: number) => void;
+  updateTextContent: (id: string, content: string) => void;
+  resetCanvas: () => void;
+  undo: () => void;
+  redo: () => void;
+  reorderElements: (oldIndex: number, newIndex: number) => void;
+  updateCornerRadius: (id: string, cornerRadius: number) => void;
+  updateFillColor: (id: string, color: string) => void;
+  updateBorderWidth: (id: string, width: number) => void;
+  updateBorderColor: (id: string, color: string) => void;
+  updateShadowBlur: (id: string, blur: number) => void;
+  updateShadowColor: (id: string, color: string) => void;
+  deleteElement: (id: string) => void;
+  updateName: (id: string, name: string) => void;
+  updateFontSize: (id: string, fontSize: number) => void;
+  updateFontWeight: (id: string, fontWeight: number) => void;
+  updateLetterSpacing: (id: string, letterSpacing: number) => void;
+  updateLineHeight: (id: string, lineHeight: number) => void;
+  updateHorizontalAlign: (
+    id: string,
+    align: "left" | "center" | "right"
+  ) => void;
+  updateVerticalAlign: (id: string, align: "top" | "middle" | "bottom") => void;
+  clearSelection: () => void;
+  getSelectedElementData: () => CanvasElementData | undefined;
+  copySelection: () => void;
+  pasteClipboard: () => void;
+  updateImageSrc: (id: string, src: string) => void;
+  // API functions
+  saveCanvas: (title?: string) => Promise<string | null>;
+  loadCanvas: (id: string) => Promise<boolean>;
+  listCanvases: () => Promise<any[]>;
+}
+
+export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
+  elements: [],
+  selectedElement: null,
+  artboardDimensions: { width: 500, height: 400 },
+  past: [],
+  future: [],
+  clipboard: null,
+  setArtboardDimensions: (dims) => set({ artboardDimensions: dims }),
+  addElement: (type) => {
+    const { artboardDimensions, elements } = get();
+    let newElement: CanvasElementData;
+
+    if (type === "text") {
+      newElement = {
+        id: `${type}-${Date.now()}`,
+        type,
+        x: artboardDimensions.width / 2 - 40,
+        y: artboardDimensions.height / 2 - 20,
+        width: 80,
+        height: 40,
+        content: "New Text",
+        color: "#000000",
+        borderWidth: 0,
+        borderColor: "#000000",
+        shadowBlur: 0,
+        shadowColor: "#000000",
+        selected: true,
+        name: "Text",
+        fontSize: 16,
+        fontWeight: 400,
+        letterSpacing: 0,
+        lineHeight: 20,
+        horizontalAlign: "left",
+        verticalAlign: "top",
+      };
+    } else if (type === "image") {
+      newElement = {
+        id: `${type}-${Date.now()}`,
+        type,
+        x: artboardDimensions.width / 2 - 75,
+        y: artboardDimensions.height / 2 - 56,
+        width: 150,
+        height: 112,
+        src: "https://via.placeholder.com/150x112/e0e0e0/666666?text=Image",
+        color: "#ffffff",
+        borderWidth: 0,
+        borderColor: "#000000",
+        shadowBlur: 0,
+        shadowColor: "#000000",
+        selected: true,
+        cornerRadius: 0,
+        name: "Image",
+      };
+    } else {
+      // rectangle
+      newElement = {
+        id: `${type}-${Date.now()}`,
+        type,
+        x: artboardDimensions.width / 2 - 50,
+        y: artboardDimensions.height / 2 - 50,
+        width: 100,
+        height: 100,
+        color: "#d9f99d",
+        borderWidth: 0,
+        borderColor: "#000000",
+        shadowBlur: 0,
+        shadowColor: "#000000",
+        selected: true,
+        cornerRadius: 0,
+        name: "Rectangle",
+      };
+    }
+    set((state) => ({
+      past: [...state.past, state.elements],
+      future: [],
+      elements: [
+        ...state.elements.map((el) => ({ ...el, selected: false })),
+        newElement,
+      ],
+      selectedElement: newElement.id,
+    }));
+  },
+  selectElement: (id) =>
+    set((state) => ({
+      elements: state.elements.map((el) => ({ ...el, selected: el.id === id })),
+      selectedElement: id,
+    })),
+  moveElement: (id, dx, dy) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, x: el.x + dx, y: el.y + dy } : el
+      ),
+    })),
+  resizeElement: (id, width, height) =>
+    set((state) => ({
+      elements: state.elements.map((el) => {
+        if (el.id === id) {
+          let newCornerRadius = el.cornerRadius;
+          if (typeof newCornerRadius === "number") {
+            newCornerRadius = Math.min(newCornerRadius, width / 2, height / 2);
+          }
+          return {
+            ...el,
+            width,
+            height,
+            ...(typeof newCornerRadius === "number"
+              ? { cornerRadius: newCornerRadius }
+              : {}),
+          };
+        }
+        return el;
+      }),
+    })),
+  updateTextContent: (id, content) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id && el.type === "text" ? { ...el, content } : el
+      ),
+    })),
+  resetCanvas: () =>
+    set((state) => ({
+      past: [...state.past, state.elements],
+      future: [],
+      elements: [],
+      selectedElement: null,
+    })),
+  undo: () =>
+    set((state) => {
+      if (state.past.length === 0) return state;
+      const previous = state.past[state.past.length - 1];
+      return {
+        past: state.past.slice(0, state.past.length - 1),
+        future: [state.elements, ...state.future],
+        elements: previous,
+        selectedElement: null,
+      };
+    }),
+  redo: () =>
+    set((state) => {
+      if (state.future.length === 0) return state;
+      const next = state.future[0];
+      return {
+        past: [...state.past, state.elements],
+        future: state.future.slice(1),
+        elements: next,
+        selectedElement: null,
+      };
+    }),
+  reorderElements: (oldIndex, newIndex) =>
+    set((state) => {
+      const updated = [...state.elements];
+      const [moved] = updated.splice(oldIndex, 1);
+      updated.splice(newIndex, 0, moved);
+      return { elements: updated };
+    }),
+  updateCornerRadius: (id, cornerRadius) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id && (el.type === "rectangle" || el.type === "image")
+          ? {
+              ...el,
+              cornerRadius: Math.max(
+                0,
+                Math.min(cornerRadius, el.width / 2, el.height / 2)
+              ),
+            }
+          : el
+      ),
+    })),
+  updateFillColor: (id, color) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, color } : el
+      ),
+    })),
+  updateBorderWidth: (id, borderWidth) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, borderWidth } : el
+      ),
+    })),
+  updateBorderColor: (id, borderColor) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, borderColor } : el
+      ),
+    })),
+  updateShadowBlur: (id, shadowBlur) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, shadowBlur } : el
+      ),
+    })),
+  updateShadowColor: (id, shadowColor) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, shadowColor } : el
+      ),
+    })),
+  deleteElement: (id) =>
+    set((state) => ({
+      elements: state.elements.filter((el) => el.id !== id),
+      selectedElement: null,
+    })),
+  updateName: (id, name) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, name } : el
+      ),
+    })),
+  updateFontSize: (id, fontSize) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, fontSize } : el
+      ),
+    })),
+  updateFontWeight: (id, fontWeight) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, fontWeight } : el
+      ),
+    })),
+  updateLetterSpacing: (id, letterSpacing) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, letterSpacing } : el
+      ),
+    })),
+  updateLineHeight: (id, lineHeight) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, lineHeight } : el
+      ),
+    })),
+  updateHorizontalAlign: (id, horizontalAlign) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, horizontalAlign } : el
+      ),
+    })),
+  updateVerticalAlign: (id, verticalAlign) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, verticalAlign } : el
+      ),
+    })),
+  clearSelection: () =>
+    set((state) => ({
+      elements: state.elements.map((el) => ({ ...el, selected: false })),
+      selectedElement: null,
+    })),
+  getSelectedElementData: () => {
+    const { elements, selectedElement } = get();
+    return elements.find((el) => el.id === selectedElement);
+  },
+  copySelection: () =>
+    set((state) => {
+      const selected = state.elements.find(
+        (el) => el.id === state.selectedElement
+      );
+      return { clipboard: selected ? { ...selected } : null };
+    }),
+  pasteClipboard: () =>
+    set((state) => {
+      if (!state.clipboard) return {};
+      const newId = `${state.clipboard.type}-${Date.now()}`;
+      const newElement = {
+        ...state.clipboard,
+        id: newId,
+        x: state.clipboard.x + 20,
+        y: state.clipboard.y + 20,
+        selected: true,
+      };
+      return {
+        elements: [
+          ...state.elements.map((el) => ({ ...el, selected: false })),
+          newElement,
+        ],
+        selectedElement: newId,
+      };
+    }),
+  updateImageSrc: (id, src) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id && el.type === "image" ? { ...el, src } : el
+      ),
+    })),
+  // API functions
+  saveCanvas: async (title?: string) => {
+    const { elements, artboardDimensions } = get();
+    try {
+      const response = await fetch("/api/canvas/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          canvasData: {
+            elements,
+            artboardDimensions,
+          },
+          title,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save canvas");
+      }
+
+      const result = await response.json();
+      return result.canvasId;
+    } catch (error) {
+      console.error("Error saving canvas:", error);
+      return null;
+    }
+  },
+  loadCanvas: async (id: string) => {
+    try {
+      const response = await fetch(`/api/canvas/load/${id}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to load canvas");
+      }
+
+      const result = await response.json();
+      const { elements, artboardDimensions } = result.canvas.data;
+
+      set({
+        elements,
+        artboardDimensions,
+        selectedElement: null,
+        past: [],
+        future: [],
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error loading canvas:", error);
+      return false;
+    }
+  },
+  listCanvases: async () => {
+    try {
+      const response = await fetch("/api/canvas/list");
+
+      if (!response.ok) {
+        throw new Error("Failed to list canvases");
+      }
+
+      const result = await response.json();
+      return result.canvases;
+    } catch (error) {
+      console.error("Error listing canvases:", error);
+      return [];
+    }
+  },
+}));

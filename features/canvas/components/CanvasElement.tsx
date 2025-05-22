@@ -4,16 +4,18 @@ import type React from "react";
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useElementDragResize } from "../hooks/useElementDragResize";
 
 interface CanvasElementProps {
   element: {
     id: string;
-    type: "rectangle" | "text";
+    type: "rectangle" | "text" | "image";
     x: number;
     y: number;
     width: number;
     height: number;
     content?: string;
+    src?: string;
     color: string;
     selected: boolean;
     cornerRadius?: number;
@@ -450,6 +452,20 @@ export default function CanvasElement({
         element.type === "text" ? handleTextDoubleClick : undefined
       }
     >
+      {element.type === "image" && (
+        <img
+          src={element.src}
+          alt="Canvas element"
+          className="w-full h-full object-cover"
+          style={{
+            borderRadius:
+              element.type === "image"
+                ? `${element.cornerRadius || 0}px`
+                : undefined,
+          }}
+          draggable={false}
+        />
+      )}
       {element.type === "text" && (
         <div
           ref={textRef}
@@ -606,8 +622,8 @@ export default function CanvasElement({
             onTouchStart={(e) => handleResizeTouchStart("se", e)}
             onDoubleClick={handleResizeDoubleClick}
           />
-          {/* Corner radius handle for rectangles */}
-          {element.type === "rectangle" && (
+          {/* Corner radius handle for rectangles and images */}
+          {(element.type === "rectangle" || element.type === "image") && (
             <div
               className="absolute w-4 h-4 rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer z-20"
               onMouseDown={handleCornerRadiusDragStart}

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Input } from "./ui/input";
+import { Input } from "@/components/ui/input";
 
 type NumberInputProps = {
   value: number;

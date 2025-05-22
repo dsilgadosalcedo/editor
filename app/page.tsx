@@ -1,9 +1,9 @@
-import DesignCanvas from "@/components/design-canvas";
+import CanvasPage from "@/features/canvas/components/CanvasPage";
 
 export default function Home() {
   return (
     <main>
-      <DesignCanvas />
+      <CanvasPage />
     </main>
   );
 }

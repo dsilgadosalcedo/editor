@@ -5,23 +5,16 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
-import type { CanvasElementData } from "@/hooks/useCanvasElements";
+import type { CanvasElementData } from "../store/useCanvasStore";
+import { useCanvasStore } from "../store/useCanvasStore";
 
 interface LayersPanelProps {
-  elements: CanvasElementData[];
-  selectedElement: string | null;
-  onSelect: (id: string) => void;
-  onReorder: (oldIndex: number, newIndex: number) => void;
   className?: string;
 }
 
-const LayersPanel: React.FC<LayersPanelProps> = ({
-  elements,
-  selectedElement,
-  onSelect,
-  onReorder,
-  className = "",
-}) => {
+const LayersPanel: React.FC<LayersPanelProps> = ({ className = "" }) => {
+  const { elements, selectedElement, selectElement, reorderElements } =
+    useCanvasStore();
   const [open, setOpen] = useState<boolean>(true);
   const dragItemIndex = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -43,7 +36,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
     e.preventDefault();
     const targetIdx = Number(e.currentTarget.dataset.index);
     if (dragItemIndex.current !== null && dragItemIndex.current !== targetIdx) {
-      onReorder(dragItemIndex.current, targetIdx);
+      reorderElements(dragItemIndex.current, targetIdx);
     }
     dragItemIndex.current = null;
     setDragOverIndex(null);
@@ -88,7 +81,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
-                    onClick={() => onSelect(el.id)}
+                    onClick={() => selectElement(el.id)}
                     className={`flex items-center justify-between p-1 rounded cursor-pointer ${
                       el.id === selectedElement
                         ? "bg-properties-blue/30 dark:bg-white/20"

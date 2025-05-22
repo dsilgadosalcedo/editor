@@ -1,6 +1,6 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { NumberInput } from "@/components/number-input";
+import { NumberInput } from "./NumberInput";
 import { Button } from "@/components/ui/button";
 import {
   AlignStartHorizontal,
@@ -10,59 +10,49 @@ import {
   AlignVerticalJustifyCenter,
   AlignEndVertical,
 } from "lucide-react";
-import type { CanvasElementData } from "@/hooks/useCanvasElements";
+import type { CanvasElementData } from "../store/useCanvasStore";
+import { useCanvasStore } from "../store/useCanvasStore";
 
-interface PropertiesSidebarProps {
-  artboardDimensions: { width: number; height: number };
-  onUpdateArtboardWidth: (width: number) => void;
-  onUpdateArtboardHeight: (height: number) => void;
-  selectedElementData?: CanvasElementData;
-  onTextChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleResizeElement: (id: string, width: number, height: number) => void;
-  handleMoveElement: (id: string, dx: number, dy: number) => void;
-  handleUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
-  handleUpdateFillColor?: (id: string, color: string) => void;
-  handleUpdateBorderWidth?: (id: string, width: number) => void;
-  handleUpdateBorderColor?: (id: string, color: string) => void;
-  handleUpdateShadowBlur?: (id: string, blur: number) => void;
-  handleUpdateShadowColor?: (id: string, color: string) => void;
-  handleUpdateName?: (id: string, name: string) => void;
-  handleUpdateFontSize?: (id: string, fontSize: number) => void;
-  handleUpdateFontWeight?: (id: string, fontWeight: number) => void;
-  handleUpdateLetterSpacing?: (id: string, letterSpacing: number) => void;
-  handleUpdateLineHeight?: (id: string, lineHeight: number) => void;
-  handleUpdateHorizontalAlign?: (
-    id: string,
-    horizontalAlign: "left" | "center" | "right"
-  ) => void;
-  handleUpdateVerticalAlign?: (
-    id: string,
-    verticalAlign: "top" | "middle" | "bottom"
-  ) => void;
-}
+export default function PropertiesPanel() {
+  const {
+    artboardDimensions,
+    setArtboardDimensions,
+    selectedElement,
+    getSelectedElementData,
+    updateTextContent,
+    resizeElement,
+    moveElement,
+    updateCornerRadius,
+    updateFillColor,
+    updateBorderWidth,
+    updateBorderColor,
+    updateShadowBlur,
+    updateShadowColor,
+    updateName,
+    updateFontSize,
+    updateFontWeight,
+    updateLetterSpacing,
+    updateLineHeight,
+    updateHorizontalAlign,
+    updateVerticalAlign,
+    updateImageSrc,
+  } = useCanvasStore();
 
-export default function PropertiesSidebar({
-  artboardDimensions,
-  onUpdateArtboardWidth,
-  onUpdateArtboardHeight,
-  selectedElementData,
-  onTextChange,
-  handleResizeElement,
-  handleMoveElement,
-  handleUpdateCornerRadius,
-  handleUpdateFillColor,
-  handleUpdateBorderWidth,
-  handleUpdateBorderColor,
-  handleUpdateShadowBlur,
-  handleUpdateShadowColor,
-  handleUpdateName,
-  handleUpdateFontSize,
-  handleUpdateFontWeight,
-  handleUpdateLetterSpacing,
-  handleUpdateLineHeight,
-  handleUpdateHorizontalAlign,
-  handleUpdateVerticalAlign,
-}: PropertiesSidebarProps) {
+  const selectedElementData = getSelectedElementData();
+
+  const handleUpdateArtboardWidth = (width: number) => {
+    setArtboardDimensions({ ...artboardDimensions, width });
+  };
+
+  const handleUpdateArtboardHeight = (height: number) => {
+    setArtboardDimensions({ ...artboardDimensions, height });
+  };
+
+  const handleTextInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedElement) return;
+    updateTextContent(selectedElement, e.target.value);
+  };
+
   return (
     <div className="z-20 m-4 p-1 bg-properties-blue/20 dark:bg-white/10 rounded-2xl shadow flex flex-col backdrop-blur-sm">
       <div className="flex-1 overflow-y-auto bg-white/15 dark:bg-white/10 border border-properties-blue dark:border-white/20 rounded-xl p-4 w-64">
@@ -83,8 +73,8 @@ export default function PropertiesSidebar({
                     </span>
                     <NumberInput
                       value={artboardDimensions.width}
-                      onChange={onUpdateArtboardWidth}
-                      onInstantChange={onUpdateArtboardWidth}
+                      onChange={handleUpdateArtboardWidth}
+                      onInstantChange={handleUpdateArtboardWidth}
                       className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                       aria-label="Artboard width"
                     />
@@ -95,8 +85,8 @@ export default function PropertiesSidebar({
                     </span>
                     <NumberInput
                       value={artboardDimensions.height}
-                      onChange={onUpdateArtboardHeight}
-                      onInstantChange={onUpdateArtboardHeight}
+                      onChange={handleUpdateArtboardHeight}
+                      onInstantChange={handleUpdateArtboardHeight}
                       className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                       aria-label="Artboard height"
                     />
@@ -115,8 +105,7 @@ export default function PropertiesSidebar({
               <Input
                 value={selectedElementData.name || ""}
                 onChange={(e) =>
-                  handleUpdateName &&
-                  handleUpdateName(selectedElementData.id, e.target.value)
+                  updateName(selectedElementData.id, e.target.value)
                 }
                 className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                 aria-label="Element name"
@@ -131,7 +120,7 @@ export default function PropertiesSidebar({
                   </div>
                   <Input
                     value={selectedElementData.content || ""}
-                    onChange={onTextChange}
+                    onChange={handleTextInputChange}
                     className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                   />
                 </section>
@@ -144,11 +133,7 @@ export default function PropertiesSidebar({
                     type="color"
                     value={selectedElementData.color}
                     onChange={(e) =>
-                      handleUpdateFillColor &&
-                      handleUpdateFillColor(
-                        selectedElementData.id,
-                        e.target.value
-                      )
+                      updateFillColor(selectedElementData.id, e.target.value)
                     }
                     className="w-full h-8 p-0 rounded"
                     aria-label="Text color"
@@ -168,12 +153,10 @@ export default function PropertiesSidebar({
                         value={selectedElementData.fontSize || 16}
                         min={1}
                         onChange={(val) =>
-                          handleUpdateFontSize &&
-                          handleUpdateFontSize(selectedElementData.id, val)
+                          updateFontSize(selectedElementData.id, val)
                         }
                         onInstantChange={(val) =>
-                          handleUpdateFontSize &&
-                          handleUpdateFontSize(selectedElementData.id, val)
+                          updateFontSize(selectedElementData.id, val)
                         }
                         className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                         aria-label="Font size"
@@ -190,12 +173,10 @@ export default function PropertiesSidebar({
                         max={900}
                         step={100}
                         onChange={(val) =>
-                          handleUpdateFontWeight &&
-                          handleUpdateFontWeight(selectedElementData.id, val)
+                          updateFontWeight(selectedElementData.id, val)
                         }
                         onInstantChange={(val) =>
-                          handleUpdateFontWeight &&
-                          handleUpdateFontWeight(selectedElementData.id, val)
+                          updateFontWeight(selectedElementData.id, val)
                         }
                         className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                         aria-label="Font weight"
@@ -216,14 +197,14 @@ export default function PropertiesSidebar({
                       <NumberInput
                         value={selectedElementData.width}
                         onChange={(val) =>
-                          handleResizeElement(
+                          resizeElement(
                             selectedElementData.id,
                             val,
                             selectedElementData.height
                           )
                         }
                         onInstantChange={(val) =>
-                          handleResizeElement(
+                          resizeElement(
                             selectedElementData.id,
                             val,
                             selectedElementData.height
@@ -240,14 +221,14 @@ export default function PropertiesSidebar({
                       <NumberInput
                         value={selectedElementData.height}
                         onChange={(val) =>
-                          handleResizeElement(
+                          resizeElement(
                             selectedElementData.id,
                             selectedElementData.width,
                             val
                           )
                         }
                         onInstantChange={(val) =>
-                          handleResizeElement(
+                          resizeElement(
                             selectedElementData.id,
                             selectedElementData.width,
                             val
@@ -267,12 +248,10 @@ export default function PropertiesSidebar({
                   <NumberInput
                     value={selectedElementData.letterSpacing || 0}
                     onChange={(val) =>
-                      handleUpdateLetterSpacing &&
-                      handleUpdateLetterSpacing(selectedElementData.id, val)
+                      updateLetterSpacing(selectedElementData.id, val)
                     }
                     onInstantChange={(val) =>
-                      handleUpdateLetterSpacing &&
-                      handleUpdateLetterSpacing(selectedElementData.id, val)
+                      updateLetterSpacing(selectedElementData.id, val)
                     }
                     className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                     aria-label="Letter spacing"
@@ -287,12 +266,10 @@ export default function PropertiesSidebar({
                     value={selectedElementData.lineHeight || 20}
                     min={1}
                     onChange={(val) =>
-                      handleUpdateLineHeight &&
-                      handleUpdateLineHeight(selectedElementData.id, val)
+                      updateLineHeight(selectedElementData.id, val)
                     }
                     onInstantChange={(val) =>
-                      handleUpdateLineHeight &&
-                      handleUpdateLineHeight(selectedElementData.id, val)
+                      updateLineHeight(selectedElementData.id, val)
                     }
                     className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                     aria-label="Line height"
@@ -308,11 +285,7 @@ export default function PropertiesSidebar({
                       variant="ghost"
                       size="icon"
                       onClick={() =>
-                        handleUpdateHorizontalAlign &&
-                        handleUpdateHorizontalAlign(
-                          selectedElementData.id,
-                          "left"
-                        )
+                        updateHorizontalAlign(selectedElementData.id, "left")
                       }
                       className="h-8 w-8 text-properties-text dark:text-foreground"
                       aria-label="Align left"
@@ -323,11 +296,7 @@ export default function PropertiesSidebar({
                       variant="ghost"
                       size="icon"
                       onClick={() =>
-                        handleUpdateHorizontalAlign &&
-                        handleUpdateHorizontalAlign(
-                          selectedElementData.id,
-                          "center"
-                        )
+                        updateHorizontalAlign(selectedElementData.id, "center")
                       }
                       className="h-8 w-8 text-properties-text dark:text-foreground"
                       aria-label="Align center"
@@ -338,11 +307,7 @@ export default function PropertiesSidebar({
                       variant="ghost"
                       size="icon"
                       onClick={() =>
-                        handleUpdateHorizontalAlign &&
-                        handleUpdateHorizontalAlign(
-                          selectedElementData.id,
-                          "right"
-                        )
+                        updateHorizontalAlign(selectedElementData.id, "right")
                       }
                       className="h-8 w-8 text-properties-text dark:text-foreground"
                       aria-label="Align right"
@@ -355,8 +320,7 @@ export default function PropertiesSidebar({
                       variant="ghost"
                       size="icon"
                       onClick={() =>
-                        handleUpdateVerticalAlign &&
-                        handleUpdateVerticalAlign(selectedElementData.id, "top")
+                        updateVerticalAlign(selectedElementData.id, "top")
                       }
                       className="h-8 w-8 text-properties-text dark:text-foreground"
                       aria-label="Align top"
@@ -367,11 +331,7 @@ export default function PropertiesSidebar({
                       variant="ghost"
                       size="icon"
                       onClick={() =>
-                        handleUpdateVerticalAlign &&
-                        handleUpdateVerticalAlign(
-                          selectedElementData.id,
-                          "middle"
-                        )
+                        updateVerticalAlign(selectedElementData.id, "middle")
                       }
                       className="h-8 w-8 text-properties-text dark:text-foreground"
                       aria-label="Align middle"
@@ -382,11 +342,7 @@ export default function PropertiesSidebar({
                       variant="ghost"
                       size="icon"
                       onClick={() =>
-                        handleUpdateVerticalAlign &&
-                        handleUpdateVerticalAlign(
-                          selectedElementData.id,
-                          "bottom"
-                        )
+                        updateVerticalAlign(selectedElementData.id, "bottom")
                       }
                       className="h-8 w-8 text-properties-text dark:text-foreground"
                       aria-label="Align bottom"
@@ -394,6 +350,211 @@ export default function PropertiesSidebar({
                       <AlignEndHorizontal className="h-4 w-4" />
                     </Button>
                   </div>
+                </section>
+              </>
+            ) : selectedElementData.type === "image" ? (
+              <>
+                {/* Image Source Input */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Image Source
+                  </div>
+                  <Input
+                    value={selectedElementData.src || ""}
+                    onChange={(e) =>
+                      updateImageSrc(selectedElementData.id, e.target.value)
+                    }
+                    className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                    placeholder="Enter image URL"
+                    aria-label="Image source URL"
+                  />
+                </section>
+
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Dimensions
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Width
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.width}
+                        onChange={(val) =>
+                          resizeElement(
+                            selectedElementData.id,
+                            val,
+                            selectedElementData.height
+                          )
+                        }
+                        onInstantChange={(val) =>
+                          resizeElement(
+                            selectedElementData.id,
+                            val,
+                            selectedElementData.height
+                          )
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Image width"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Height
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.height}
+                        onChange={(val) =>
+                          resizeElement(
+                            selectedElementData.id,
+                            selectedElementData.width,
+                            val
+                          )
+                        }
+                        onInstantChange={(val) =>
+                          resizeElement(
+                            selectedElementData.id,
+                            selectedElementData.width,
+                            val
+                          )
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Image height"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Corner Radius Input for Images */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Appearance
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center">
+                      <span className="w-12 text-xs text-properties-text dark:text-foreground mr-2">
+                        Radius
+                      </span>
+                      <NumberInput
+                        value={selectedElementData.cornerRadius || 0}
+                        min={0}
+                        max={Math.floor(
+                          Math.min(
+                            selectedElementData.width,
+                            selectedElementData.height
+                          ) / 2
+                        )}
+                        onChange={(val) =>
+                          updateCornerRadius(
+                            selectedElementData.id,
+                            Math.max(
+                              0,
+                              Math.min(
+                                val,
+                                Math.floor(
+                                  Math.min(
+                                    selectedElementData.width,
+                                    selectedElementData.height
+                                  ) / 2
+                                )
+                              )
+                            )
+                          )
+                        }
+                        onInstantChange={(val) =>
+                          updateCornerRadius(
+                            selectedElementData.id,
+                            Math.max(
+                              0,
+                              Math.min(
+                                val,
+                                Math.floor(
+                                  Math.min(
+                                    selectedElementData.width,
+                                    selectedElementData.height
+                                  ) / 2
+                                )
+                              )
+                            )
+                          )
+                        }
+                        className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                        aria-label="Corner radius"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Border Width Input for Images */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Border Width
+                  </div>
+                  <NumberInput
+                    value={selectedElementData.borderWidth || 0}
+                    min={0}
+                    onChange={(val) =>
+                      updateBorderWidth(selectedElementData.id, val)
+                    }
+                    onInstantChange={(val) =>
+                      updateBorderWidth(selectedElementData.id, val)
+                    }
+                    className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                    aria-label="Border width"
+                  />
+                </section>
+
+                {/* Border Color Input for Images */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Border Color
+                  </div>
+                  <Input
+                    type="color"
+                    value={selectedElementData.borderColor || "#000000"}
+                    onChange={(e) =>
+                      updateBorderColor(selectedElementData.id, e.target.value)
+                    }
+                    className="w-full h-8 p-0 rounded"
+                    aria-label="Border color"
+                  />
+                </section>
+
+                {/* Shadow Blur Input for Images */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Shadow Blur
+                  </div>
+                  <NumberInput
+                    value={selectedElementData.shadowBlur || 0}
+                    min={0}
+                    onChange={(val) =>
+                      updateShadowBlur(selectedElementData.id, val)
+                    }
+                    onInstantChange={(val) =>
+                      updateShadowBlur(selectedElementData.id, val)
+                    }
+                    className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                    aria-label="Shadow blur"
+                  />
+                </section>
+
+                {/* Shadow Color Input for Images */}
+                <section>
+                  <div className="text-sm font-bold text-properties-text dark:text-foreground mb-2">
+                    Shadow Color
+                  </div>
+                  <Input
+                    type="color"
+                    value={selectedElementData.shadowColor || "#000000"}
+                    onChange={(e) =>
+                      updateShadowColor(selectedElementData.id, e.target.value)
+                    }
+                    className="w-full h-8 p-0 rounded"
+                    aria-label="Shadow color"
+                  />
                 </section>
               </>
             ) : (
@@ -407,11 +568,7 @@ export default function PropertiesSidebar({
                     type="color"
                     value={selectedElementData.color}
                     onChange={(e) =>
-                      handleUpdateFillColor &&
-                      handleUpdateFillColor(
-                        selectedElementData.id,
-                        e.target.value
-                      )
+                      updateFillColor(selectedElementData.id, e.target.value)
                     }
                     className="w-full h-8 p-0 rounded"
                     aria-label="Background color"
@@ -430,14 +587,14 @@ export default function PropertiesSidebar({
                       <NumberInput
                         value={selectedElementData.width}
                         onChange={(val) =>
-                          handleResizeElement(
+                          resizeElement(
                             selectedElementData.id,
                             val,
                             selectedElementData.height
                           )
                         }
                         onInstantChange={(val) =>
-                          handleResizeElement(
+                          resizeElement(
                             selectedElementData.id,
                             val,
                             selectedElementData.height
@@ -454,14 +611,14 @@ export default function PropertiesSidebar({
                       <NumberInput
                         value={selectedElementData.height}
                         onChange={(val) =>
-                          handleResizeElement(
+                          resizeElement(
                             selectedElementData.id,
                             selectedElementData.width,
                             val
                           )
                         }
                         onInstantChange={(val) =>
-                          handleResizeElement(
+                          resizeElement(
                             selectedElementData.id,
                             selectedElementData.width,
                             val
@@ -495,8 +652,7 @@ export default function PropertiesSidebar({
                           ) / 2
                         )}
                         onChange={(val) =>
-                          handleUpdateCornerRadius &&
-                          handleUpdateCornerRadius(
+                          updateCornerRadius(
                             selectedElementData.id,
                             Math.max(
                               0,
@@ -513,8 +669,7 @@ export default function PropertiesSidebar({
                           )
                         }
                         onInstantChange={(val) =>
-                          handleUpdateCornerRadius &&
-                          handleUpdateCornerRadius(
+                          updateCornerRadius(
                             selectedElementData.id,
                             Math.max(
                               0,
@@ -562,12 +717,10 @@ export default function PropertiesSidebar({
                     value={selectedElementData.borderWidth || 0}
                     min={0}
                     onChange={(val) =>
-                      handleUpdateBorderWidth &&
-                      handleUpdateBorderWidth(selectedElementData.id, val)
+                      updateBorderWidth(selectedElementData.id, val)
                     }
                     onInstantChange={(val) =>
-                      handleUpdateBorderWidth &&
-                      handleUpdateBorderWidth(selectedElementData.id, val)
+                      updateBorderWidth(selectedElementData.id, val)
                     }
                     className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                     aria-label="Border width"
@@ -583,11 +736,7 @@ export default function PropertiesSidebar({
                     type="color"
                     value={selectedElementData.borderColor || "#000000"}
                     onChange={(e) =>
-                      handleUpdateBorderColor &&
-                      handleUpdateBorderColor(
-                        selectedElementData.id,
-                        e.target.value
-                      )
+                      updateBorderColor(selectedElementData.id, e.target.value)
                     }
                     className="w-full h-8 p-0 rounded"
                     aria-label="Border color"
@@ -603,12 +752,10 @@ export default function PropertiesSidebar({
                     value={selectedElementData.shadowBlur || 0}
                     min={0}
                     onChange={(val) =>
-                      handleUpdateShadowBlur &&
-                      handleUpdateShadowBlur(selectedElementData.id, val)
+                      updateShadowBlur(selectedElementData.id, val)
                     }
                     onInstantChange={(val) =>
-                      handleUpdateShadowBlur &&
-                      handleUpdateShadowBlur(selectedElementData.id, val)
+                      updateShadowBlur(selectedElementData.id, val)
                     }
                     className="h-8 w-21 bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                     aria-label="Shadow blur"
@@ -624,11 +771,7 @@ export default function PropertiesSidebar({
                     type="color"
                     value={selectedElementData.shadowColor || "#000000"}
                     onChange={(e) =>
-                      handleUpdateShadowColor &&
-                      handleUpdateShadowColor(
-                        selectedElementData.id,
-                        e.target.value
-                      )
+                      updateShadowColor(selectedElementData.id, e.target.value)
                     }
                     className="w-full h-8 p-0 rounded"
                     aria-label="Shadow color"
@@ -649,14 +792,14 @@ export default function PropertiesSidebar({
                   <NumberInput
                     value={selectedElementData.x}
                     onChange={(val) =>
-                      handleMoveElement(
+                      moveElement(
                         selectedElementData.id,
                         val - selectedElementData.x,
                         0
                       )
                     }
                     onInstantChange={(val) =>
-                      handleMoveElement(
+                      moveElement(
                         selectedElementData.id,
                         val - selectedElementData.x,
                         0
@@ -673,14 +816,14 @@ export default function PropertiesSidebar({
                   <NumberInput
                     value={selectedElementData.y}
                     onChange={(val) =>
-                      handleMoveElement(
+                      moveElement(
                         selectedElementData.id,
                         0,
                         val - selectedElementData.y
                       )
                     }
                     onInstantChange={(val) =>
-                      handleMoveElement(
+                      moveElement(
                         selectedElementData.id,
                         0,
                         val - selectedElementData.y
