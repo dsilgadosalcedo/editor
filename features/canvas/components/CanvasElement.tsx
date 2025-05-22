@@ -439,9 +439,13 @@ export default function CanvasElement({
           element.type === "rectangle"
             ? `${element.cornerRadius || 0}px`
             : undefined,
-        borderWidth: element.borderWidth ?? 0,
-        borderStyle: element.borderWidth ? "solid" : undefined,
-        borderColor: element.borderColor ?? "transparent",
+        borderWidth: element.type !== "image" ? element.borderWidth ?? 0 : 0,
+        borderStyle:
+          element.type !== "image" && element.borderWidth ? "solid" : undefined,
+        borderColor:
+          element.type !== "image"
+            ? element.borderColor ?? "transparent"
+            : undefined,
         boxShadow: element.shadowBlur
           ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
           : undefined,
@@ -458,10 +462,11 @@ export default function CanvasElement({
           alt="Canvas element"
           className="w-full h-full object-cover"
           style={{
-            borderRadius:
-              element.type === "image"
-                ? `${element.cornerRadius || 0}px`
-                : undefined,
+            borderRadius: `${element.cornerRadius || 0}px`,
+            borderWidth: element.borderWidth ?? 0,
+            borderStyle: element.borderWidth ? "solid" : undefined,
+            borderColor: element.borderColor ?? "transparent",
+            boxSizing: "border-box",
           }}
           draggable={false}
         />

@@ -71,7 +71,7 @@ export default function CanvasToolbar({
   };
 
   return (
-    <div className="z-20 absolute bottom-6 left-4 flex items-center gap-2 bg-properties-blue/90 dark:bg-properties-blue/90 backdrop-blur-md p-2 rounded-xl shadow-lg border border-blue-200">
+    <div className="z-20 absolute bottom-4 left-28 flex items-center gap-2 bg-properties-blue/90 dark:bg-properties-blue/90 backdrop-blur-md p-2 rounded-xl shadow-lg border border-blue-200">
       {/* Save/Load Controls */}
       <Button
         variant="ghost"

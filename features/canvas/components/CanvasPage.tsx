@@ -39,6 +39,14 @@ export default function CanvasPage() {
   // Keyboard shortcuts: Full professional shortcuts support
   useEffect(() => {
     const onKeyDown = async (e: KeyboardEvent) => {
+      // Check if user is typing in an input field or contentEditable element
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA");
+
       // Delete selected element on Backspace (when not typing in inputs or contentEditable)
       if (
         e.key === "Backspace" &&
@@ -47,12 +55,6 @@ export default function CanvasPage() {
         !e.shiftKey &&
         !e.altKey
       ) {
-        const target = e.target as HTMLElement;
-        const isTyping =
-          target instanceof HTMLElement &&
-          (target.isContentEditable ||
-            target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA");
         if (!isTyping && selectedElement) {
           e.preventDefault();
           deleteElement(selectedElement);
@@ -78,7 +80,7 @@ export default function CanvasPage() {
       if (!modifier) return;
       const key = e.key.toLowerCase();
 
-      // Save with Ctrl/Cmd+S
+      // Save with Ctrl/Cmd+S (always prevent default to avoid browser save dialog)
       if (key === "s") {
         e.preventDefault();
         const title = prompt("Enter canvas title (optional):");
@@ -91,7 +93,7 @@ export default function CanvasPage() {
         return;
       }
 
-      // Load with Ctrl/Cmd+O
+      // Load with Ctrl/Cmd+O (always prevent default to avoid browser open dialog)
       if (key === "o") {
         e.preventDefault();
         const canvasId = prompt("Enter canvas ID to load:");
@@ -106,35 +108,35 @@ export default function CanvasPage() {
         return;
       }
 
-      // Select All with Ctrl/Cmd+A (prevent default browser behavior)
-      if (key === "a") {
+      // Select All with Ctrl/Cmd+A (only when not typing in inputs)
+      if (key === "a" && !isTyping) {
         e.preventDefault();
         // For now, just clear selection (could implement select all elements later)
         clearSelection();
         return;
       }
 
-      // Undo/Redo with Ctrl/Cmd+Z
-      if (key === "z" && !e.shiftKey) {
+      // Undo/Redo with Ctrl/Cmd+Z (only when not typing in inputs)
+      if (key === "z" && !e.shiftKey && !isTyping) {
         e.preventDefault();
         undo();
         return;
       }
-      if (key === "z" && e.shiftKey) {
+      if (key === "z" && e.shiftKey && !isTyping) {
         e.preventDefault();
         redo();
         return;
       }
 
-      // Copy with Ctrl/Cmd+C
-      if (key === "c" && selectedElement) {
+      // Copy with Ctrl/Cmd+C (only when not typing in inputs and element is selected)
+      if (key === "c" && selectedElement && !isTyping) {
         e.preventDefault();
         copySelection();
         return;
       }
 
-      // Paste with Ctrl/Cmd+V
-      if (key === "v") {
+      // Paste with Ctrl/Cmd+V (only when not typing in inputs)
+      if (key === "v" && !isTyping) {
         e.preventDefault();
         pasteClipboard();
         return;
@@ -225,7 +227,7 @@ export default function CanvasPage() {
 
         {/* Layers Panel */}
         {layersOpen && (
-          <LayersPanel className="z-20 absolute bottom-6 right-4" />
+          <LayersPanel className="z-20 absolute bottom-4 right-76" />
         )}
 
         {/* Canvas Toolbar */}
