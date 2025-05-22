@@ -487,61 +487,97 @@ export default function CanvasElement({
       {/* Selection UI: Only show when selected */}
       {element.selected && (
         <>
-          {/* Selection frame */}
-          <div className="absolute inset-0 border border-blue-500 rounded-none pointer-events-none" />
+          {/* Selection frame: offset by 4px + borderWidth if present */}
+          <div
+            className="absolute pointer-events-none border border-blue-400 rounded-none"
+            style={{
+              left: `-${1 + (element.borderWidth ?? 0)}px`,
+              top: `-${1 + (element.borderWidth ?? 0)}px`,
+              width: `calc(100% + ${(1 + (element.borderWidth ?? 0)) * 2}px)`,
+              height: `calc(100% + ${(1 + (element.borderWidth ?? 0)) * 2}px)`,
+            }}
+          />
           {/* Resize handles */}
           {/* top-left */}
           <div
-            className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-nwse-resize"
+            className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
+            style={{
+              left: `-${5 + (element.borderWidth ?? 0)}px`,
+              top: `-${5 + (element.borderWidth ?? 0)}px`,
+            }}
             onMouseDown={(e) => handleResizeStart("nw", e)}
             onTouchStart={(e) => handleResizeTouchStart("nw", e)}
             onDoubleClick={handleResizeDoubleClick}
           />
           {/* top-center */}
           <div
-            className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-ns-resize"
+            className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
+            style={{
+              top: `-${5 + (element.borderWidth ?? 0)}px`,
+            }}
             onMouseDown={(e) => handleResizeStart("n", e)}
             onTouchStart={(e) => handleResizeTouchStart("n", e)}
             onDoubleClick={handleResizeDoubleClick}
           />
           {/* top-right */}
           <div
-            className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-nesw-resize"
+            className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
+            style={{
+              right: `-${5 + (element.borderWidth ?? 0)}px`,
+              top: `-${5 + (element.borderWidth ?? 0)}px`,
+            }}
             onMouseDown={(e) => handleResizeStart("ne", e)}
             onTouchStart={(e) => handleResizeTouchStart("ne", e)}
             onDoubleClick={handleResizeDoubleClick}
           />
           {/* middle-left */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-ew-resize"
+            className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
+            style={{
+              left: `-${5 + (element.borderWidth ?? 0)}px`,
+            }}
             onMouseDown={(e) => handleResizeStart("w", e)}
             onTouchStart={(e) => handleResizeTouchStart("w", e)}
             onDoubleClick={handleResizeDoubleClick}
           />
           {/* middle-right */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-ew-resize"
+            className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
+            style={{
+              right: `-${5 + (element.borderWidth ?? 0)}px`,
+            }}
             onMouseDown={(e) => handleResizeStart("e", e)}
             onTouchStart={(e) => handleResizeTouchStart("e", e)}
             onDoubleClick={handleResizeDoubleClick}
           />
           {/* bottom-left */}
           <div
-            className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-nesw-resize"
+            className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
+            style={{
+              left: `-${5 + (element.borderWidth ?? 0)}px`,
+              bottom: `-${5 + (element.borderWidth ?? 0)}px`,
+            }}
             onMouseDown={(e) => handleResizeStart("sw", e)}
             onTouchStart={(e) => handleResizeTouchStart("sw", e)}
             onDoubleClick={handleResizeDoubleClick}
           />
           {/* bottom-center */}
           <div
-            className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-ns-resize"
+            className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
+            style={{
+              bottom: `-${5 + (element.borderWidth ?? 0)}px`,
+            }}
             onMouseDown={(e) => handleResizeStart("s", e)}
             onTouchStart={(e) => handleResizeTouchStart("s", e)}
             onDoubleClick={handleResizeDoubleClick}
           />
           {/* bottom-right */}
           <div
-            className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full shadow-sm hover:scale-110 transition-transform cursor-nwse-resize"
+            className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
+            style={{
+              right: `-${5 + (element.borderWidth ?? 0)}px`,
+              bottom: `-${5 + (element.borderWidth ?? 0)}px`,
+            }}
             onMouseDown={(e) => handleResizeStart("se", e)}
             onTouchStart={(e) => handleResizeTouchStart("se", e)}
             onDoubleClick={handleResizeDoubleClick}
