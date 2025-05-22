@@ -51,22 +51,7 @@ export default function ToolSidebar({
         >
           <ToolIcon icon={Square} />
         </ToolButton>
-        <ToolButton
-          className={cn(
-            selectedTool === "hand" &&
-              "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
-          )}
-          onClick={() => {
-            const next = selectedTool === "hand" ? null : "hand";
-            onSelectTool(next);
-            clearSelection();
-          }}
-        >
-          <ToolIcon
-            icon={Hand}
-            className={cn(selectedTool === "hand" && "text-properties-gold")}
-          />
-        </ToolButton>
+        <div className="w-full h-px bg-properties-blue/30 dark:bg-slate-100/30 my-1"></div>
         <ToolButton
           className={cn(
             layersOpen &&

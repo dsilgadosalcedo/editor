@@ -166,10 +166,12 @@ export default function DesignCanvas() {
               backgroundSize: "20px 20px",
             }}
             onMouseDown={(e) => {
-              if (selectedTool !== "hand") handleClearSelection();
+              handleClearSelection();
+              // if (selectedTool !== "hand") handleClearSelection();
             }}
             onTouchStart={(e) => {
-              if (selectedTool !== "hand") handleClearSelection();
+              handleClearSelection();
+              // if (selectedTool !== "hand") handleClearSelection();
             }}
           >
             {/* Canvas Container for Panning and Artboard */}

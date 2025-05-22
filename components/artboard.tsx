@@ -61,10 +61,12 @@ const Artboard: React.FC<ArtboardProps> = ({
           marginTop: `-${artboardDimensions.height / 2}px`,
         }}
         onMouseDown={(e) => {
-          if (selectedTool !== "hand") onSelectElement(null);
+          onSelectElement(null);
+          // if (selectedTool !== "hand") onSelectElement(null);
         }}
         onTouchStart={(e) => {
-          if (selectedTool !== "hand") onSelectElement(null);
+          onSelectElement(null);
+          // if (selectedTool !== "hand") onSelectElement(null);
         }}
       >
         {showGuides && (

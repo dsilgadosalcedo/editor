@@ -451,7 +451,8 @@ export default function CanvasElement({
       {element.type === "text" && (
         <div
           ref={textRef}
-          contentEditable={isEditing && !isPanMode}
+          contentEditable={isEditing}
+          // contentEditable={isEditing && !isPanMode}
           suppressContentEditableWarning
           onBlur={handleTextBlur}
           onInput={handleTextChange}
