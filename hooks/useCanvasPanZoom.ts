@@ -14,14 +14,12 @@ export const useCanvasPanZoom = (
 
   // Mouse pan handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    // if (selectedTool === "hand") {
     setIsPanning(true);
     panStartRef.current = {
       x: e.clientX - canvasPosition.x,
       y: e.clientY - canvasPosition.y,
     };
     if (canvasRef.current) canvasRef.current.style.cursor = "grabbing";
-    // }
   };
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isPanning && panStartRef.current) {
@@ -36,7 +34,6 @@ export const useCanvasPanZoom = (
       setIsPanning(false);
       panStartRef.current = null;
       if (canvasRef.current) canvasRef.current.style.cursor = "grab";
-      // selectedTool === "hand" ? "grab" : "default";
     }
   };
 
@@ -80,7 +77,6 @@ export const useCanvasPanZoom = (
   useEffect(() => {
     if (canvasRef.current) {
       canvasRef.current.style.cursor = isPanning ? "grabbing" : "grab";
-      // selectedTool === "hand" ? (isPanning ? "grabbing" : "grab") : "default";
     }
   }, [selectedTool, isPanning, canvasRef]);
 

@@ -33,6 +33,7 @@ interface CanvasElementProps {
   onResize: (width: number, height: number) => void;
   onTextChange: (content: string) => void;
   isPanMode?: boolean;
+  zoom: number;
   onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
 }
 
@@ -43,6 +44,7 @@ export default function CanvasElement({
   onResize,
   onTextChange,
   isPanMode = false,
+  zoom,
   onUpdateCornerRadius,
 }: CanvasElementProps) {
   const elementRef = useRef<HTMLDivElement>(null);
@@ -490,12 +492,17 @@ export default function CanvasElement({
         <>
           {/* Selection frame: offset by 4px + borderWidth if present */}
           <div
-            className="absolute pointer-events-none border border-blue-400 rounded-none"
+            className="absolute pointer-events-none border-blue-500 rounded-none"
             style={{
-              left: `-${1 + (element.borderWidth ?? 0)}px`,
-              top: `-${1 + (element.borderWidth ?? 0)}px`,
-              width: `calc(100% + ${(1 + (element.borderWidth ?? 0)) * 2}px)`,
-              height: `calc(100% + ${(1 + (element.borderWidth ?? 0)) * 2}px)`,
+              left: `-${1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              top: `-${1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              width: `calc(100% + ${
+                1 * (100 / zoom) * 2 + (element.borderWidth ?? 0) * 2
+              }px)`,
+              height: `calc(100% + ${
+                1 * (100 / zoom) * 2 + (element.borderWidth ?? 0) * 2
+              }px)`,
+              borderWidth: 1 * (100 / zoom),
             }}
           />
           {/* Resize handles */}
@@ -503,8 +510,10 @@ export default function CanvasElement({
           <div
             className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
             style={{
-              left: `-${5 + (element.borderWidth ?? 0)}px`,
-              top: `-${5 + (element.borderWidth ?? 0)}px`,
+              left: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              top: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "center",
             }}
             onMouseDown={(e) => handleResizeStart("nw", e)}
             onTouchStart={(e) => handleResizeTouchStart("nw", e)}
@@ -514,7 +523,9 @@ export default function CanvasElement({
           <div
             className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
             style={{
-              top: `-${5 + (element.borderWidth ?? 0)}px`,
+              top: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "center",
             }}
             onMouseDown={(e) => handleResizeStart("n", e)}
             onTouchStart={(e) => handleResizeTouchStart("n", e)}
@@ -524,8 +535,10 @@ export default function CanvasElement({
           <div
             className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
             style={{
-              right: `-${5 + (element.borderWidth ?? 0)}px`,
-              top: `-${5 + (element.borderWidth ?? 0)}px`,
+              right: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              top: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "center",
             }}
             onMouseDown={(e) => handleResizeStart("ne", e)}
             onTouchStart={(e) => handleResizeTouchStart("ne", e)}
@@ -535,7 +548,9 @@ export default function CanvasElement({
           <div
             className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
             style={{
-              left: `-${5 + (element.borderWidth ?? 0)}px`,
+              left: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "center",
             }}
             onMouseDown={(e) => handleResizeStart("w", e)}
             onTouchStart={(e) => handleResizeTouchStart("w", e)}
@@ -545,7 +560,9 @@ export default function CanvasElement({
           <div
             className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
             style={{
-              right: `-${5 + (element.borderWidth ?? 0)}px`,
+              right: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "center",
             }}
             onMouseDown={(e) => handleResizeStart("e", e)}
             onTouchStart={(e) => handleResizeTouchStart("e", e)}
@@ -555,8 +572,10 @@ export default function CanvasElement({
           <div
             className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
             style={{
-              left: `-${5 + (element.borderWidth ?? 0)}px`,
-              bottom: `-${5 + (element.borderWidth ?? 0)}px`,
+              left: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              bottom: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "center",
             }}
             onMouseDown={(e) => handleResizeStart("sw", e)}
             onTouchStart={(e) => handleResizeTouchStart("sw", e)}
@@ -566,7 +585,9 @@ export default function CanvasElement({
           <div
             className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
             style={{
-              bottom: `-${5 + (element.borderWidth ?? 0)}px`,
+              bottom: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "center",
             }}
             onMouseDown={(e) => handleResizeStart("s", e)}
             onTouchStart={(e) => handleResizeTouchStart("s", e)}
@@ -576,8 +597,10 @@ export default function CanvasElement({
           <div
             className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
             style={{
-              right: `-${5 + (element.borderWidth ?? 0)}px`,
-              bottom: `-${5 + (element.borderWidth ?? 0)}px`,
+              right: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              bottom: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "center",
             }}
             onMouseDown={(e) => handleResizeStart("se", e)}
             onTouchStart={(e) => handleResizeTouchStart("se", e)}
@@ -592,6 +615,8 @@ export default function CanvasElement({
               style={{
                 left: (element.cornerRadius || 0) - 8, // 8 = handle radius for centering
                 top: (element.cornerRadius || 0) - 8,
+                transform: `scale(${100 / zoom})`,
+                transformOrigin: "center",
               }}
             />
           )}

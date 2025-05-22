@@ -88,6 +88,7 @@ const Artboard: React.FC<ArtboardProps> = ({
             onResize={(w, h) => onResizeElement(element.id, w, h)}
             onTextChange={(content) => onTextChange(element.id, content)}
             isPanMode={selectedTool === "hand"}
+            zoom={zoom}
             onUpdateCornerRadius={onUpdateCornerRadius}
           />
         ))}

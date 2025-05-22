@@ -5,7 +5,13 @@ import type React from "react";
 import { useRef, useState, useEffect } from "react";
 import { Minus, Plus, Eraser, RotateCcw, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Artboard from "./artboard";
 import { useCanvasElements, ToolType } from "@/hooks/useCanvasElements";
 import { useCanvasPanZoom } from "@/hooks/useCanvasPanZoom";
@@ -134,6 +140,29 @@ export default function DesignCanvas() {
     handleUpdateTextContent(selectedElement, e.target.value);
   };
 
+  // Helper: Zoom to fit selection
+  const handleZoomToSelection = () => {
+    if (!selectedElement) return;
+    const el = elements.find((el) => el.id === selectedElement);
+    if (!el) return;
+    // Get artboard and canvas sizes
+    const artboardW = artboardDimensions.width;
+    const artboardH = artboardDimensions.height;
+    const padding = 40; // px, for some margin
+    const scaleX = (artboardW - padding * 2) / el.width;
+    const scaleY = (artboardH - padding * 2) / el.height;
+    const newZoom = Math.min(
+      400,
+      Math.max(10, Math.floor(Math.min(scaleX, scaleY) * 100))
+    );
+    setZoom(newZoom);
+    // Center the element
+    setCanvasPosition({
+      x: artboardW / 2 - (el.x + el.width / 2) * (newZoom / 100),
+      y: artboardH / 2 - (el.y + el.height / 2) * (newZoom / 100),
+    });
+  };
+
   return (
     <div className="bg-muted/50 flex flex-col h-screen w-full">
       <div className="flex flex-1 overflow-hidden">
@@ -198,32 +227,68 @@ export default function DesignCanvas() {
             />
           </div>
 
-          {/* Zoom Controls */}
-          <div className="z-20 absolute bottom-6 left-4 flex items-center gap-2 bg-properties-blue dark:bg-properties-blue backdrop-blur-sm p-2 rounded-lg">
+          {/* Zoom Controls - Freeform style */}
+          <div className="z-20 absolute bottom-6 left-4 flex items-center gap-2 bg-properties-blue/90 dark:bg-properties-blue/90 backdrop-blur-md p-2 rounded-xl shadow-lg border border-blue-200">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setZoom((prev) => Math.max(prev - 10, 50))}
+              onClick={() =>
+                setZoom((prev) => {
+                  const levels = [10, 25, 50, 75, 100, 125, 150, 200, 300, 400];
+                  const idx = levels.findIndex((z) => z >= prev);
+                  return levels[Math.max(0, idx - 1)];
+                })
+              }
               className="h-8 w-8 text-white"
+              aria-label="Zoom Out"
             >
               <Minus className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-1">
-              <Slider
-                value={[zoom]}
-                min={50}
-                max={400}
-                step={1}
-                className="w-24"
-                onValueChange={(value) => setZoom(value[0])}
-              />
-              <span className="text-white text-xs w-12">{zoom}%</span>
-            </div>
+            <Select
+              value={String(zoom)}
+              onValueChange={(val) => {
+                if (val === "selection") {
+                  handleZoomToSelection();
+                } else {
+                  setZoom(Number(val));
+                }
+              }}
+            >
+              <SelectTrigger className="w-[90px] bg-transparent text-white text-sm rounded-md border border-blue-200/40 hover:border-blue-400 transition-colors">
+                <SelectValue placeholder="Zoom">{zoom}%</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 25, 50, 75, 100, 125, 150, 200, 300, 400].map((val) => (
+                  <SelectItem key={val} value={String(val)}>
+                    {val}%
+                  </SelectItem>
+                ))}
+                <SelectItem
+                  value="selection"
+                  className="text-blue-500 font-semibold border-t border-blue-100 mt-1"
+                  disabled={!selectedElement}
+                >
+                  Zoom to Selection
+                </SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setZoom((prev) => Math.min(prev + 10, 400))}
+              onClick={() =>
+                setZoom((prev) => {
+                  const levels = [10, 25, 50, 75, 100, 125, 150, 200, 300, 400];
+                  const idx = levels.findIndex((z) => z > prev);
+                  return levels[
+                    Math.min(
+                      levels.length - 1,
+                      idx === -1 ? levels.length - 1 : idx
+                    )
+                  ];
+                })
+              }
               className="h-8 w-8 text-white"
+              aria-label="Zoom In"
             >
               <Plus className="h-4 w-4" />
             </Button>

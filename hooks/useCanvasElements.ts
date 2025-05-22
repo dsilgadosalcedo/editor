@@ -107,7 +107,6 @@ export const useCanvasElements = (artboardDimensions: {
   };
 
   const handleSelectElement = (id: string, tool: ToolType) => {
-    if (tool === "hand") return;
     setElements((prev) =>
       prev.map((el) => ({ ...el, selected: el.id === id }))
     );
