@@ -1,17 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { SavedCanvas, CanvasListItem } from "@/lib/types";
 
 // In-memory storage (should match the storage in save route)
-const canvasStorage = new Map<string, any>();
+const canvasStorage = new Map<string, SavedCanvas>();
 
 export async function GET() {
   try {
-    const canvasList = Array.from(canvasStorage.values()).map((canvas) => ({
-      id: canvas.id,
-      title: canvas.title,
-      createdAt: canvas.createdAt,
-      updatedAt: canvas.updatedAt,
-      // Don't return the full canvas data for performance
-    }));
+    const canvasList: CanvasListItem[] = Array.from(canvasStorage.values()).map(
+      (canvas) => ({
+        id: canvas.id,
+        title: canvas.title,
+        createdAt: canvas.createdAt,
+        updatedAt: canvas.updatedAt,
+        // Don't return the full canvas data for performance
+      })
+    );
 
     return NextResponse.json(
       {

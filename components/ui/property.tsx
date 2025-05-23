@@ -41,7 +41,13 @@ function PropertyInput({
   distribution?: "row" | "column";
 }) {
   return (
-    <div className="flex items-center gap-2" {...props}>
+    <div
+      className={cn(
+        "flex items-center gap-2",
+        distribution === "row" ? "flex-row" : "flex-col"
+      )}
+      {...props}
+    >
       {props.children}
     </div>
   );

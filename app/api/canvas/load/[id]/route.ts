@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SavedCanvas } from "@/lib/types";
 
 // In-memory storage (should match the storage in save route)
-const canvasStorage = new Map<string, any>();
+const canvasStorage = new Map<string, SavedCanvas>();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(

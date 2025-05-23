@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SavedCanvas, CanvasData } from "@/lib/types";
 
 // In-memory storage (replace with actual database in production)
-const canvasStorage = new Map<string, any>();
+const canvasStorage = new Map<string, SavedCanvas>();
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { canvasData, title } = body;
+    const { canvasData, title }: { canvasData: CanvasData; title?: string } =
+      body;
 
     if (!canvasData) {
       return NextResponse.json(
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
       .substr(2, 9)}`;
 
     // Save canvas data
-    const saveData = {
+    const saveData: SavedCanvas = {
       id: canvasId,
       title: title || "Untitled Canvas",
       data: canvasData,
