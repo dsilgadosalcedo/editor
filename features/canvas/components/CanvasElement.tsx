@@ -185,24 +185,21 @@ export default function CanvasElement({
       // Use setTimeout to ensure the DOM is ready
       setTimeout(() => {
         if (textRef.current) {
+          // Set the initial content when starting to edit
+          textRef.current.textContent = element.content || "";
           textRef.current.focus();
 
-          // Place cursor at the end of text
-          const range = document.createRange();
+          // Move cursor to end of text
           const selection = window.getSelection();
+          const range = document.createRange();
 
-          // Clear the text node first to avoid issues
-          textRef.current.innerHTML = element.content || "";
+          // Select all text content
+          range.selectNodeContents(textRef.current);
+          // Collapse to end to place cursor at the end
+          range.collapse(false);
 
-          if (textRef.current.firstChild) {
-            range.setStart(
-              textRef.current.firstChild,
-              (element.content || "").length
-            );
-            range.collapse(true);
-            selection?.removeAllRanges();
-            selection?.addRange(range);
-          }
+          selection?.removeAllRanges();
+          selection?.addRange(range);
         }
       }, 0);
     }
@@ -225,6 +222,10 @@ export default function CanvasElement({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       textRef.current?.blur();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      textRef.current?.blur();
+      setIsEditing(false);
     }
   };
 
@@ -658,7 +659,7 @@ export default function CanvasElement({
                 : undefined,
             }}
           >
-            {element.content}
+            {!isEditing && element.content}
           </div>
         )}
 
