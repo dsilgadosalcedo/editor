@@ -51,6 +51,8 @@ interface CanvasStoreState {
   undo: () => void;
   redo: () => void;
   reorderElements: (oldIndex: number, newIndex: number) => void;
+  moveElementUp: (id: string) => void;
+  moveElementDown: (id: string) => void;
   updateCornerRadius: (id: string, cornerRadius: number) => void;
   updateFillColor: (id: string, color: string) => void;
   updateBorderWidth: (id: string, width: number) => void;
@@ -215,6 +217,40 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ...addToHistory(),
         elements: updated,
       };
+    }),
+  moveElementUp: (id) =>
+    set((state) => {
+      const { addToHistory } = get();
+      const elements = [...state.elements];
+      const index = elements.findIndex((el) => el.id === id);
+      // Move up means bring forward (higher z-index) = move to higher index in array
+      // Elements later in the array are rendered on top of earlier elements
+      if (index < elements.length - 1) {
+        const [moved] = elements.splice(index, 1);
+        elements.splice(index + 1, 0, moved);
+        return {
+          ...addToHistory(),
+          elements,
+        };
+      }
+      return state;
+    }),
+  moveElementDown: (id) =>
+    set((state) => {
+      const { addToHistory } = get();
+      const elements = [...state.elements];
+      const index = elements.findIndex((el) => el.id === id);
+      // Move down means send backward (lower z-index) = move to lower index in array
+      // Elements earlier in the array are rendered behind later elements
+      if (index > 0) {
+        const [moved] = elements.splice(index, 1);
+        elements.splice(index - 1, 0, moved);
+        return {
+          ...addToHistory(),
+          elements,
+        };
+      }
+      return state;
     }),
   updateCornerRadius: (id, cornerRadius) =>
     set((state) => {

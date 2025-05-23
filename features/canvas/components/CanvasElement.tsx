@@ -5,6 +5,7 @@ import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useElementDragResize } from "../hooks/useElementDragResize";
+import ElementFloatingToolbar from "./ElementFloatingToolbar";
 
 interface CanvasElementProps {
   element: {
@@ -428,281 +429,302 @@ export default function CanvasElement({
   };
 
   return (
-    <div
-      ref={elementRef}
-      className="absolute cursor-move"
-      style={{
-        left: `${element.x}px`,
-        top: `${element.y}px`,
-        width: `${element.width}px`,
-        height: `${element.height}px`,
-        backgroundColor:
-          element.type === "rectangle" ? element.color : "transparent",
-        zIndex: 1,
-        borderRadius:
-          element.type === "rectangle"
-            ? `${element.cornerRadius || 0}px`
-            : undefined,
-        borderWidth: element.type !== "image" ? element.borderWidth ?? 0 : 0,
-        borderStyle:
-          element.type !== "image" && element.borderWidth ? "solid" : undefined,
-        borderColor:
-          element.type !== "image"
-            ? element.borderColor ?? "transparent"
-            : undefined,
-        boxShadow: element.shadowBlur
-          ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
-          : undefined,
-      }}
-      onMouseDown={handleMouseDown}
-      onTouchStart={handleTouchStart}
-      onDoubleClick={
-        element.type === "text" ? handleTextDoubleClick : undefined
-      }
-    >
-      {element.type === "image" && (
-        <img
-          src={element.src}
-          alt="Canvas element"
-          className="w-full h-full object-cover"
-          style={{
-            borderRadius: `${element.cornerRadius || 0}px`,
-            borderWidth: element.borderWidth ?? 0,
-            borderStyle: element.borderWidth ? "solid" : undefined,
-            borderColor: element.borderColor ?? "transparent",
-            boxSizing: "border-box",
-          }}
-          draggable={false}
-        />
-      )}
-      {element.type === "text" && (
-        <div
-          ref={textRef}
-          contentEditable={isEditing}
-          // contentEditable={isEditing && !isPanMode}
-          suppressContentEditableWarning
-          onBlur={handleTextBlur}
-          onInput={handleTextChange}
-          onKeyDown={handleTextKeyDown}
-          className={cn(
-            "w-full h-full flex outline-none",
-            // Dynamic horizontal alignment
-            element.horizontalAlign === "left" && "justify-start",
-            element.horizontalAlign === "center" && "justify-center",
-            element.horizontalAlign === "right" && "justify-end",
-            // Dynamic vertical alignment
-            element.verticalAlign === "top" && "items-start",
-            element.verticalAlign === "middle" && "items-center",
-            element.verticalAlign === "bottom" && "items-end",
-            isEditing && "bg-blue-600/30"
-          )}
-          style={{
-            color: element.color,
-            fontSize: element.fontSize ? `${element.fontSize}px` : undefined,
-            fontWeight: element.fontWeight,
-            letterSpacing: element.letterSpacing
-              ? `${element.letterSpacing}px`
+    <>
+      <div
+        ref={elementRef}
+        className="absolute cursor-move"
+        style={{
+          left: `${element.x}px`,
+          top: `${element.y}px`,
+          width: `${element.width}px`,
+          height: `${element.height}px`,
+          backgroundColor:
+            element.type === "rectangle" ? element.color : "transparent",
+          zIndex: 1,
+          borderRadius:
+            element.type === "rectangle"
+              ? `${element.cornerRadius || 0}px`
               : undefined,
-            lineHeight: element.lineHeight
-              ? `${element.lineHeight}px`
+          borderWidth: element.type !== "image" ? element.borderWidth ?? 0 : 0,
+          borderStyle:
+            element.type !== "image" && element.borderWidth
+              ? "solid"
               : undefined,
-          }}
-        >
-          {element.content}
-        </div>
-      )}
+          borderColor:
+            element.type !== "image"
+              ? element.borderColor ?? "transparent"
+              : undefined,
+          boxShadow: element.shadowBlur
+            ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
+            : undefined,
+        }}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onDoubleClick={
+          element.type === "text" ? handleTextDoubleClick : undefined
+        }
+      >
+        {element.type === "image" && (
+          <img
+            src={element.src}
+            alt="Canvas element"
+            className="w-full h-full object-cover"
+            style={{
+              borderRadius: `${element.cornerRadius || 0}px`,
+              borderWidth: element.borderWidth ?? 0,
+              borderStyle: element.borderWidth ? "solid" : undefined,
+              borderColor: element.borderColor ?? "transparent",
+              boxSizing: "border-box",
+            }}
+            draggable={false}
+          />
+        )}
+        {element.type === "text" && (
+          <div
+            ref={textRef}
+            contentEditable={isEditing}
+            // contentEditable={isEditing && !isPanMode}
+            suppressContentEditableWarning
+            onBlur={handleTextBlur}
+            onInput={handleTextChange}
+            onKeyDown={handleTextKeyDown}
+            className={cn(
+              "w-full h-full flex outline-none",
+              // Dynamic horizontal alignment
+              element.horizontalAlign === "left" && "justify-start",
+              element.horizontalAlign === "center" && "justify-center",
+              element.horizontalAlign === "right" && "justify-end",
+              // Dynamic vertical alignment
+              element.verticalAlign === "top" && "items-start",
+              element.verticalAlign === "middle" && "items-center",
+              element.verticalAlign === "bottom" && "items-end",
+              isEditing && "bg-blue-600/30"
+            )}
+            style={{
+              color: element.color,
+              fontSize: element.fontSize ? `${element.fontSize}px` : undefined,
+              fontWeight: element.fontWeight,
+              letterSpacing: element.letterSpacing
+                ? `${element.letterSpacing}px`
+                : undefined,
+              lineHeight: element.lineHeight
+                ? `${element.lineHeight}px`
+                : undefined,
+            }}
+          >
+            {element.content}
+          </div>
+        )}
 
-      {/* Selection UI: Only show when selected */}
-      {element.selected && (
-        <>
-          {/* Selection frame: offset by 4px + borderWidth if present */}
-          <div
-            className="absolute pointer-events-none border-blue-500 rounded-none"
-            style={{
-              left: `-${
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              top: `-${
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              width: `calc(100% + ${
-                1 * (100 / zoom) * 2 +
-                (element.type !== "image" ? (element.borderWidth ?? 0) * 2 : 0)
-              }px)`,
-              height: `calc(100% + ${
-                1 * (100 / zoom) * 2 +
-                (element.type !== "image" ? (element.borderWidth ?? 0) * 2 : 0)
-              }px)`,
-              borderWidth: 1 * (100 / zoom),
-            }}
-          />
-          {/* Resize handles */}
-          {/* top-left */}
-          <div
-            className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
-            style={{
-              left: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              top: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "center",
-            }}
-            onMouseDown={(e) => handleResizeStart("nw", e)}
-            onTouchStart={(e) => handleResizeTouchStart("nw", e)}
-            onDoubleClick={handleResizeDoubleClick}
-          />
-          {/* top-center */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
-            style={{
-              top: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "center",
-            }}
-            onMouseDown={(e) => handleResizeStart("n", e)}
-            onTouchStart={(e) => handleResizeTouchStart("n", e)}
-            onDoubleClick={handleResizeDoubleClick}
-          />
-          {/* top-right */}
-          <div
-            className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
-            style={{
-              right: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              top: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "center",
-            }}
-            onMouseDown={(e) => handleResizeStart("ne", e)}
-            onTouchStart={(e) => handleResizeTouchStart("ne", e)}
-            onDoubleClick={handleResizeDoubleClick}
-          />
-          {/* middle-left */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
-            style={{
-              left: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "center",
-            }}
-            onMouseDown={(e) => handleResizeStart("w", e)}
-            onTouchStart={(e) => handleResizeTouchStart("w", e)}
-            onDoubleClick={handleResizeDoubleClick}
-          />
-          {/* middle-right */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
-            style={{
-              right: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "center",
-            }}
-            onMouseDown={(e) => handleResizeStart("e", e)}
-            onTouchStart={(e) => handleResizeTouchStart("e", e)}
-            onDoubleClick={handleResizeDoubleClick}
-          />
-          {/* bottom-left */}
-          <div
-            className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
-            style={{
-              left: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              bottom: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "center",
-            }}
-            onMouseDown={(e) => handleResizeStart("sw", e)}
-            onTouchStart={(e) => handleResizeTouchStart("sw", e)}
-            onDoubleClick={handleResizeDoubleClick}
-          />
-          {/* bottom-center */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
-            style={{
-              bottom: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "center",
-            }}
-            onMouseDown={(e) => handleResizeStart("s", e)}
-            onTouchStart={(e) => handleResizeTouchStart("s", e)}
-            onDoubleClick={handleResizeDoubleClick}
-          />
-          {/* bottom-right */}
-          <div
-            className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
-            style={{
-              right: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              bottom: `-${
-                4 +
-                1 * (100 / zoom) +
-                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-              }px`,
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "center",
-            }}
-            onMouseDown={(e) => handleResizeStart("se", e)}
-            onTouchStart={(e) => handleResizeTouchStart("se", e)}
-            onDoubleClick={handleResizeDoubleClick}
-          />
-          {/* Corner radius handle for rectangles and images */}
-          {(element.type === "rectangle" || element.type === "image") && (
+        {/* Selection UI: Only show when selected */}
+        {element.selected && (
+          <>
+            {/* Selection frame: offset by 4px + borderWidth if present */}
             <div
-              className="absolute w-4 h-4 rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer z-20"
-              onMouseDown={handleCornerRadiusDragStart}
-              title="Drag to adjust corner radius"
+              className="absolute pointer-events-none border-blue-500 rounded-none"
               style={{
-                left: (element.cornerRadius || 0) - 8, // 8 = handle radius for centering
-                top: (element.cornerRadius || 0) - 8,
+                left: `-${
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                top: `-${
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                width: `calc(100% + ${
+                  1 * (100 / zoom) * 2 +
+                  (element.type !== "image"
+                    ? (element.borderWidth ?? 0) * 2
+                    : 0)
+                }px)`,
+                height: `calc(100% + ${
+                  1 * (100 / zoom) * 2 +
+                  (element.type !== "image"
+                    ? (element.borderWidth ?? 0) * 2
+                    : 0)
+                }px)`,
+                borderWidth: 1 * (100 / zoom),
+              }}
+            />
+            {/* Resize handles */}
+            {/* top-left */}
+            <div
+              className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
+              style={{
+                left: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                top: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
                 transform: `scale(${100 / zoom})`,
                 transformOrigin: "center",
               }}
+              onMouseDown={(e) => handleResizeStart("nw", e)}
+              onTouchStart={(e) => handleResizeTouchStart("nw", e)}
+              onDoubleClick={handleResizeDoubleClick}
             />
-          )}
-        </>
+            {/* top-center */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
+              style={{
+                top: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                transform: `scale(${100 / zoom})`,
+                transformOrigin: "center",
+              }}
+              onMouseDown={(e) => handleResizeStart("n", e)}
+              onTouchStart={(e) => handleResizeTouchStart("n", e)}
+              onDoubleClick={handleResizeDoubleClick}
+            />
+            {/* top-right */}
+            <div
+              className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
+              style={{
+                right: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                top: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                transform: `scale(${100 / zoom})`,
+                transformOrigin: "center",
+              }}
+              onMouseDown={(e) => handleResizeStart("ne", e)}
+              onTouchStart={(e) => handleResizeTouchStart("ne", e)}
+              onDoubleClick={handleResizeDoubleClick}
+            />
+            {/* middle-left */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
+              style={{
+                left: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                transform: `scale(${100 / zoom})`,
+                transformOrigin: "center",
+              }}
+              onMouseDown={(e) => handleResizeStart("w", e)}
+              onTouchStart={(e) => handleResizeTouchStart("w", e)}
+              onDoubleClick={handleResizeDoubleClick}
+            />
+            {/* middle-right */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
+              style={{
+                right: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                transform: `scale(${100 / zoom})`,
+                transformOrigin: "center",
+              }}
+              onMouseDown={(e) => handleResizeStart("e", e)}
+              onTouchStart={(e) => handleResizeTouchStart("e", e)}
+              onDoubleClick={handleResizeDoubleClick}
+            />
+            {/* bottom-left */}
+            <div
+              className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
+              style={{
+                left: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                bottom: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                transform: `scale(${100 / zoom})`,
+                transformOrigin: "center",
+              }}
+              onMouseDown={(e) => handleResizeStart("sw", e)}
+              onTouchStart={(e) => handleResizeTouchStart("sw", e)}
+              onDoubleClick={handleResizeDoubleClick}
+            />
+            {/* bottom-center */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
+              style={{
+                bottom: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                transform: `scale(${100 / zoom})`,
+                transformOrigin: "center",
+              }}
+              onMouseDown={(e) => handleResizeStart("s", e)}
+              onTouchStart={(e) => handleResizeTouchStart("s", e)}
+              onDoubleClick={handleResizeDoubleClick}
+            />
+            {/* bottom-right */}
+            <div
+              className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
+              style={{
+                right: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                bottom: `-${
+                  4 +
+                  1 * (100 / zoom) +
+                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                }px`,
+                transform: `scale(${100 / zoom})`,
+                transformOrigin: "center",
+              }}
+              onMouseDown={(e) => handleResizeStart("se", e)}
+              onTouchStart={(e) => handleResizeTouchStart("se", e)}
+              onDoubleClick={handleResizeDoubleClick}
+            />
+            {/* Corner radius handle for rectangles and images */}
+            {(element.type === "rectangle" || element.type === "image") && (
+              <div
+                className="absolute w-4 h-4 rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer z-20"
+                onMouseDown={handleCornerRadiusDragStart}
+                title="Drag to adjust corner radius"
+                style={{
+                  left: (element.cornerRadius || 0) - 8, // 8 = handle radius for centering
+                  top: (element.cornerRadius || 0) - 8,
+                  transform: `scale(${100 / zoom})`,
+                  transformOrigin: "center",
+                }}
+              />
+            )}
+          </>
+        )}
+      </div>
+      {/* Floating Toolbar */}
+      {element.selected && !(element.type === "text" && isEditing) && (
+        <ElementFloatingToolbar
+          elementId={element.id}
+          elementType={element.type}
+          elementColor={element.color}
+          position={{
+            x: element.x + element.width / 2,
+            y: element.y,
+          }}
+          zoom={zoom}
+        />
       )}
-    </div>
+    </>
   );
 }

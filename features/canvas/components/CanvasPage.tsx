@@ -34,6 +34,8 @@ export default function CanvasPage() {
     saveCanvas,
     loadCanvas,
     clearSelection,
+    moveElementUp,
+    moveElementDown,
   } = useCanvasStore();
 
   // Keyboard shortcuts: Full professional shortcuts support
@@ -113,6 +115,20 @@ export default function CanvasPage() {
           return;
         }
 
+        // Move element up one layer with Ctrl/Cmd+ArrowUp (only when not typing and element is selected)
+        if (key === "arrowup" && selectedElement && !isTyping) {
+          e.preventDefault();
+          moveElementUp(selectedElement);
+          return;
+        }
+
+        // Move element down one layer with Ctrl/Cmd+ArrowDown (only when not typing and element is selected)
+        if (key === "arrowdown" && selectedElement && !isTyping) {
+          e.preventDefault();
+          moveElementDown(selectedElement);
+          return;
+        }
+
         // If we reach here with a modifier key, don't process further
         return;
       }
@@ -160,6 +176,8 @@ export default function CanvasPage() {
     saveCanvas,
     loadCanvas,
     clearSelection,
+    moveElementUp,
+    moveElementDown,
   ]);
 
   // Pan/zoom logic
