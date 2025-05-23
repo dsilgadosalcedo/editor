@@ -48,7 +48,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ className = "" }) => {
       onOpenChange={setOpen}
       className={`${className} w-48`}
     >
-      <div className="bg-white/90 dark:bg-slate-800 backdrop-blur-sm p-2 rounded-lg shadow-lg">
+      <div className="bg-card/80 backdrop-blur-sm p-4 rounded-xl shadow-lg">
         <div className="flex items-center justify-between mb-2">
           <span className="font-medium text-properties-text dark:text-foreground">
             Layers

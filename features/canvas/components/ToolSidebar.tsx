@@ -23,12 +23,12 @@ export default function ToolSidebar({
   const { addElement, clearSelection } = useCanvasStore();
 
   return (
-    <div className="z-20 m-4 p-1 bg-properties-blue/20 dark:bg-white/10 rounded-2xl shadow flex flex-col backdrop-blur-sm">
-      <div className="flex-1 bg-white/15 dark:bg-white/10 border border-properties-blue dark:border-white/20 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
+    <div className="z-20 m-4 p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
+      <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
-          className="border border-white/30 hover:bg-transparent"
+          className="border border-white/30 hover:bg-transparent dark:hover:bg-transparent"
         >
           <Image
             src="/favicon.ico"

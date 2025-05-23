@@ -47,7 +47,7 @@ const Artboard: React.FC<ArtboardProps> = ({
     >
       <div
         ref={artboardRef}
-        className="bg-blue-300/30 relative mx-auto my-auto"
+        className="bg-sky-harbor/50 relative mx-auto my-auto"
         style={{
           width: `${artboardDimensions.width}px`,
           height: `${artboardDimensions.height}px`,

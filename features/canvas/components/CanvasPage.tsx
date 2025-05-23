@@ -200,7 +200,7 @@ export default function CanvasPage() {
   };
 
   return (
-    <div className="bg-muted/50 flex flex-col h-screen w-full">
+    <div className="bg-background flex flex-col h-screen w-full">
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
         <ToolSidebar
@@ -227,7 +227,7 @@ export default function CanvasPage() {
 
         {/* Layers Panel */}
         {layersOpen && (
-          <LayersPanel className="z-20 absolute bottom-4 right-76" />
+          <LayersPanel className="z-20 absolute bottom-4 left-26" />
         )}
 
         {/* Canvas Toolbar */}

@@ -55,7 +55,7 @@ export default function CanvasViewport({
         className="z-10 fixed w-full h-full top-0 left-0 inset-0"
         style={{
           backgroundImage: showGuides
-            ? `linear-gradient(to right, var(--grid-color) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px)`
+            ? `linear-gradient(to right, var(--sidebar) 1px, transparent 1px), linear-gradient(to bottom, var(--sidebar) 1px, transparent 1px)`
             : "none",
           backgroundSize: "20px 20px",
         }}

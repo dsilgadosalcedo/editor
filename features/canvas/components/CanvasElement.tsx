@@ -438,7 +438,7 @@ export default function CanvasElement({
         height: `${element.height}px`,
         backgroundColor:
           element.type === "rectangle" ? element.color : "transparent",
-        zIndex: element.selected ? 10 : 1,
+        zIndex: 1,
         borderRadius:
           element.type === "rectangle"
             ? `${element.cornerRadius || 0}px`

@@ -71,13 +71,13 @@ export default function CanvasToolbar({
   };
 
   return (
-    <div className="z-20 absolute bottom-4 left-28 flex items-center gap-2 bg-properties-blue/90 dark:bg-properties-blue/90 backdrop-blur-md p-2 rounded-xl shadow-lg border border-blue-200">
+    <div className="z-20 bg-card/60 absolute bottom-4 left-1/3 flex items-center gap-2 backdrop-blur-md p-2 rounded-xl shadow-lg border border-sky-harbor/80">
       {/* Save/Load Controls */}
       <Button
         variant="ghost"
         size="icon"
         onClick={handleSave}
-        className="h-8 w-8 text-white"
+        className="h-8 w-8"
         aria-label="Save Canvas"
       >
         <Save className="h-4 w-4" />
@@ -86,7 +86,7 @@ export default function CanvasToolbar({
         variant="ghost"
         size="icon"
         onClick={handleLoad}
-        className="h-8 w-8 text-white"
+        className="h-8 w-8"
         aria-label="Load Canvas"
       >
         <FolderOpen className="h-4 w-4" />
@@ -106,7 +106,7 @@ export default function CanvasToolbar({
             return levels[Math.max(0, idx - 1)];
           })
         }
-        className="h-8 w-8 text-white"
+        className="h-8 w-8"
         aria-label="Zoom Out"
       >
         <Minus className="h-4 w-4" />
@@ -121,7 +121,7 @@ export default function CanvasToolbar({
           }
         }}
       >
-        <SelectTrigger className="w-[90px] bg-transparent text-white text-sm rounded-md border border-blue-200/40 hover:border-blue-400 transition-colors">
+        <SelectTrigger className="w-[90px] bg-transparent text-sm rounded-md border border-blue-200/40 hover:border-blue-400 transition-colors">
           <SelectValue placeholder="Zoom">{zoom}%</SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -151,7 +151,7 @@ export default function CanvasToolbar({
             ];
           })
         }
-        className="h-8 w-8 text-white"
+        className="h-8 w-8"
         aria-label="Zoom In"
       >
         <Plus className="h-4 w-4" />
@@ -164,7 +164,7 @@ export default function CanvasToolbar({
         size="icon"
         onClick={copySelection}
         disabled={!selectedElement}
-        className="h-8 w-8 text-white"
+        className="h-8 w-8"
         aria-label="Copy"
       >
         <Copy className="h-4 w-4" />
@@ -174,7 +174,7 @@ export default function CanvasToolbar({
         size="icon"
         onClick={pasteClipboard}
         disabled={!clipboard}
-        className="h-8 w-8 text-white"
+        className="h-8 w-8"
         aria-label="Paste"
       >
         <Clipboard className="h-4 w-4" />
@@ -187,7 +187,7 @@ export default function CanvasToolbar({
         size="icon"
         onClick={undo}
         disabled={!canUndo}
-        className="h-8 w-8 text-white"
+        className="h-8 w-8"
         aria-label="Undo"
       >
         <RotateCcw className="h-4 w-4" />
@@ -197,7 +197,7 @@ export default function CanvasToolbar({
         size="icon"
         onClick={redo}
         disabled={!canRedo}
-        className="h-8 w-8 text-white"
+        className="h-8 w-8"
         aria-label="Redo"
       >
         <RotateCw className="h-4 w-4" />
@@ -216,7 +216,7 @@ export default function CanvasToolbar({
             resetCanvas();
           }
         }}
-        className="h-8 w-8 text-white ml-2"
+        className="h-8 w-8 ml-2"
         aria-label="Reset Canvas"
       >
         <Eraser className="h-4 w-4" />

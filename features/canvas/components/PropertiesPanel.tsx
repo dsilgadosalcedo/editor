@@ -54,8 +54,8 @@ export default function PropertiesPanel() {
   };
 
   return (
-    <div className="z-20 m-4 p-1 bg-properties-blue/20 dark:bg-white/10 rounded-2xl shadow flex flex-col backdrop-blur-sm">
-      <div className="flex-1 overflow-y-auto bg-white/15 dark:bg-white/10 border border-properties-blue dark:border-white/20 rounded-xl p-4 w-64">
+    <div className="z-20 m-4 p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
+      <div className="flex-1 overflow-y-auto bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl p-4 w-64">
         {!selectedElementData ? (
           <>
             <div className="text-properties-text dark:text-foreground font-medium mb-4">
