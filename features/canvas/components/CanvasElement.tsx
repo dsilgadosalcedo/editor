@@ -30,6 +30,7 @@ interface CanvasElementProps {
     lineHeight?: number;
     horizontalAlign?: "left" | "center" | "right";
     verticalAlign?: "top" | "middle" | "bottom";
+    visible?: boolean;
   };
   onSelect: () => void;
   onMove: (deltaX: number, deltaY: number) => void;
@@ -427,6 +428,11 @@ export default function CanvasElement({
       onResize(fitWidth, fitHeight);
     }
   };
+
+  // Don't render anything if element is hidden
+  if (element.visible === false) {
+    return null;
+  }
 
   return (
     <>

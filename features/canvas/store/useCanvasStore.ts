@@ -26,6 +26,7 @@ export interface CanvasElementData {
   lineHeight?: number;
   horizontalAlign?: "left" | "center" | "right";
   verticalAlign?: "top" | "middle" | "bottom";
+  visible?: boolean;
 }
 
 interface CanvasStoreState {
@@ -75,6 +76,7 @@ interface CanvasStoreState {
   copySelection: () => void;
   pasteClipboard: () => void;
   updateImageSrc: (id: string, src: string) => void;
+  toggleElementVisibility: (id: string) => void;
   // API functions
   saveCanvas: (title?: string) => Promise<string | null>;
   loadCanvas: (id: string) => Promise<boolean>;
@@ -113,6 +115,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         height: 75,
         color: "#3b82f6",
         selected: true,
+        visible: true,
       };
     } else if (type === "text") {
       newElement = {
@@ -131,6 +134,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         lineHeight: 20,
         horizontalAlign: "left",
         verticalAlign: "top",
+        visible: true,
       };
     } else if (type === "image") {
       newElement = {
@@ -143,6 +147,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         src: "https://picsum.photos/150/112?random=" + Date.now(),
         color: "transparent",
         selected: true,
+        visible: true,
       };
     } else {
       return; // Invalid type
@@ -438,6 +443,14 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     set((state) => ({
       elements: state.elements.map((el) =>
         el.id === id && el.type === "image" ? { ...el, src } : el
+      ),
+    })),
+  toggleElementVisibility: (id) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id
+          ? { ...el, visible: el.visible !== false ? false : true }
+          : el
       ),
     })),
   // API functions

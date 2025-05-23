@@ -44,7 +44,8 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     updateFillColor(elementId, e.target.value);
   };
 
-  const toolbarScale = Math.max(0.8, Math.min(1.2, zoom / 100));
+  // Apply inverse scaling to keep toolbar at consistent size regardless of zoom
+  const toolbarScale = 1 / (zoom / 100);
 
   return (
     <div

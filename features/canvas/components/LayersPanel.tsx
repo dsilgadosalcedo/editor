@@ -4,13 +4,21 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Trash2, Eye, EyeOff } from "lucide-react";
 import type { CanvasElementData } from "../store/useCanvasStore";
 import { useCanvasStore } from "../store/useCanvasStore";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const LayersPanel: React.FC = () => {
-  const { elements, selectedElement, selectElement, reorderElements } =
-    useCanvasStore();
+  const {
+    elements,
+    selectedElement,
+    selectElement,
+    reorderElements,
+    deleteElement,
+    toggleElementVisibility,
+  } = useCanvasStore();
   const [open, setOpen] = useState<boolean>(true);
   const dragItemIndex = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -36,6 +44,16 @@ const LayersPanel: React.FC = () => {
     }
     dragItemIndex.current = null;
     setDragOverIndex(null);
+  };
+
+  const handleDeleteElement = (e: React.MouseEvent, elementId: string) => {
+    e.stopPropagation();
+    deleteElement(elementId);
+  };
+
+  const handleToggleVisibility = (e: React.MouseEvent, elementId: string) => {
+    e.stopPropagation();
+    toggleElementVisibility(elementId);
   };
 
   return (
@@ -76,17 +94,37 @@ const LayersPanel: React.FC = () => {
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                   onClick={() => selectElement(el.id)}
-                  className={`flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-colors ${
+                  className={cn(
+                    "flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-colors",
+                    "group",
                     el.id === selectedElement
                       ? "border-storm-slate dark:border-sky-harbor/80"
                       : "border-transparent hover:border-sky-harbor/80 dark:hover:border-storm-slate"
-                  }`}
+                  )}
                 >
                   <span className="text-sm text-properties-text dark:text-foreground">
                     {el.name ||
                       el.type.charAt(0).toUpperCase() + el.type.slice(1)}
                   </span>
-                  <span className="text-xs text-gray-500">{actualIdx}</span>
+                  <div className="flex items-center space-x-1.5 mr-1">
+                    {el.visible !== false ? (
+                      <Eye
+                        onClick={(e) => handleToggleVisibility(e, el.id)}
+                        className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
+                        aria-label="Hide element"
+                      />
+                    ) : (
+                      <EyeOff
+                        onClick={(e) => handleToggleVisibility(e, el.id)}
+                        className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
+                        aria-label="Show element"
+                      />
+                    )}
+                    <Trash2
+                      onClick={(e) => handleDeleteElement(e, el.id)}
+                      className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
+                    />
+                  </div>
                 </li>
               </React.Fragment>
             );
