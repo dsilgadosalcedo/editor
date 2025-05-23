@@ -55,6 +55,7 @@ export default function CanvasElement({
   const textRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [justDragged, setJustDragged] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({
     width: 0,
@@ -86,6 +87,8 @@ export default function CanvasElement({
       return;
     }
 
+    // Reset justDragged state for new interaction
+    setJustDragged(false);
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
   };
@@ -101,6 +104,8 @@ export default function CanvasElement({
       return;
     }
 
+    // Reset justDragged state for new interaction
+    setJustDragged(false);
     setIsDragging(true);
     setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
@@ -196,6 +201,10 @@ export default function CanvasElement({
       if (isDragging) {
         const deltaX = (e.clientX - dragStart.x) / (zoom / 100);
         const deltaY = (e.clientY - dragStart.y) / (zoom / 100);
+
+        // Mark as actually dragged when movement occurs
+        setJustDragged(true);
+
         // Round to integers for clean positions
         onMove(Math.round(deltaX), Math.round(deltaY));
         setDragStart({ x: e.clientX, y: e.clientY });
@@ -263,6 +272,10 @@ export default function CanvasElement({
       if (isDragging) {
         const deltaX = (e.touches[0].clientX - dragStart.x) / (zoom / 100);
         const deltaY = (e.touches[0].clientY - dragStart.y) / (zoom / 100);
+
+        // Mark as actually dragged when movement occurs
+        setJustDragged(true);
+
         // Round to integers for clean positions
         onMove(Math.round(deltaX), Math.round(deltaY));
         setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
@@ -719,18 +732,22 @@ export default function CanvasElement({
         )}
       </div>
       {/* Floating Toolbar */}
-      {element.selected && !(element.type === "text" && isEditing) && (
-        <ElementFloatingToolbar
-          elementId={element.id}
-          elementType={element.type}
-          elementColor={element.color}
-          position={{
-            x: element.x + element.width / 2,
-            y: element.y,
-          }}
-          zoom={zoom}
-        />
-      )}
+      {element.selected &&
+        !(element.type === "text" && isEditing) &&
+        !isDragging &&
+        !isResizing &&
+        !justDragged && (
+          <ElementFloatingToolbar
+            elementId={element.id}
+            elementType={element.type}
+            elementColor={element.color}
+            position={{
+              x: element.x + element.width / 2,
+              y: element.y,
+            }}
+            zoom={zoom}
+          />
+        )}
     </>
   );
 }

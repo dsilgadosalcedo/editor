@@ -9,6 +9,8 @@ import {
   Clipboard,
   Save,
   FolderOpen,
+  Download,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +45,8 @@ export default function CanvasToolbar({
     clipboard,
     saveCanvas,
     loadCanvas,
+    exportCanvas,
+    importCanvas,
   } = useCanvasStore();
 
   const canUndo = past.length > 0;
@@ -70,31 +74,53 @@ export default function CanvasToolbar({
     }
   };
 
+  const handleExport = () => {
+    exportCanvas();
+  };
+
+  const handleImport = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const success = await importCanvas(file);
+        if (!success) {
+          alert(
+            "Failed to import canvas. Please make sure it's a valid canvas file."
+          );
+        }
+      }
+    };
+    input.click();
+  };
+
   return (
     <div className="absolute grid place-items-center bottom-4 z-10 w-full">
       <div className="bg-card/60 w-fit flex items-center gap-2 backdrop-blur-md p-2 rounded-xl shadow-lg border border-sky-harbor/80">
-        {/* Save/Load Controls */}
-        {/* <Button
+        {/* Export/Import Controls */}
+        <Button
           variant="ghost"
           size="icon"
-          onClick={handleSave}
+          onClick={handleExport}
           className="h-8 w-8"
-          aria-label="Save Canvas"
+          aria-label="Export Canvas"
         >
-          <Save className="h-4 w-4" />
+          <Download className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleLoad}
+          onClick={handleImport}
           className="h-8 w-8"
-          aria-label="Load Canvas"
+          aria-label="Import Canvas"
         >
-          <FolderOpen className="h-4 w-4" />
-        </Button> */}
+          <Upload className="h-4 w-4" />
+        </Button>
 
         {/* Separator */}
-        {/* <div className="w-px h-6 bg-blue-200/40 mx-1" /> */}
+        <div className="w-px h-6 bg-blue-200/40 mx-1" />
 
         {/* Zoom Controls */}
         <Button

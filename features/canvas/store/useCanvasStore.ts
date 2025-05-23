@@ -77,6 +77,9 @@ interface CanvasStoreState {
   pasteClipboard: () => void;
   updateImageSrc: (id: string, src: string) => void;
   toggleElementVisibility: (id: string) => void;
+  // File operations
+  exportCanvas: (filename?: string) => void;
+  importCanvas: (file: File) => Promise<boolean>;
   // API functions
   saveCanvas: (title?: string) => Promise<string | null>;
   loadCanvas: (id: string) => Promise<boolean>;
@@ -453,6 +456,104 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           : el
       ),
     })),
+  // File operations
+  exportCanvas: (filename?: string) => {
+    const { elements, artboardDimensions } = get();
+
+    const canvasData = {
+      elements,
+      artboardDimensions,
+      exportedAt: new Date().toISOString(),
+      version: "1.0",
+    };
+
+    const dataStr = JSON.stringify(canvasData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(dataBlob);
+    link.download =
+      filename ||
+      `canvas-export-${new Date().toISOString().split("T")[0]}.json`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(link.href);
+  },
+  importCanvas: async (file: File) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const canvasData = JSON.parse(content);
+
+          // Validate the imported data structure
+          if (!canvasData.elements || !Array.isArray(canvasData.elements)) {
+            console.error(
+              "Invalid canvas data: missing or invalid elements array"
+            );
+            resolve(false);
+            return;
+          }
+
+          if (
+            !canvasData.artboardDimensions ||
+            typeof canvasData.artboardDimensions.width !== "number" ||
+            typeof canvasData.artboardDimensions.height !== "number"
+          ) {
+            console.error(
+              "Invalid canvas data: missing or invalid artboard dimensions"
+            );
+            resolve(false);
+            return;
+          }
+
+          const state = get();
+          const { addToHistory } = get();
+
+          // Generate new IDs for imported elements to avoid conflicts
+          const importedElements = canvasData.elements.map(
+            (el: CanvasElementData) => ({
+              ...el,
+              id: `${el.type}-${Date.now()}-${Math.random()
+                .toString(36)
+                .substr(2, 9)}`,
+              selected: false, // Don't select imported elements
+            })
+          );
+
+          // Add imported elements to existing elements instead of replacing
+          const updatedElements = [
+            ...state.elements.map((el) => ({ ...el, selected: false })), // Deselect current elements
+            ...importedElements,
+          ];
+
+          // Keep current artboard dimensions (don't change them)
+          set({
+            ...addToHistory(),
+            elements: updatedElements,
+            selectedElement: null,
+          });
+
+          resolve(true);
+        } catch (error) {
+          console.error("Error parsing canvas file:", error);
+          resolve(false);
+        }
+      };
+
+      reader.onerror = () => {
+        console.error("Error reading file");
+        resolve(false);
+      };
+
+      reader.readAsText(file);
+    });
+  },
   // API functions
   saveCanvas: async (title?: string) => {
     const { elements, artboardDimensions } = get();
