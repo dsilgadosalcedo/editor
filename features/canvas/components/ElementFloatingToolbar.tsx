@@ -46,15 +46,18 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
 
   // Apply inverse scaling to keep toolbar at consistent size regardless of zoom
   const toolbarScale = 1 / (zoom / 100);
+  // Scale the offset distance to maintain consistent visual spacing
+  // 24 is the height of the toolbar, 8 is the padding, 2+2=4 is the borders
+  const scaledYOffset = (24 + 8 + 2 + 2 + 16) * (100 / zoom);
 
   return (
     <div
       className="absolute pointer-events-auto z-50"
       style={{
         left: position.x,
-        top: position.y - 50,
+        top: position.y - scaledYOffset,
         transform: `scale(${toolbarScale}) translate(-50%, 0)`,
-        transformOrigin: "top center",
+        transformOrigin: "top left",
       }}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
