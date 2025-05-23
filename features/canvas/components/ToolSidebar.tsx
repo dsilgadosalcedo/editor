@@ -6,6 +6,7 @@ import type { ToolType, ElementType } from "../store/useCanvasStore";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
 import { useCanvasStore } from "../store/useCanvasStore";
+import { Separator } from "@/components/ui/separator";
 
 interface ToolSidebarProps {
   selectedTool: ToolType;
@@ -39,7 +40,9 @@ export default function ToolSidebar({
           />
         </Button>
         <ThemeToggle />
-        <div className="w-full h-px bg-properties-blue/30 dark:bg-slate-100/30 my-1"></div>
+
+        <Separator />
+
         <ToolButton onClick={() => addElement("text")}>
           <ToolIcon icon={Type} />
         </ToolButton>
@@ -53,7 +56,24 @@ export default function ToolSidebar({
         <ToolButton onClick={() => addElement("image")}>
           <ToolIcon icon={ImageIcon} />
         </ToolButton>
-        <div className="w-full h-px bg-properties-blue/30 dark:bg-slate-100/30 my-1"></div>
+
+        <Separator />
+
+        <ToolButton
+          className={cn(
+            selectedTool === "hand" &&
+              "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
+          )}
+          onClick={() => {
+            onSelectTool(selectedTool === "hand" ? null : "hand");
+            clearSelection();
+          }}
+        >
+          <ToolIcon
+            icon={Hand}
+            className={cn(layersOpen && "text-properties-gold")}
+          />
+        </ToolButton>
         <ToolButton
           className={cn(
             layersOpen &&

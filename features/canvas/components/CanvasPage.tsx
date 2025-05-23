@@ -9,6 +9,7 @@ import LayersPanel from "./LayersPanel";
 import CanvasToolbar from "./CanvasToolbar";
 import CanvasViewport from "./CanvasViewport";
 import KeyboardShortcuts from "./KeyboardShortcuts";
+import DragDropOverlay from "./DragDropOverlay";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
 import { useCanvasStore } from "../store/useCanvasStore";
 import type { ToolType } from "../store/useCanvasStore";
@@ -37,6 +38,7 @@ export default function CanvasPage() {
     clearSelection,
     moveElementUp,
     moveElementDown,
+    importCanvas,
   } = useCanvasStore();
 
   // Keyboard shortcuts: Full professional shortcuts support
@@ -226,6 +228,23 @@ export default function CanvasPage() {
     });
   };
 
+  // Handle drag and drop import
+  const handleFileDrop = async (file: File) => {
+    try {
+      const result = await importCanvas(file);
+      if (!result.success) {
+        alert(
+          "Failed to import canvas. Please make sure it's a valid canvas file."
+        );
+      }
+    } catch (error) {
+      console.error("Error importing canvas:", error);
+      alert(
+        "Failed to import canvas. Please make sure it's a valid canvas file."
+      );
+    }
+  };
+
   return (
     <ColorPickerProvider>
       <div className="bg-background flex flex-col h-screen w-full">
@@ -269,6 +288,9 @@ export default function CanvasPage() {
 
         {/* Keyboard Shortcuts Overlay */}
         <KeyboardShortcuts />
+
+        {/* Drag and Drop Overlay */}
+        <DragDropOverlay onFileDrop={handleFileDrop} />
       </div>
     </ColorPickerProvider>
   );

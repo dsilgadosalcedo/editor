@@ -88,7 +88,9 @@ interface CanvasStoreState {
   toggleElementVisibility: (id: string) => void;
   // File operations
   exportCanvas: (filename?: string) => void;
-  importCanvas: (file: File) => Promise<boolean>;
+  importCanvas: (
+    file: File
+  ) => Promise<{ success: boolean; importedCount?: number }>;
   // API functions
   saveCanvas: (title?: string) => Promise<string | null>;
   loadCanvas: (id: string) => Promise<boolean>;
@@ -542,8 +544,13 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   exportCanvas: (filename?: string) => {
     const { elements, artboardDimensions } = get();
 
+    // Clean elements by removing id and selected properties
+    const cleanElements = elements.map(
+      ({ id, selected, ...element }) => element
+    );
+
     const canvasData = {
-      elements,
+      elements: cleanElements,
       artboardDimensions,
       exportedAt: new Date().toISOString(),
       version: "1.0",
@@ -578,7 +585,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
             console.error(
               "Invalid canvas data: missing or invalid elements array"
             );
-            resolve(false);
+            resolve({ success: false });
             return;
           }
 
@@ -590,7 +597,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
             console.error(
               "Invalid canvas data: missing or invalid artboard dimensions"
             );
-            resolve(false);
+            resolve({ success: false });
             return;
           }
 
@@ -599,13 +606,21 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
           // Generate new IDs for imported elements to avoid conflicts
           const importedElements = canvasData.elements.map(
-            (el: CanvasElementData) => ({
-              ...el,
-              id: `${el.type}-${Date.now()}-${Math.random()
+            (el: CanvasElementData) => {
+              const newId = `${el.type}-${Date.now()}-${Math.random()
                 .toString(36)
-                .substr(2, 9)}`,
-              selected: false, // Don't select imported elements
-            })
+                .substr(2, 9)}`;
+              return {
+                ...el,
+                id: newId,
+                selected: true, // Auto-select imported elements
+              };
+            }
+          );
+
+          // Get the IDs of imported elements for selection
+          const importedElementIds = importedElements.map(
+            (el: CanvasElementData) => el.id
           );
 
           // Add imported elements to existing elements instead of replacing
@@ -618,19 +633,19 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           set({
             ...addToHistory(),
             elements: updatedElements,
-            selectedElements: [],
+            selectedElements: importedElementIds, // Auto-select all imported elements
           });
 
-          resolve(true);
+          resolve({ success: true, importedCount: importedElements.length });
         } catch (error) {
           console.error("Error parsing canvas file:", error);
-          resolve(false);
+          resolve({ success: false });
         }
       };
 
       reader.onerror = () => {
         console.error("Error reading file");
-        resolve(false);
+        resolve({ success: false });
       };
 
       reader.readAsText(file);
