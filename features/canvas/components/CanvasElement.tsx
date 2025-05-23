@@ -39,6 +39,8 @@ interface CanvasElementProps {
   isPanMode?: boolean;
   zoom: number;
   onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
+  onUpdateFontSize?: (id: string, fontSize: number) => void;
+  onUpdateLineHeight?: (id: string, lineHeight: number) => void;
   isMultipleSelected?: boolean;
 }
 
@@ -51,6 +53,8 @@ export default function CanvasElement({
   isPanMode = false,
   zoom,
   onUpdateCornerRadius,
+  onUpdateFontSize,
+  onUpdateLineHeight,
   isMultipleSelected = false,
 }: CanvasElementProps) {
   const elementRef = useRef<HTMLDivElement>(null);
@@ -71,6 +75,15 @@ export default function CanvasElement({
     x: 0,
     y: 0,
     cornerRadius: 0,
+  });
+  const [isFontScaling, setIsFontScaling] = useState(false);
+  const [fontScaleStart, setFontScaleStart] = useState({
+    x: 0,
+    y: 0,
+    fontSize: 0,
+    lineHeight: 0,
+    width: 0,
+    height: 0,
   });
   const [resizeDir, setResizeDir] = useState<string | null>(null);
 
@@ -442,6 +455,100 @@ export default function CanvasElement({
     zoom,
   ]);
 
+  // Handle font scaling drag start
+  const handleFontScaleDragStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsFontScaling(true);
+    setFontScaleStart({
+      x: e.clientX,
+      y: e.clientY,
+      fontSize: element.fontSize || 16,
+      lineHeight: element.lineHeight || 20,
+      width: element.width,
+      height: element.height,
+    });
+  };
+
+  // Handle font scaling drag move
+  useEffect(() => {
+    if (!isFontScaling) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = (e.clientX - fontScaleStart.x) / (zoom / 100);
+      const dy = (e.clientY - fontScaleStart.y) / (zoom / 100);
+
+      // Use diagonal distance to determine scale factor
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const scaleFactor = distance > 0 ? (dx + dy) / 100 : 0;
+
+      let newFontSize = Math.max(8, fontScaleStart.fontSize + scaleFactor * 20);
+      let newLineHeight = Math.max(
+        10,
+        fontScaleStart.lineHeight + scaleFactor * 24
+      );
+
+      // Round to reasonable increments
+      newFontSize = Math.round(newFontSize);
+      newLineHeight = Math.round(newLineHeight);
+
+      // Calculate font scale ratio to apply to dimensions
+      const fontScaleRatio = newFontSize / fontScaleStart.fontSize;
+
+      // Scale the text box dimensions proportionally from original size
+      const newWidth = Math.max(
+        20,
+        Math.round(fontScaleStart.width * fontScaleRatio)
+      );
+      const newHeight = Math.max(
+        20,
+        Math.round(fontScaleStart.height * fontScaleRatio)
+      );
+
+      // Update font properties
+      if (
+        element.fontSize !== newFontSize &&
+        typeof onUpdateFontSize === "function"
+      ) {
+        onUpdateFontSize(element.id, newFontSize);
+      }
+
+      if (
+        element.lineHeight !== newLineHeight &&
+        typeof onUpdateLineHeight === "function"
+      ) {
+        onUpdateLineHeight(element.id, newLineHeight);
+      }
+
+      // Update dimensions to accommodate the scaled text
+      if (
+        (element.width !== newWidth || element.height !== newHeight) &&
+        typeof onResize === "function"
+      ) {
+        onResize(newWidth, newHeight);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsFontScaling(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [
+    isFontScaling,
+    fontScaleStart,
+    element,
+    onUpdateFontSize,
+    onUpdateLineHeight,
+    onResize,
+    zoom,
+  ]);
+
   // Double-click resize handle to fit text
   const handleResizeDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -585,155 +692,208 @@ export default function CanvasElement({
                 borderWidth: 1 * (100 / zoom),
               }}
             />
-            {/* Resize handles - show for all selected elements */}
-            {/* top-left */}
-            <div
-              className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
-              style={{
-                left: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                top: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                transform: `scale(${100 / zoom})`,
-                transformOrigin: "center",
-              }}
-              onMouseDown={(e) => handleResizeStart("nw", e)}
-              onTouchStart={(e) => handleResizeTouchStart("nw", e)}
-              onDoubleClick={handleResizeDoubleClick}
-            />
-            {/* top-center */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
-              style={{
-                top: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                transform: `scale(${100 / zoom})`,
-                transformOrigin: "center",
-              }}
-              onMouseDown={(e) => handleResizeStart("n", e)}
-              onTouchStart={(e) => handleResizeTouchStart("n", e)}
-              onDoubleClick={handleResizeDoubleClick}
-            />
-            {/* top-right */}
-            <div
-              className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
-              style={{
-                right: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                top: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                transform: `scale(${100 / zoom})`,
-                transformOrigin: "center",
-              }}
-              onMouseDown={(e) => handleResizeStart("ne", e)}
-              onTouchStart={(e) => handleResizeTouchStart("ne", e)}
-              onDoubleClick={handleResizeDoubleClick}
-            />
-            {/* middle-left */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
-              style={{
-                left: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                transform: `scale(${100 / zoom})`,
-                transformOrigin: "center",
-              }}
-              onMouseDown={(e) => handleResizeStart("w", e)}
-              onTouchStart={(e) => handleResizeTouchStart("w", e)}
-              onDoubleClick={handleResizeDoubleClick}
-            />
-            {/* middle-right */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
-              style={{
-                right: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                transform: `scale(${100 / zoom})`,
-                transformOrigin: "center",
-              }}
-              onMouseDown={(e) => handleResizeStart("e", e)}
-              onTouchStart={(e) => handleResizeTouchStart("e", e)}
-              onDoubleClick={handleResizeDoubleClick}
-            />
-            {/* bottom-left */}
-            <div
-              className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
-              style={{
-                left: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                bottom: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                transform: `scale(${100 / zoom})`,
-                transformOrigin: "center",
-              }}
-              onMouseDown={(e) => handleResizeStart("sw", e)}
-              onTouchStart={(e) => handleResizeTouchStart("sw", e)}
-              onDoubleClick={handleResizeDoubleClick}
-            />
-            {/* bottom-center */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
-              style={{
-                bottom: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                transform: `scale(${100 / zoom})`,
-                transformOrigin: "center",
-              }}
-              onMouseDown={(e) => handleResizeStart("s", e)}
-              onTouchStart={(e) => handleResizeTouchStart("s", e)}
-              onDoubleClick={handleResizeDoubleClick}
-            />
-            {/* bottom-right */}
-            <div
-              className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
-              style={{
-                right: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                bottom: `-${
-                  4 +
-                  1 * (100 / zoom) +
-                  (element.type !== "image" ? element.borderWidth ?? 0 : 0)
-                }px`,
-                transform: `scale(${100 / zoom})`,
-                transformOrigin: "center",
-              }}
-              onMouseDown={(e) => handleResizeStart("se", e)}
-              onTouchStart={(e) => handleResizeTouchStart("se", e)}
-              onDoubleClick={handleResizeDoubleClick}
-            />
+            {/* Resize handles - show different handles based on element type */}
+            {element.type === "text" ? (
+              <>
+                {/* Text elements: Only 3 handles like Apple's FreeForm */}
+                {/* middle-right for width adjustment */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
+                  style={{
+                    right: `-${
+                      4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("e", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("e", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+                {/* bottom-center for height adjustment */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
+                  style={{
+                    bottom: `-${
+                      4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("s", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("s", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+                {/* bottom-right font scale handle (special warm/green colored handle) */}
+                <div
+                  className="absolute w-3 h-3 hover:scale-125 transition-all duration-100 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-nwse-resize z-20"
+                  style={{
+                    right: `-${
+                      8 + 1 * (100 / zoom) + (element.borderWidth ?? 0)
+                    }px`,
+                    bottom: `-${
+                      8 + 1 * (100 / zoom) + (element.borderWidth ?? 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={handleFontScaleDragStart}
+                  title="Drag to scale text size"
+                />
+              </>
+            ) : (
+              <>
+                {/* Rectangle and Image elements: All 8 handles */}
+                {/* top-left */}
+                <div
+                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
+                  style={{
+                    left: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    top: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("nw", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("nw", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+                {/* top-center */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
+                  style={{
+                    top: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("n", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("n", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+                {/* top-right */}
+                <div
+                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
+                  style={{
+                    right: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    top: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("ne", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("ne", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+                {/* middle-left */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
+                  style={{
+                    left: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("w", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("w", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+                {/* middle-right */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
+                  style={{
+                    right: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("e", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("e", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+                {/* bottom-left */}
+                <div
+                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
+                  style={{
+                    left: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    bottom: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("sw", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("sw", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+                {/* bottom-center */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
+                  style={{
+                    bottom: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("s", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("s", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+                {/* bottom-right */}
+                <div
+                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
+                  style={{
+                    right: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    bottom: `-${
+                      4 +
+                      1 * (100 / zoom) +
+                      (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "center",
+                  }}
+                  onMouseDown={(e) => handleResizeStart("se", e)}
+                  onTouchStart={(e) => handleResizeTouchStart("se", e)}
+                  onDoubleClick={handleResizeDoubleClick}
+                />
+              </>
+            )}
             {/* Corner radius handle for rectangles and images */}
             {(element.type === "rectangle" || element.type === "image") && (
               <div

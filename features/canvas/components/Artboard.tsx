@@ -19,6 +19,8 @@ interface ArtboardProps {
   artboardRef: React.RefObject<HTMLDivElement | null>;
   canvasContainerRef: React.RefObject<HTMLDivElement | null>;
   onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
+  onUpdateFontSize?: (id: string, fontSize: number) => void;
+  onUpdateLineHeight?: (id: string, lineHeight: number) => void;
 }
 
 const Artboard: React.FC<ArtboardProps> = ({
@@ -39,6 +41,8 @@ const Artboard: React.FC<ArtboardProps> = ({
   artboardRef,
   canvasContainerRef,
   onUpdateCornerRadius,
+  onUpdateFontSize,
+  onUpdateLineHeight,
 }) => {
   return (
     <div
@@ -120,6 +124,8 @@ const Artboard: React.FC<ArtboardProps> = ({
             isPanMode={selectedTool === "hand"}
             zoom={zoom}
             onUpdateCornerRadius={onUpdateCornerRadius}
+            onUpdateFontSize={onUpdateFontSize}
+            onUpdateLineHeight={onUpdateLineHeight}
             isMultipleSelected={selectedElements.length > 1}
           />
         ))}
