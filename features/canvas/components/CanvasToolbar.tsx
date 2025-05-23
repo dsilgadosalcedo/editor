@@ -34,7 +34,7 @@ export default function CanvasToolbar({
   onZoomToSelection,
 }: CanvasToolbarProps) {
   const {
-    selectedElement,
+    selectedElements,
     past,
     future,
     undo,
@@ -160,7 +160,7 @@ export default function CanvasToolbar({
             <SelectItem
               value="selection"
               className="text-blue-500 font-semibold rounded-none border-t border-blue-100 mt-1"
-              disabled={!selectedElement}
+              disabled={selectedElements.length === 0}
             >
               Zoom to Selection
             </SelectItem>

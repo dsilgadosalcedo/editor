@@ -25,7 +25,7 @@ export default function CanvasPage() {
   // Zustand store
   const {
     elements,
-    selectedElement,
+    selectedElements,
     artboardDimensions,
     deleteElement,
     undo,
@@ -86,8 +86,13 @@ export default function CanvasPage() {
         // Select All with Ctrl/Cmd+A (only when not typing in inputs)
         if (key === "a" && !isTyping) {
           e.preventDefault();
-          // For now, just clear selection (could implement select all elements later)
-          clearSelection();
+          // Select all elements
+          const allElementIds = elements.map((el) => el.id);
+          if (allElementIds.length > 0) {
+            // Use selectMultipleElements to select all
+            const { selectMultipleElements } = useCanvasStore.getState();
+            selectMultipleElements(allElementIds);
+          }
           return;
         }
 
@@ -103,7 +108,7 @@ export default function CanvasPage() {
         }
 
         // Copy with Ctrl/Cmd+C (only when not typing in inputs and element is selected)
-        if (key === "c" && selectedElement && !isTyping) {
+        if (key === "c" && selectedElements.length > 0 && !isTyping) {
           e.preventDefault();
           copySelection();
           return;
@@ -116,17 +121,17 @@ export default function CanvasPage() {
           return;
         }
 
-        // Move element up one layer with Ctrl/Cmd+ArrowUp (only when not typing and element is selected)
-        if (key === "arrowup" && selectedElement && !isTyping) {
+        // Move element up one layer with Ctrl/Cmd+ArrowUp (only when not typing and single element is selected)
+        if (key === "arrowup" && selectedElements.length === 1 && !isTyping) {
           e.preventDefault();
-          moveElementUp(selectedElement);
+          moveElementUp(selectedElements[0]);
           return;
         }
 
-        // Move element down one layer with Ctrl/Cmd+ArrowDown (only when not typing and element is selected)
-        if (key === "arrowdown" && selectedElement && !isTyping) {
+        // Move element down one layer with Ctrl/Cmd+ArrowDown (only when not typing and single element is selected)
+        if (key === "arrowdown" && selectedElements.length === 1 && !isTyping) {
           e.preventDefault();
-          moveElementDown(selectedElement);
+          moveElementDown(selectedElements[0]);
           return;
         }
 
@@ -136,7 +141,7 @@ export default function CanvasPage() {
 
       // Handle non-modifier key shortcuts (lower priority)
 
-      // Delete selected element on Backspace (when not typing in inputs or contentEditable)
+      // Delete selected elements on Backspace (when not typing in inputs or contentEditable)
       if (
         e.key === "Backspace" &&
         !e.ctrlKey &&
@@ -144,10 +149,11 @@ export default function CanvasPage() {
         !e.shiftKey &&
         !e.altKey &&
         !isTyping &&
-        selectedElement
+        selectedElements.length > 0
       ) {
         e.preventDefault();
-        deleteElement(selectedElement);
+        // Delete all selected elements
+        selectedElements.forEach((id) => deleteElement(id));
         return;
       }
 
@@ -171,7 +177,7 @@ export default function CanvasPage() {
     undo,
     redo,
     deleteElement,
-    selectedElement,
+    selectedElements,
     copySelection,
     pasteClipboard,
     saveCanvas,
@@ -199,8 +205,8 @@ export default function CanvasPage() {
 
   // Helper: Zoom to fit selection
   const handleZoomToSelection = () => {
-    if (!selectedElement) return;
-    const el = elements.find((el) => el.id === selectedElement);
+    if (selectedElements.length === 0) return;
+    const el = elements.find((el) => el.id === selectedElements[0]);
     if (!el) return;
     // Get artboard and canvas sizes
     const artboardW = artboardDimensions.width;

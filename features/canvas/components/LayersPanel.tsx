@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 const LayersPanel: React.FC = () => {
   const {
     elements,
-    selectedElement,
+    selectedElements,
     selectElement,
     reorderElements,
     deleteElement,
@@ -93,11 +93,14 @@ const LayersPanel: React.FC = () => {
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  onClick={() => selectElement(el.id)}
+                  onClick={(e) => {
+                    const isMultiSelectKey = e.ctrlKey || e.metaKey;
+                    selectElement(el.id, isMultiSelectKey);
+                  }}
                   className={cn(
                     "flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-colors",
                     "group",
-                    el.id === selectedElement
+                    selectedElements.includes(el.id)
                       ? "border-storm-slate dark:border-sky-harbor/80"
                       : "border-transparent hover:border-sky-harbor/80 dark:hover:border-storm-slate"
                   )}

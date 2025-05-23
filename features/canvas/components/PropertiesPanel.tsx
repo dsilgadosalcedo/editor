@@ -21,8 +21,9 @@ export default function PropertiesPanel() {
   const {
     artboardDimensions,
     setArtboardDimensions,
-    selectedElement,
+    selectedElements,
     getSelectedElementData,
+    hasMultipleSelection,
     updateTextContent,
     resizeElement,
     moveElement,
@@ -55,13 +56,27 @@ export default function PropertiesPanel() {
   return (
     <div className="z-20 m-4 p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
       <div className="flex-1 overflow-y-auto bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl p-4 w-64">
-        {!selectedElementData ? (
+        {selectedElements.length === 0 ? (
           <ArtboardProperties
             dimensions={artboardDimensions}
             onWidthChange={handleUpdateArtboardWidth}
             onHeightChange={handleUpdateArtboardHeight}
           />
-        ) : (
+        ) : hasMultipleSelection() ? (
+          <div className="space-y-4">
+            <PropertySection>
+              <PropertyTitle>Multiple Selection</PropertyTitle>
+              <div className="text-sm text-muted-foreground">
+                {selectedElements.length} elements selected
+              </div>
+              <div className="text-xs text-muted-foreground mt-2">
+                Individual properties are not available when multiple elements
+                are selected. You can still move and delete the selected
+                elements.
+              </div>
+            </PropertySection>
+          </div>
+        ) : selectedElementData ? (
           <div className="space-y-6">
             {selectedElementData.type === "text" ? (
               <>
@@ -361,7 +376,7 @@ export default function PropertiesPanel() {
               </>
             )}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

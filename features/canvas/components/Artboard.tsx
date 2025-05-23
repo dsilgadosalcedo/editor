@@ -7,9 +7,12 @@ interface ArtboardProps {
   transformOrigin: string;
   showGuides: boolean;
   elements: any[];
-  onSelectElement: (id: string | null) => void;
+  selectedElements: string[];
+  onSelectElement: (id: string | null, addToSelection?: boolean) => void;
   onMoveElement: (id: string, dx: number, dy: number) => void;
+  onMoveSelectedElements: (dx: number, dy: number) => void;
   onResizeElement: (id: string, w: number, h: number) => void;
+  onResizeSelectedElements: (baseId: string, w: number, h: number) => void;
   onTextChange: (id: string, content: string) => void;
   selectedTool: string | null;
   canvasPosition: { x: number; y: number };
@@ -24,9 +27,12 @@ const Artboard: React.FC<ArtboardProps> = ({
   transformOrigin,
   showGuides,
   elements,
+  selectedElements,
   onSelectElement,
   onMoveElement,
+  onMoveSelectedElements,
   onResizeElement,
+  onResizeSelectedElements,
   onTextChange,
   selectedTool,
   canvasPosition,
@@ -83,13 +89,38 @@ const Artboard: React.FC<ArtboardProps> = ({
           <CanvasElement
             key={element.id}
             element={element}
-            onSelect={() => onSelectElement(element.id)}
-            onMove={(dx, dy) => onMoveElement(element.id, dx, dy)}
-            onResize={(w, h) => onResizeElement(element.id, w, h)}
+            onSelect={(addToSelection) =>
+              onSelectElement(element.id, addToSelection)
+            }
+            onMove={(dx, dy) => {
+              if (
+                selectedElements.length > 1 &&
+                selectedElements.includes(element.id)
+              ) {
+                // Move all selected elements together when dragging a selected element
+                onMoveSelectedElements(dx, dy);
+              } else {
+                // Move single element
+                onMoveElement(element.id, dx, dy);
+              }
+            }}
+            onResize={(w, h) => {
+              if (
+                selectedElements.length > 1 &&
+                selectedElements.includes(element.id)
+              ) {
+                // Resize all selected elements proportionally
+                onResizeSelectedElements(element.id, w, h);
+              } else {
+                // Resize single element
+                onResizeElement(element.id, w, h);
+              }
+            }}
             onTextChange={(content) => onTextChange(element.id, content)}
             isPanMode={selectedTool === "hand"}
             zoom={zoom}
             onUpdateCornerRadius={onUpdateCornerRadius}
+            isMultipleSelected={selectedElements.length > 1}
           />
         ))}
         {showGuides && (

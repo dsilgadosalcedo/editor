@@ -31,7 +31,7 @@ export interface CanvasElementData {
 
 interface CanvasStoreState {
   elements: CanvasElementData[];
-  selectedElement: string | null;
+  selectedElements: string[];
   artboardDimensions: { width: number; height: number };
   past: CanvasElementData[][];
   future: CanvasElementData[][];
@@ -44,9 +44,16 @@ interface CanvasStoreState {
   // Actions
   setArtboardDimensions: (dims: { width: number; height: number }) => void;
   addElement: (type: ElementType) => void;
-  selectElement: (id: string) => void;
+  selectElement: (id: string, addToSelection?: boolean) => void;
+  selectMultipleElements: (ids: string[]) => void;
   moveElement: (id: string, dx: number, dy: number) => void;
+  moveSelectedElements: (dx: number, dy: number) => void;
   resizeElement: (id: string, width: number, height: number) => void;
+  resizeSelectedElements: (
+    baseId: string,
+    newWidth: number,
+    newHeight: number
+  ) => void;
   updateTextContent: (id: string, content: string) => void;
   resetCanvas: () => void;
   undo: () => void;
@@ -73,6 +80,8 @@ interface CanvasStoreState {
   updateVerticalAlign: (id: string, align: "top" | "middle" | "bottom") => void;
   clearSelection: () => void;
   getSelectedElementData: () => CanvasElementData | undefined;
+  getSelectedElementsData: () => CanvasElementData[];
+  hasMultipleSelection: () => boolean;
   copySelection: () => void;
   pasteClipboard: () => void;
   updateImageSrc: (id: string, src: string) => void;
@@ -88,7 +97,7 @@ interface CanvasStoreState {
 
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   elements: [],
-  selectedElement: null,
+  selectedElements: [],
   artboardDimensions: { width: 800, height: 600 },
   past: [],
   future: [],
@@ -162,18 +171,56 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ...state.elements.map((el) => ({ ...el, selected: false })),
         newElement,
       ],
-      selectedElement: newElement.id,
+      selectedElements: [newElement.id],
     }));
   },
-  selectElement: (id) =>
+  selectElement: (id, addToSelection = false) =>
+    set((state) => {
+      if (addToSelection) {
+        // Add to or remove from selection
+        const isAlreadySelected = state.selectedElements.includes(id);
+        const newSelectedElements = isAlreadySelected
+          ? state.selectedElements.filter((elId) => elId !== id)
+          : [...state.selectedElements, id];
+
+        return {
+          elements: state.elements.map((el) => ({
+            ...el,
+            selected: newSelectedElements.includes(el.id),
+          })),
+          selectedElements: newSelectedElements,
+        };
+      } else {
+        // Single selection
+        return {
+          elements: state.elements.map((el) => ({
+            ...el,
+            selected: el.id === id,
+          })),
+          selectedElements: [id],
+        };
+      }
+    }),
+  selectMultipleElements: (ids) =>
     set((state) => ({
-      elements: state.elements.map((el) => ({ ...el, selected: el.id === id })),
-      selectedElement: id,
+      elements: state.elements.map((el) => ({
+        ...el,
+        selected: ids.includes(el.id),
+      })),
+      selectedElements: ids,
     })),
   moveElement: (id, dx, dy) =>
     set((state) => ({
       elements: state.elements.map((el) =>
         el.id === id ? { ...el, x: el.x + dx, y: el.y + dy } : el
+      ),
+    })),
+  moveSelectedElements: (dx, dy) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        state.selectedElements.includes(el.id)
+          ? { ...el, x: el.x + dx, y: el.y + dy }
+          : el
       ),
     })),
   resizeElement: (id, width, height) =>
@@ -182,6 +229,29 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         el.id === id ? { ...el, width, height } : el
       ),
     })),
+  resizeSelectedElements: (baseId, newWidth, newHeight) =>
+    set((state) => {
+      const baseElement = state.elements.find((el) => el.id === baseId);
+      if (!baseElement || !state.selectedElements.includes(baseId)) {
+        return state;
+      }
+
+      const scaleX = newWidth / baseElement.width;
+      const scaleY = newHeight / baseElement.height;
+
+      return {
+        elements: state.elements.map((el) => {
+          if (state.selectedElements.includes(el.id)) {
+            return {
+              ...el,
+              width: Math.max(20, Math.round(el.width * scaleX)),
+              height: Math.max(20, Math.round(el.height * scaleY)),
+            };
+          }
+          return el;
+        }),
+      };
+    }),
   updateTextContent: (id, content) =>
     set((state) => ({
       elements: state.elements.map((el) =>
@@ -191,7 +261,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   resetCanvas: () =>
     set(() => ({
       elements: [],
-      selectedElement: null,
+      selectedElements: [],
     })),
   undo: () =>
     set((state) => {
@@ -201,7 +271,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         past: state.past.slice(0, state.past.length - 1),
         future: [state.elements, ...state.future],
         elements: previous,
-        selectedElement: null,
+        selectedElements: [],
       };
     }),
   redo: () =>
@@ -212,7 +282,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         past: [...state.past, state.elements],
         future: state.future.slice(1),
         elements: next,
-        selectedElement: null,
+        selectedElements: [],
       };
     }),
   reorderElements: (oldIndex, newIndex) =>
@@ -334,7 +404,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       return {
         ...addToHistory(),
         elements: state.elements.filter((el) => el.id !== id),
-        selectedElement: null,
+        selectedElements: state.selectedElements.filter((elId) => elId !== id),
       };
     }),
   updateName: (id, name) =>
@@ -410,17 +480,29 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   clearSelection: () =>
     set((state) => ({
       elements: state.elements.map((el) => ({ ...el, selected: false })),
-      selectedElement: null,
+      selectedElements: [],
     })),
   getSelectedElementData: () => {
-    const { elements, selectedElement } = get();
-    return elements.find((el) => el.id === selectedElement);
+    const { elements, selectedElements } = get();
+    return selectedElements.length === 1
+      ? elements.find((el) => el.id === selectedElements[0])
+      : undefined;
+  },
+  getSelectedElementsData: () => {
+    const { elements, selectedElements } = get();
+    return elements.filter((el) => selectedElements.includes(el.id));
+  },
+  hasMultipleSelection: () => {
+    const { selectedElements } = get();
+    return selectedElements.length > 1;
   },
   copySelection: () =>
     set((state) => {
-      const selected = state.elements.find(
-        (el) => el.id === state.selectedElement
-      );
+      // For now, only copy the first selected element
+      const selected =
+        state.selectedElements.length > 0
+          ? state.elements.find((el) => el.id === state.selectedElements[0])
+          : null;
       return { clipboard: selected ? { ...selected } : null };
     }),
   pasteClipboard: () =>
@@ -439,7 +521,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           ...state.elements.map((el) => ({ ...el, selected: false })),
           newElement,
         ],
-        selectedElement: newId,
+        selectedElements: [newId],
       };
     }),
   updateImageSrc: (id, src) =>
@@ -536,7 +618,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           set({
             ...addToHistory(),
             elements: updatedElements,
-            selectedElement: null,
+            selectedElements: [],
           });
 
           resolve(true);
@@ -597,7 +679,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       set({
         elements,
         artboardDimensions,
-        selectedElement: null,
+        selectedElements: [],
         past: [],
         future: [],
       });

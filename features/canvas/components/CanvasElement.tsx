@@ -32,13 +32,14 @@ interface CanvasElementProps {
     verticalAlign?: "top" | "middle" | "bottom";
     visible?: boolean;
   };
-  onSelect: () => void;
+  onSelect: (addToSelection?: boolean) => void;
   onMove: (deltaX: number, deltaY: number) => void;
   onResize: (width: number, height: number) => void;
   onTextChange: (content: string) => void;
   isPanMode?: boolean;
   zoom: number;
   onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
+  isMultipleSelected?: boolean;
 }
 
 export default function CanvasElement({
@@ -50,6 +51,7 @@ export default function CanvasElement({
   isPanMode = false,
   zoom,
   onUpdateCornerRadius,
+  isMultipleSelected = false,
 }: CanvasElementProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -81,7 +83,21 @@ export default function CanvasElement({
 
     // if (isPanMode) return;
 
-    onSelect();
+    // Check for Ctrl/Cmd key for multiple selection
+    const isMultiSelectKey = e.ctrlKey || e.metaKey;
+
+    // Smart selection logic:
+    // 1. If Ctrl/Cmd is held, toggle selection (add/remove from selection)
+    // 2. If clicking on already selected element without Ctrl/Cmd and multiple elements are selected, don't change selection (start dragging)
+    // 3. If clicking on non-selected element without Ctrl/Cmd, select only that element
+    if (isMultiSelectKey) {
+      // Modifier key held - toggle selection
+      onSelect(true);
+    } else if (!element.selected || !isMultipleSelected) {
+      // Not holding modifier and (element not selected OR only single selection) - select this element only
+      onSelect(false);
+    }
+    // If element is selected and multiple elements are selected and no modifier key, don't change selection
 
     if (element.type === "text" && isEditing) {
       return;
@@ -98,7 +114,11 @@ export default function CanvasElement({
 
     // if (isPanMode) return;
 
-    onSelect();
+    // For touch: if element is already selected and multiple elements are selected, don't change selection
+    // Otherwise, select only this element
+    if (!element.selected || !isMultipleSelected) {
+      onSelect(false);
+    }
 
     if (element.type === "text" && isEditing) {
       return;
@@ -565,7 +585,7 @@ export default function CanvasElement({
                 borderWidth: 1 * (100 / zoom),
               }}
             />
-            {/* Resize handles */}
+            {/* Resize handles - show for all selected elements */}
             {/* top-left */}
             <div
               className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
@@ -731,8 +751,9 @@ export default function CanvasElement({
           </>
         )}
       </div>
-      {/* Floating Toolbar */}
+      {/* Floating Toolbar - only show for single selection */}
       {element.selected &&
+        !isMultipleSelected &&
         !(element.type === "text" && isEditing) &&
         !isDragging &&
         !isResizing &&

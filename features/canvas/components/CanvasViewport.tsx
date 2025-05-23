@@ -33,9 +33,12 @@ export default function CanvasViewport({
   const {
     artboardDimensions,
     elements,
+    selectedElements,
     selectElement,
     moveElement,
+    moveSelectedElements,
     resizeElement,
+    resizeSelectedElements,
     updateTextContent,
     updateCornerRadius,
     clearSelection,
@@ -73,12 +76,15 @@ export default function CanvasViewport({
           transformOrigin={transformOrigin}
           showGuides={showGuides}
           elements={elements}
-          onSelectElement={(id) => {
+          selectedElements={selectedElements}
+          onSelectElement={(id, addToSelection) => {
             if (id === null) clearSelection();
-            else selectElement(id);
+            else selectElement(id, addToSelection);
           }}
           onMoveElement={moveElement}
+          onMoveSelectedElements={moveSelectedElements}
           onResizeElement={resizeElement}
+          onResizeSelectedElements={resizeSelectedElements}
           onTextChange={updateTextContent}
           selectedTool={selectedTool}
           canvasPosition={canvasPosition}
