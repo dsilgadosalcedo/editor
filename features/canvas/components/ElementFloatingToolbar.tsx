@@ -39,8 +39,8 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     const scaledOffset = 52 * (100 / zoom); // Account for toolbar scaling
     const scaledYOffset = (24 + 8 + 2 + 2 + 16) * (100 / zoom);
 
-    const colorPickerWidth = 320;
-    const colorPickerHeight = 400;
+    const colorPickerWidth = 280;
+    const colorPickerHeight = 360;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 

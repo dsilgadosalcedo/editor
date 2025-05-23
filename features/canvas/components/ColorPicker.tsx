@@ -142,8 +142,8 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   const handleClick = (e: React.MouseEvent) => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const colorPickerWidth = 320; // Width of the CustomColorPicker
-      const colorPickerHeight = 400; // Approximate height of the CustomColorPicker
+      const colorPickerWidth = 280; // Width of the CustomColorPicker
+      const colorPickerHeight = 360; // Approximate height of the CustomColorPicker
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
 

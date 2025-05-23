@@ -502,7 +502,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         left: pickerPosition.x,
         top: pickerPosition.y,
         cursor: isDragging ? "grabbing" : "default",
-        width: "320px",
+        width: "280px",
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -543,7 +543,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         {/* Saturation/Value picker */}
         <div
           ref={saturationRef}
-          className="relative w-48 h-48 rounded cursor-crosshair"
+          className="relative w-44 h-32 cursor-crosshair"
           style={{
             background: `
               linear-gradient(to top, #000, transparent),
@@ -565,7 +565,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         {/* Hue picker */}
         <div
           ref={hueRef}
-          className="relative w-6 h-48 rounded cursor-ns-resize"
+          className="relative w-5 h-32 rounded cursor-ns-resize"
           style={{
             background: `linear-gradient(to bottom, 
               hsl(0, 100%, 50%) 0%,
@@ -580,7 +580,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         >
           {/* Hue indicator */}
           <div
-            className="absolute w-8 h-1 bg-white border border-gray-300 rounded transform -translate-x-1 -translate-y-1/2 pointer-events-none shadow-lg"
+            className="absolute w-7 h-1 bg-white border border-gray-300 rounded transform -translate-x-1 -translate-y-1/2 pointer-events-none shadow-lg"
             style={{
               top: `${(hue / 360) * 100}%`,
             }}
@@ -646,7 +646,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       {/* Color preview and value */}
       <div className="flex gap-2">
         <div
-          className="w-16 h-10 rounded-lg border border-gray-200 dark:border-gray-600"
+          className="w-12 h-9 rounded-md border border-gray-200 dark:border-gray-600"
           style={{
             backgroundColor: `hsla(${hue}, ${saturation}%, ${
               value / 2
@@ -663,7 +663,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
           onChange={(e) => {
             onChange(e.target.value);
           }}
-          className="flex-1 font-mono"
+          className="flex-1 font-mono text-sm"
           placeholder="Color value"
         />
       </div>
