@@ -12,6 +12,7 @@ import KeyboardShortcuts from "./KeyboardShortcuts";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
 import { useCanvasStore } from "../store/useCanvasStore";
 import type { ToolType } from "../store/useCanvasStore";
+import { ColorPickerProvider } from "./ColorPicker";
 
 export default function CanvasPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -220,47 +221,49 @@ export default function CanvasPage() {
   };
 
   return (
-    <div className="bg-background flex flex-col h-screen w-full">
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <ToolSidebar
-          selectedTool={selectedTool}
-          onSelectTool={setSelectedTool}
-          onToggleLayers={() => setLayersOpen((prev) => !prev)}
-          layersOpen={layersOpen}
-        />
+    <ColorPickerProvider>
+      <div className="bg-background flex flex-col h-screen w-full">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Sidebar */}
+          <ToolSidebar
+            selectedTool={selectedTool}
+            onSelectTool={setSelectedTool}
+            onToggleLayers={() => setLayersOpen((prev) => !prev)}
+            layersOpen={layersOpen}
+          />
 
-        {/* Main Canvas Area */}
-        <CanvasViewport
-          canvasRef={canvasRef}
-          artboardRef={artboardRef}
-          canvasContainerRef={canvasContainerRef}
-          showGuides={showGuides}
-          selectedTool={selectedTool}
-          zoom={zoom}
-          transformOrigin={transformOrigin}
-          canvasPosition={canvasPosition}
-          handleMouseDown={handleMouseDown}
-          handleMouseMove={handleMouseMove}
-          handleMouseUp={handleMouseUp}
-        />
+          {/* Main Canvas Area */}
+          <CanvasViewport
+            canvasRef={canvasRef}
+            artboardRef={artboardRef}
+            canvasContainerRef={canvasContainerRef}
+            showGuides={showGuides}
+            selectedTool={selectedTool}
+            zoom={zoom}
+            transformOrigin={transformOrigin}
+            canvasPosition={canvasPosition}
+            handleMouseDown={handleMouseDown}
+            handleMouseMove={handleMouseMove}
+            handleMouseUp={handleMouseUp}
+          />
 
-        {/* Layers Panel */}
-        {layersOpen && <LayersPanel />}
+          {/* Layers Panel */}
+          {layersOpen && <LayersPanel />}
 
-        {/* Canvas Toolbar */}
-        <CanvasToolbar
-          zoom={zoom}
-          setZoom={setZoom}
-          onZoomToSelection={handleZoomToSelection}
-        />
+          {/* Canvas Toolbar */}
+          <CanvasToolbar
+            zoom={zoom}
+            setZoom={setZoom}
+            onZoomToSelection={handleZoomToSelection}
+          />
 
-        {/* Right Sidebar */}
-        <PropertiesPanel />
+          {/* Right Sidebar */}
+          <PropertiesPanel />
+        </div>
+
+        {/* Keyboard Shortcuts Overlay */}
+        <KeyboardShortcuts />
       </div>
-
-      {/* Keyboard Shortcuts Overlay */}
-      <KeyboardShortcuts />
-    </div>
+    </ColorPickerProvider>
   );
 }

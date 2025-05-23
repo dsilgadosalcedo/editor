@@ -717,7 +717,7 @@ export default function CanvasElement({
             {/* Corner radius handle for rectangles and images */}
             {(element.type === "rectangle" || element.type === "image") && (
               <div
-                className="absolute w-4 h-4 rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer z-20"
+                className="absolute w-3 h-3 hover:scale-125 transition-all duration-100 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer z-20"
                 onMouseDown={handleCornerRadiusDragStart}
                 title="Drag to adjust corner radius"
                 style={{

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Button } from "@/components/ui/button";
+import { useColorPicker } from "./ColorPicker";
 
 interface ElementFloatingToolbarProps {
   elementId: string;
@@ -19,7 +20,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
   zoom,
 }) => {
   const { moveElementUp, moveElementDown, updateFillColor } = useCanvasStore();
-  const colorInputRef = useRef<HTMLInputElement>(null);
+  const { openColorPicker } = useColorPicker();
 
   const handleMoveUp = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -33,15 +34,35 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
 
   const handleColorClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Directly trigger the hidden color input
-    if (colorInputRef.current) {
-      colorInputRef.current.click();
-    }
-  };
 
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    updateFillColor(elementId, e.target.value);
+    // Account for the toolbar scaling and position
+    const scaledOffset = 52 * (100 / zoom); // Account for toolbar scaling
+    const scaledYOffset = (24 + 8 + 2 + 2 + 16) * (100 / zoom);
+
+    const colorPickerWidth = 320;
+    const colorPickerHeight = 400;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Calculate initial position
+    let x = position.x + scaledOffset;
+    let y = position.y - scaledYOffset + 30;
+
+    // Adjust if off-screen horizontally
+    if (x + colorPickerWidth > viewportWidth) {
+      x = position.x - colorPickerWidth;
+    }
+
+    // Adjust if off-screen vertically
+    if (y + colorPickerHeight > viewportHeight) {
+      y = position.y - scaledYOffset - colorPickerHeight - 8;
+    }
+
+    const handleColorChange = (newColor: string) => {
+      updateFillColor(elementId, newColor);
+    };
+
+    openColorPicker(elementColor, handleColorChange, { x, y });
   };
 
   // Apply inverse scaling to keep toolbar at consistent size regardless of zoom
@@ -94,34 +115,22 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
 
         {/* Color Picker */}
         {(elementType === "rectangle" || elementType === "text") && (
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleColorClick}
-              title={elementType === "text" ? "Text color" : "Background color"}
-              aria-label={`Change ${
-                elementType === "text" ? "text" : "background"
-              } color`}
-              className="h-6 w-6"
-            >
-              <div
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: elementColor }}
-              />
-            </Button>
-
-            {/* Color Picker Input */}
-            <input
-              ref={colorInputRef}
-              type="color"
-              value={elementColor}
-              onChange={handleColorChange}
-              className="hidden"
-              tabIndex={0}
-              aria-label="Color picker"
+          <Button
+            variant="ghost"
+            size="icon"
+            data-color-picker-trigger
+            onClick={handleColorClick}
+            title={elementType === "text" ? "Text color" : "Background color"}
+            aria-label={`Change ${
+              elementType === "text" ? "text" : "background"
+            } color`}
+            className="h-6 w-6"
+          >
+            <div
+              className="w-4 h-4 rounded-full"
+              style={{ backgroundColor: elementColor }}
             />
-          </div>
+          </Button>
         )}
       </div>
     </div>
