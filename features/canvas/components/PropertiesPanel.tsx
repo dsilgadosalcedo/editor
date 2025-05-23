@@ -69,7 +69,7 @@ export default function PropertiesPanel() {
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center">
                     <span className="text-properties-text dark:text-foreground mr-2">
-                      x
+                      X
                     </span>
                     <NumberInput
                       value={artboardDimensions.width}
@@ -81,7 +81,7 @@ export default function PropertiesPanel() {
                   </div>
                   <div className="flex items-center">
                     <span className="text-properties-text dark:text-foreground mr-2">
-                      y
+                      Y
                     </span>
                     <NumberInput
                       value={artboardDimensions.height}

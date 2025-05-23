@@ -228,9 +228,7 @@ export default function CanvasPage() {
         />
 
         {/* Layers Panel */}
-        {layersOpen && (
-          <LayersPanel className="z-20 absolute bottom-4 left-26" />
-        )}
+        {layersOpen && <LayersPanel />}
 
         {/* Canvas Toolbar */}
         <CanvasToolbar
