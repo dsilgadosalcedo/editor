@@ -192,13 +192,14 @@ export default function CanvasElement({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
-        const deltaX = e.clientX - dragStart.x;
-        const deltaY = e.clientY - dragStart.y;
-        onMove(deltaX, deltaY);
+        const deltaX = (e.clientX - dragStart.x) / (zoom / 100);
+        const deltaY = (e.clientY - dragStart.y) / (zoom / 100);
+        // Round to integers for clean positions
+        onMove(Math.round(deltaX), Math.round(deltaY));
         setDragStart({ x: e.clientX, y: e.clientY });
       } else if (isResizing && resizeDir) {
-        const dx = e.clientX - resizeStart.x;
-        const dy = e.clientY - resizeStart.y;
+        const dx = (e.clientX - resizeStart.x) / (zoom / 100);
+        const dy = (e.clientY - resizeStart.y) / (zoom / 100);
         let newWidth = resizeStart.width;
         let newHeight = resizeStart.height;
         let moveX = 0;
@@ -239,12 +240,12 @@ export default function CanvasElement({
             moveX = dx;
             break;
         }
-        newWidth = Math.max(20, newWidth);
-        newHeight = Math.max(20, newHeight);
+        newWidth = Math.max(20, Math.round(newWidth));
+        newHeight = Math.max(20, Math.round(newHeight));
         // Apply size change then position change
         onResize(newWidth, newHeight);
         if (moveX || moveY) {
-          onMove(moveX, moveY);
+          onMove(Math.round(moveX), Math.round(moveY));
         }
         // Update base for next incremental resize
         setResizeStart({
@@ -258,13 +259,14 @@ export default function CanvasElement({
 
     const handleTouchMove = (e: TouchEvent) => {
       if (isDragging) {
-        const deltaX = e.touches[0].clientX - dragStart.x;
-        const deltaY = e.touches[0].clientY - dragStart.y;
-        onMove(deltaX, deltaY);
+        const deltaX = (e.touches[0].clientX - dragStart.x) / (zoom / 100);
+        const deltaY = (e.touches[0].clientY - dragStart.y) / (zoom / 100);
+        // Round to integers for clean positions
+        onMove(Math.round(deltaX), Math.round(deltaY));
         setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
       } else if (isResizing && resizeDir) {
-        const dx = e.touches[0].clientX - resizeStart.x;
-        const dy = e.touches[0].clientY - resizeStart.y;
+        const dx = (e.touches[0].clientX - resizeStart.x) / (zoom / 100);
+        const dy = (e.touches[0].clientY - resizeStart.y) / (zoom / 100);
         let newWidth = resizeStart.width;
         let newHeight = resizeStart.height;
         let moveX = 0;
@@ -305,12 +307,12 @@ export default function CanvasElement({
             moveX = dx;
             break;
         }
-        newWidth = Math.max(20, newWidth);
-        newHeight = Math.max(20, newHeight);
+        newWidth = Math.max(20, Math.round(newWidth));
+        newHeight = Math.max(20, Math.round(newHeight));
         // Apply size change then position change
         onResize(newWidth, newHeight);
         if (moveX || moveY) {
-          onMove(moveX, moveY);
+          onMove(Math.round(moveX), Math.round(moveY));
         }
         // Update base for next incremental resize
         setResizeStart({
@@ -355,6 +357,7 @@ export default function CanvasElement({
     resizeStart,
     onMove,
     onResize,
+    zoom,
   ]);
 
   // Handle corner radius drag start
@@ -373,12 +376,12 @@ export default function CanvasElement({
   useEffect(() => {
     if (!isCornerRadiusDragging) return;
     const handleMouseMove = (e: MouseEvent) => {
-      const dx = e.clientX - cornerRadiusStart.x;
-      const dy = e.clientY - cornerRadiusStart.y;
+      const dx = (e.clientX - cornerRadiusStart.x) / (zoom / 100);
+      const dy = (e.clientY - cornerRadiusStart.y) / (zoom / 100);
       let newRadius = cornerRadiusStart.cornerRadius + (dx + dy) / 2;
       newRadius = Math.max(
         0,
-        Math.min(newRadius, element.width / 2, element.height / 2)
+        Math.min(Math.round(newRadius), element.width / 2, element.height / 2)
       );
       if (
         element.cornerRadius !== newRadius &&
@@ -401,6 +404,7 @@ export default function CanvasElement({
     cornerRadiusStart,
     element,
     onUpdateCornerRadius,
+    zoom,
   ]);
 
   // Double-click resize handle to fit text
@@ -515,13 +519,21 @@ export default function CanvasElement({
           <div
             className="absolute pointer-events-none border-blue-500 rounded-none"
             style={{
-              left: `-${1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
-              top: `-${1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              left: `-${
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
+              top: `-${
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
               width: `calc(100% + ${
-                1 * (100 / zoom) * 2 + (element.borderWidth ?? 0) * 2
+                1 * (100 / zoom) * 2 +
+                (element.type !== "image" ? (element.borderWidth ?? 0) * 2 : 0)
               }px)`,
               height: `calc(100% + ${
-                1 * (100 / zoom) * 2 + (element.borderWidth ?? 0) * 2
+                1 * (100 / zoom) * 2 +
+                (element.type !== "image" ? (element.borderWidth ?? 0) * 2 : 0)
               }px)`,
               borderWidth: 1 * (100 / zoom),
             }}
@@ -531,8 +543,16 @@ export default function CanvasElement({
           <div
             className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
             style={{
-              left: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
-              top: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              left: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
+              top: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
               transform: `scale(${100 / zoom})`,
               transformOrigin: "center",
             }}
@@ -544,7 +564,11 @@ export default function CanvasElement({
           <div
             className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
             style={{
-              top: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              top: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
               transform: `scale(${100 / zoom})`,
               transformOrigin: "center",
             }}
@@ -556,8 +580,16 @@ export default function CanvasElement({
           <div
             className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
             style={{
-              right: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
-              top: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              right: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
+              top: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
               transform: `scale(${100 / zoom})`,
               transformOrigin: "center",
             }}
@@ -569,7 +601,11 @@ export default function CanvasElement({
           <div
             className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
             style={{
-              left: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              left: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
               transform: `scale(${100 / zoom})`,
               transformOrigin: "center",
             }}
@@ -581,7 +617,11 @@ export default function CanvasElement({
           <div
             className="absolute top-1/2 -translate-y-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
             style={{
-              right: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              right: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
               transform: `scale(${100 / zoom})`,
               transformOrigin: "center",
             }}
@@ -593,8 +633,16 @@ export default function CanvasElement({
           <div
             className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
             style={{
-              left: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
-              bottom: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              left: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
+              bottom: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
               transform: `scale(${100 / zoom})`,
               transformOrigin: "center",
             }}
@@ -606,7 +654,11 @@ export default function CanvasElement({
           <div
             className="absolute left-1/2 -translate-x-1/2 w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
             style={{
-              bottom: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              bottom: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
               transform: `scale(${100 / zoom})`,
               transformOrigin: "center",
             }}
@@ -618,8 +670,16 @@ export default function CanvasElement({
           <div
             className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50  bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
             style={{
-              right: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
-              bottom: `-${4 + 1 * (100 / zoom) + (element.borderWidth ?? 0)}px`,
+              right: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
+              bottom: `-${
+                4 +
+                1 * (100 / zoom) +
+                (element.type !== "image" ? element.borderWidth ?? 0 : 0)
+              }px`,
               transform: `scale(${100 / zoom})`,
               transformOrigin: "center",
             }}

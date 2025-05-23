@@ -19,7 +19,7 @@ export default function CanvasPage() {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [showGuides, setShowGuides] = useState(true);
   const [selectedTool, setSelectedTool] = useState<ToolType>(null);
-  const [layersOpen, setLayersOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(true);
 
   // Zustand store
   const {
