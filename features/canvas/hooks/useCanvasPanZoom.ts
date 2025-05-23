@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 
 export const useCanvasPanZoom = (
-  artboardRef: React.RefObject<HTMLDivElement>,
-  canvasRef: React.RefObject<HTMLDivElement>,
+  artboardRef: React.RefObject<HTMLDivElement | null>,
+  canvasRef: React.RefObject<HTMLDivElement | null>,
   selectedTool: string | null
 ) => {
   const [zoom, setZoom] = useState(100);

@@ -47,18 +47,90 @@ export default function CanvasPage() {
           target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA");
 
+      // Handle modifier key shortcuts FIRST (higher priority)
+      const modifier = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+
+      if (modifier) {
+        // Save with Ctrl/Cmd+S (always prevent default to avoid browser save dialog)
+        if (key === "s") {
+          e.preventDefault();
+          const title = prompt("Enter canvas title (optional):");
+          const canvasId = await saveCanvas(title || undefined);
+          if (canvasId) {
+            alert(`Canvas saved successfully! ID: ${canvasId}`);
+          } else {
+            alert("Failed to save canvas");
+          }
+          return;
+        }
+
+        // Load with Ctrl/Cmd+O (always prevent default to avoid browser open dialog)
+        if (key === "o") {
+          e.preventDefault();
+          const canvasId = prompt("Enter canvas ID to load:");
+          if (canvasId) {
+            const success = await loadCanvas(canvasId);
+            if (success) {
+              alert("Canvas loaded successfully!");
+            } else {
+              alert("Failed to load canvas");
+            }
+          }
+          return;
+        }
+
+        // Select All with Ctrl/Cmd+A (only when not typing in inputs)
+        if (key === "a" && !isTyping) {
+          e.preventDefault();
+          // For now, just clear selection (could implement select all elements later)
+          clearSelection();
+          return;
+        }
+
+        // Undo/Redo with Ctrl/Cmd+Z (only when not typing in inputs)
+        if (key === "z" && !isTyping) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            redo();
+          } else {
+            undo();
+          }
+          return;
+        }
+
+        // Copy with Ctrl/Cmd+C (only when not typing in inputs and element is selected)
+        if (key === "c" && selectedElement && !isTyping) {
+          e.preventDefault();
+          copySelection();
+          return;
+        }
+
+        // Paste with Ctrl/Cmd+V (only when not typing in inputs)
+        if (key === "v" && !isTyping) {
+          e.preventDefault();
+          pasteClipboard();
+          return;
+        }
+
+        // If we reach here with a modifier key, don't process further
+        return;
+      }
+
+      // Handle non-modifier key shortcuts (lower priority)
+
       // Delete selected element on Backspace (when not typing in inputs or contentEditable)
       if (
         e.key === "Backspace" &&
         !e.ctrlKey &&
         !e.metaKey &&
         !e.shiftKey &&
-        !e.altKey
+        !e.altKey &&
+        !isTyping &&
+        selectedElement
       ) {
-        if (!isTyping && selectedElement) {
-          e.preventDefault();
-          deleteElement(selectedElement);
-        }
+        e.preventDefault();
+        deleteElement(selectedElement);
         return;
       }
 
@@ -74,74 +146,8 @@ export default function CanvasPage() {
         }
         return;
       }
-
-      // Handle modifier key shortcuts
-      const modifier = e.ctrlKey || e.metaKey;
-      if (!modifier) return;
-      const key = e.key.toLowerCase();
-
-      // Save with Ctrl/Cmd+S (always prevent default to avoid browser save dialog)
-      if (key === "s") {
-        e.preventDefault();
-        const title = prompt("Enter canvas title (optional):");
-        const canvasId = await saveCanvas(title || undefined);
-        if (canvasId) {
-          alert(`Canvas saved successfully! ID: ${canvasId}`);
-        } else {
-          alert("Failed to save canvas");
-        }
-        return;
-      }
-
-      // Load with Ctrl/Cmd+O (always prevent default to avoid browser open dialog)
-      if (key === "o") {
-        e.preventDefault();
-        const canvasId = prompt("Enter canvas ID to load:");
-        if (canvasId) {
-          const success = await loadCanvas(canvasId);
-          if (success) {
-            alert("Canvas loaded successfully!");
-          } else {
-            alert("Failed to load canvas");
-          }
-        }
-        return;
-      }
-
-      // Select All with Ctrl/Cmd+A (only when not typing in inputs)
-      if (key === "a" && !isTyping) {
-        e.preventDefault();
-        // For now, just clear selection (could implement select all elements later)
-        clearSelection();
-        return;
-      }
-
-      // Undo/Redo with Ctrl/Cmd+Z (only when not typing in inputs)
-      if (key === "z" && !e.shiftKey && !isTyping) {
-        e.preventDefault();
-        undo();
-        return;
-      }
-      if (key === "z" && e.shiftKey && !isTyping) {
-        e.preventDefault();
-        redo();
-        return;
-      }
-
-      // Copy with Ctrl/Cmd+C (only when not typing in inputs and element is selected)
-      if (key === "c" && selectedElement && !isTyping) {
-        e.preventDefault();
-        copySelection();
-        return;
-      }
-
-      // Paste with Ctrl/Cmd+V (only when not typing in inputs)
-      if (key === "v" && !isTyping) {
-        e.preventDefault();
-        pasteClipboard();
-        return;
-      }
     };
+
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [
@@ -170,11 +176,7 @@ export default function CanvasPage() {
     isPanning,
     setIsPanning,
     panStartRef,
-  } = useCanvasPanZoom(
-    artboardRef as React.RefObject<HTMLDivElement>,
-    canvasRef as React.RefObject<HTMLDivElement>,
-    selectedTool
-  );
+  } = useCanvasPanZoom(artboardRef, canvasRef, selectedTool);
 
   // Helper: Zoom to fit selection
   const handleZoomToSelection = () => {

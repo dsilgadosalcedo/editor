@@ -4,7 +4,7 @@ import { useCanvasStore } from "../store/useCanvasStore";
 import Artboard from "./Artboard";
 
 interface CanvasViewportProps {
-  canvasRef: React.RefObject<HTMLDivElement>;
+  canvasRef: React.RefObject<HTMLDivElement | null>;
   artboardRef: React.RefObject<HTMLDivElement | null>;
   canvasContainerRef: React.RefObject<HTMLDivElement | null>;
   showGuides: boolean;

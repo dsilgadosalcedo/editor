@@ -35,6 +35,11 @@ interface CanvasStoreState {
   past: CanvasElementData[][];
   future: CanvasElementData[][];
   clipboard: CanvasElementData | null;
+  // Helper
+  addToHistory: () => {
+    past: CanvasElementData[][];
+    future: CanvasElementData[][];
+  };
   // Actions
   setArtboardDimensions: (dims: { width: number; height: number }) => void;
   addElement: (type: ElementType) => void;
@@ -77,31 +82,47 @@ interface CanvasStoreState {
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   elements: [],
   selectedElement: null,
-  artboardDimensions: { width: 500, height: 400 },
+  artboardDimensions: { width: 800, height: 600 },
   past: [],
   future: [],
   clipboard: null,
+
+  // Helper function to add current state to history
+  addToHistory: () => {
+    const state = get();
+    return {
+      past: [...state.past, state.elements],
+      future: [], // Clear future when making new changes
+    };
+  },
+
   setArtboardDimensions: (dims) => set({ artboardDimensions: dims }),
   addElement: (type) => {
-    const { artboardDimensions, elements } = get();
+    const { artboardDimensions, elements, addToHistory } = get();
     let newElement: CanvasElementData;
 
-    if (type === "text") {
+    if (type === "rectangle") {
       newElement = {
         id: `${type}-${Date.now()}`,
         type,
-        x: artboardDimensions.width / 2 - 40,
-        y: artboardDimensions.height / 2 - 20,
-        width: 80,
-        height: 40,
-        content: "New Text",
-        color: "#000000",
-        borderWidth: 0,
-        borderColor: "#000000",
-        shadowBlur: 0,
-        shadowColor: "#000000",
+        x: artboardDimensions.width / 2 - 75,
+        y: artboardDimensions.height / 2 - 37.5,
+        width: 150,
+        height: 75,
+        color: "#3b82f6",
         selected: true,
-        name: "Text",
+      };
+    } else if (type === "text") {
+      newElement = {
+        id: `${type}-${Date.now()}`,
+        type,
+        x: artboardDimensions.width / 2 - 50,
+        y: artboardDimensions.height / 2 - 10,
+        width: 100,
+        height: 20,
+        content: "Text",
+        color: "#000000",
+        selected: true,
         fontSize: 16,
         fontWeight: 400,
         letterSpacing: 0,
@@ -117,38 +138,16 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         y: artboardDimensions.height / 2 - 56,
         width: 150,
         height: 112,
-        src: "https://via.placeholder.com/150x112/e0e0e0/666666?text=Image",
-        color: "#ffffff",
-        borderWidth: 0,
-        borderColor: "#000000",
-        shadowBlur: 0,
-        shadowColor: "#000000",
+        src: "https://picsum.photos/150/112?random=" + Date.now(),
+        color: "transparent",
         selected: true,
-        cornerRadius: 0,
-        name: "Image",
       };
     } else {
-      // rectangle
-      newElement = {
-        id: `${type}-${Date.now()}`,
-        type,
-        x: artboardDimensions.width / 2 - 50,
-        y: artboardDimensions.height / 2 - 50,
-        width: 100,
-        height: 100,
-        color: "#d9f99d",
-        borderWidth: 0,
-        borderColor: "#000000",
-        shadowBlur: 0,
-        shadowColor: "#000000",
-        selected: true,
-        cornerRadius: 0,
-        name: "Rectangle",
-      };
+      return; // Invalid type
     }
+
     set((state) => ({
-      past: [...state.past, state.elements],
-      future: [],
+      ...addToHistory(),
       elements: [
         ...state.elements.map((el) => ({ ...el, selected: false })),
         newElement,
@@ -169,34 +168,18 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     })),
   resizeElement: (id, width, height) =>
     set((state) => ({
-      elements: state.elements.map((el) => {
-        if (el.id === id) {
-          let newCornerRadius = el.cornerRadius;
-          if (typeof newCornerRadius === "number") {
-            newCornerRadius = Math.min(newCornerRadius, width / 2, height / 2);
-          }
-          return {
-            ...el,
-            width,
-            height,
-            ...(typeof newCornerRadius === "number"
-              ? { cornerRadius: newCornerRadius }
-              : {}),
-          };
-        }
-        return el;
-      }),
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, width, height } : el
+      ),
     })),
   updateTextContent: (id, content) =>
     set((state) => ({
       elements: state.elements.map((el) =>
-        el.id === id && el.type === "text" ? { ...el, content } : el
+        el.id === id ? { ...el, content } : el
       ),
     })),
   resetCanvas: () =>
-    set((state) => ({
-      past: [...state.past, state.elements],
-      future: [],
+    set(() => ({
       elements: [],
       selectedElement: null,
     })),
@@ -224,102 +207,162 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   reorderElements: (oldIndex, newIndex) =>
     set((state) => {
+      const { addToHistory } = get();
       const updated = [...state.elements];
       const [moved] = updated.splice(oldIndex, 1);
       updated.splice(newIndex, 0, moved);
-      return { elements: updated };
+      return {
+        ...addToHistory(),
+        elements: updated,
+      };
     }),
   updateCornerRadius: (id, cornerRadius) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id && (el.type === "rectangle" || el.type === "image")
-          ? {
-              ...el,
-              cornerRadius: Math.max(
-                0,
-                Math.min(cornerRadius, el.width / 2, el.height / 2)
-              ),
-            }
-          : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id && (el.type === "rectangle" || el.type === "image")
+            ? {
+                ...el,
+                cornerRadius: Math.max(
+                  0,
+                  Math.min(cornerRadius, el.width / 2, el.height / 2)
+                ),
+              }
+            : el
+        ),
+      };
+    }),
   updateFillColor: (id, color) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, color } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, color } : el
+        ),
+      };
+    }),
   updateBorderWidth: (id, borderWidth) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, borderWidth } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, borderWidth } : el
+        ),
+      };
+    }),
   updateBorderColor: (id, borderColor) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, borderColor } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, borderColor } : el
+        ),
+      };
+    }),
   updateShadowBlur: (id, shadowBlur) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, shadowBlur } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, shadowBlur } : el
+        ),
+      };
+    }),
   updateShadowColor: (id, shadowColor) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, shadowColor } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, shadowColor } : el
+        ),
+      };
+    }),
   deleteElement: (id) =>
-    set((state) => ({
-      elements: state.elements.filter((el) => el.id !== id),
-      selectedElement: null,
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.filter((el) => el.id !== id),
+        selectedElement: null,
+      };
+    }),
   updateName: (id, name) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, name } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, name } : el
+        ),
+      };
+    }),
   updateFontSize: (id, fontSize) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, fontSize } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, fontSize } : el
+        ),
+      };
+    }),
   updateFontWeight: (id, fontWeight) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, fontWeight } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, fontWeight } : el
+        ),
+      };
+    }),
   updateLetterSpacing: (id, letterSpacing) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, letterSpacing } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, letterSpacing } : el
+        ),
+      };
+    }),
   updateLineHeight: (id, lineHeight) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, lineHeight } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, lineHeight } : el
+        ),
+      };
+    }),
   updateHorizontalAlign: (id, horizontalAlign) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, horizontalAlign } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, horizontalAlign } : el
+        ),
+      };
+    }),
   updateVerticalAlign: (id, verticalAlign) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, verticalAlign } : el
-      ),
-    })),
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, verticalAlign } : el
+        ),
+      };
+    }),
   clearSelection: () =>
     set((state) => ({
       elements: state.elements.map((el) => ({ ...el, selected: false })),
