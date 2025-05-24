@@ -1,5 +1,6 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { NumberInput } from "../NumberInput";
 import { ColorPicker } from "../ColorPicker";
 import {
@@ -9,6 +10,7 @@ import {
   PropertyInput,
   PropertyLabel,
 } from "@/components/ui/property";
+import { Link, Unlink } from "lucide-react";
 
 interface ImagePropertiesProps {
   id: string;
@@ -21,6 +23,7 @@ interface ImagePropertiesProps {
   borderColor: string;
   shadowBlur: number;
   shadowColor: string;
+  lockAspectRatio?: boolean;
   onNameChange: (name: string) => void;
   onSrcChange: (src: string) => void;
   onDimensionsChange: (width: number, height: number) => void;
@@ -29,6 +32,7 @@ interface ImagePropertiesProps {
   onBorderColorChange: (color: string) => void;
   onShadowBlurChange: (blur: number) => void;
   onShadowColorChange: (color: string) => void;
+  onToggleAspectRatioLock: () => void;
 }
 
 export function ImageProperties({
@@ -42,6 +46,7 @@ export function ImageProperties({
   borderColor,
   shadowBlur,
   shadowColor,
+  lockAspectRatio,
   onNameChange,
   onSrcChange,
   onDimensionsChange,
@@ -50,6 +55,7 @@ export function ImageProperties({
   onBorderColorChange,
   onShadowBlurChange,
   onShadowColorChange,
+  onToggleAspectRatioLock,
 }: ImagePropertiesProps) {
   return (
     <>
@@ -82,12 +88,34 @@ export function ImageProperties({
         <PropertyStack distribution="column">
           <PropertyInput>
             <PropertyLabel>Width</PropertyLabel>
-            <NumberInput
-              value={width}
-              onChange={(val) => onDimensionsChange(val, height)}
-              onInstantChange={(val) => onDimensionsChange(val, height)}
-              aria-label="Image width"
-            />
+            <div className="flex items-center gap-2">
+              <NumberInput
+                value={width}
+                onChange={(val) => onDimensionsChange(val, height)}
+                onInstantChange={(val) => onDimensionsChange(val, height)}
+                aria-label="Image width"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggleAspectRatioLock}
+                className={`h-6 w-6 ${
+                  lockAspectRatio ? "text-blue-600" : "text-gray-400"
+                }`}
+                title={
+                  lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"
+                }
+                aria-label={
+                  lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"
+                }
+              >
+                {lockAspectRatio ? (
+                  <Link className="h-3 w-3" />
+                ) : (
+                  <Unlink className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
           </PropertyInput>
           <PropertyInput>
             <PropertyLabel>Height</PropertyLabel>

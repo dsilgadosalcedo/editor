@@ -1,6 +1,12 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PanelRight, PanelLeftOpen, PanelRightOpen } from "lucide-react";
+import {
+  PanelRight,
+  PanelLeftOpen,
+  PanelRightOpen,
+  Link,
+  Unlink,
+} from "lucide-react";
 import { NumberInput } from "./NumberInput";
 import { ColorPicker } from "./ColorPicker";
 import { useCanvasStore } from "../store/useCanvasStore";
@@ -17,6 +23,7 @@ import {
   TextProperties,
   ImageProperties,
 } from "./properties";
+import { Separator } from "@/components/ui/separator";
 
 export default function PropertiesPanel() {
   const {
@@ -42,6 +49,7 @@ export default function PropertiesPanel() {
     updateHorizontalAlign,
     updateVerticalAlign,
     updateImageSrc,
+    toggleAspectRatioLock,
     rightSidebarDocked,
     toggleRightSidebarDock,
   } = useCanvasStore();
@@ -66,7 +74,7 @@ export default function PropertiesPanel() {
     >
       <div className="flex-1 overflow-y-auto bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl w-64">
         {/* Header with dock/undock button */}
-        <div className="flex items-center justify-between p-3 border-b border-white/20">
+        <div className="flex items-center justify-between p-3">
           <h3 className="text-sm font-medium text-properties-text dark:text-foreground">
             Properties
           </h3>
@@ -75,17 +83,19 @@ export default function PropertiesPanel() {
             size="icon"
             onClick={toggleRightSidebarDock}
             onMouseDown={(e) => e.stopPropagation()}
-            className="h-6 w-6 rounded-md bg-white/20 hover:bg-white/30 dark:bg-white/10 dark:hover:bg-white/20 transition-all duration-200 hover:scale-110 active:scale-95"
+            className="hover:bg-transparent transition-all duration-200 hover:scale-110 active:scale-95"
             aria-label={rightSidebarDocked ? "Undock sidebar" : "Dock sidebar"}
             title={rightSidebarDocked ? "Undock sidebar" : "Dock sidebar"}
           >
             {rightSidebarDocked ? (
-              <PanelLeftOpen className="h-4 w-4 text-properties-text dark:text-foreground transition-transform duration-200" />
+              <PanelLeftOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
             ) : (
-              <PanelRightOpen className="h-4 w-4 text-properties-text dark:text-foreground transition-transform duration-200" />
+              <PanelRightOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
             )}
           </Button>
         </div>
+
+        <Separator />
 
         {/* Content */}
         <div className="p-4">
@@ -124,6 +134,9 @@ export default function PropertiesPanel() {
                     height={selectedElementData.height}
                     letterSpacing={selectedElementData.letterSpacing || 0}
                     lineHeight={selectedElementData.lineHeight || 20}
+                    lockAspectRatio={
+                      selectedElementData.lockAspectRatio || false
+                    }
                     onNameChange={(name) =>
                       updateName(selectedElementData.id, name)
                     }
@@ -140,7 +153,12 @@ export default function PropertiesPanel() {
                       updateFontWeight(selectedElementData.id, weight)
                     }
                     onDimensionsChange={(width, height) =>
-                      resizeElement(selectedElementData.id, width, height)
+                      resizeElement(
+                        selectedElementData.id,
+                        width,
+                        height,
+                        false
+                      )
                     }
                     onLetterSpacingChange={(spacing) =>
                       updateLetterSpacing(selectedElementData.id, spacing)
@@ -153,6 +171,9 @@ export default function PropertiesPanel() {
                     }
                     onVerticalAlignChange={(align) =>
                       updateVerticalAlign(selectedElementData.id, align)
+                    }
+                    onToggleAspectRatioLock={() =>
+                      toggleAspectRatioLock(selectedElementData.id)
                     }
                   />
                 </>
@@ -169,6 +190,9 @@ export default function PropertiesPanel() {
                     borderColor={selectedElementData.borderColor || "#000000"}
                     shadowBlur={selectedElementData.shadowBlur || 0}
                     shadowColor={selectedElementData.shadowColor || "#000000"}
+                    lockAspectRatio={
+                      selectedElementData.lockAspectRatio || false
+                    }
                     onNameChange={(name) =>
                       updateName(selectedElementData.id, name)
                     }
@@ -176,7 +200,12 @@ export default function PropertiesPanel() {
                       updateImageSrc(selectedElementData.id, src)
                     }
                     onDimensionsChange={(width, height) =>
-                      resizeElement(selectedElementData.id, width, height)
+                      resizeElement(
+                        selectedElementData.id,
+                        width,
+                        height,
+                        false
+                      )
                     }
                     onCornerRadiusChange={(radius) =>
                       updateCornerRadius(selectedElementData.id, radius)
@@ -192,6 +221,9 @@ export default function PropertiesPanel() {
                     }
                     onShadowColorChange={(color) =>
                       updateShadowColor(selectedElementData.id, color)
+                    }
+                    onToggleAspectRatioLock={() =>
+                      toggleAspectRatioLock(selectedElementData.id)
                     }
                   />
                 </>
@@ -216,24 +248,56 @@ export default function PropertiesPanel() {
                     <PropertyStack distribution="column">
                       <PropertyInput>
                         <PropertyLabel>Width</PropertyLabel>
-                        <NumberInput
-                          value={selectedElementData.width}
-                          onChange={(val) =>
-                            resizeElement(
-                              selectedElementData.id,
-                              val,
-                              selectedElementData.height
-                            )
-                          }
-                          onInstantChange={(val) =>
-                            resizeElement(
-                              selectedElementData.id,
-                              val,
-                              selectedElementData.height
-                            )
-                          }
-                          aria-label="Rectangle width"
-                        />
+                        <div className="flex items-center gap-2">
+                          <NumberInput
+                            value={selectedElementData.width}
+                            onChange={(val) =>
+                              resizeElement(
+                                selectedElementData.id,
+                                val,
+                                selectedElementData.height,
+                                false
+                              )
+                            }
+                            onInstantChange={(val) =>
+                              resizeElement(
+                                selectedElementData.id,
+                                val,
+                                selectedElementData.height,
+                                false
+                              )
+                            }
+                            aria-label="Rectangle width"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              toggleAspectRatioLock(selectedElementData.id)
+                            }
+                            className={`h-6 w-6 ${
+                              selectedElementData.lockAspectRatio
+                                ? "text-blue-600"
+                                : "text-gray-400"
+                            }`}
+                            title={
+                              selectedElementData.lockAspectRatio
+                                ? "Unlock aspect ratio"
+                                : "Lock aspect ratio"
+                            }
+                            aria-label={
+                              selectedElementData.lockAspectRatio
+                                ? "Unlock aspect ratio"
+                                : "Lock aspect ratio"
+                            }
+                          >
+                            {selectedElementData.lockAspectRatio ? (
+                              <Link className="h-3 w-3" />
+                            ) : (
+                              <Unlink className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
                       </PropertyInput>
                       <PropertyInput>
                         <PropertyLabel>Height</PropertyLabel>
@@ -243,14 +307,16 @@ export default function PropertiesPanel() {
                             resizeElement(
                               selectedElementData.id,
                               selectedElementData.width,
-                              val
+                              val,
+                              false
                             )
                           }
                           onInstantChange={(val) =>
                             resizeElement(
                               selectedElementData.id,
                               selectedElementData.width,
-                              val
+                              val,
+                              false
                             )
                           }
                           aria-label="Rectangle height"

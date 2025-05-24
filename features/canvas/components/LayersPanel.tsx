@@ -5,10 +5,9 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { ChevronDown, Trash2, Eye, EyeOff } from "lucide-react";
-import type { CanvasElementData } from "../store/useCanvasStore";
 import { useCanvasStore } from "../store/useCanvasStore";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 const LayersPanel: React.FC = () => {
   const {
@@ -84,8 +83,8 @@ const LayersPanel: React.FC = () => {
               return (
                 <React.Fragment key={el.id}>
                   {dragOverIndex === actualIdx && (
-                    <li className="h-0">
-                      <div className="mx-1 border-t-2 border-properties-blue dark:border-white/20" />
+                    <li className="h-0 px-2">
+                      <Separator />
                     </li>
                   )}
                   <li

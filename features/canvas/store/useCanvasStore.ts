@@ -27,6 +27,7 @@ export interface CanvasElementData {
   horizontalAlign?: "left" | "center" | "right";
   verticalAlign?: "top" | "middle" | "bottom";
   visible?: boolean;
+  lockAspectRatio?: boolean;
 }
 
 interface CanvasStoreState {
@@ -49,11 +50,17 @@ interface CanvasStoreState {
   selectMultipleElements: (ids: string[]) => void;
   moveElement: (id: string, dx: number, dy: number) => void;
   moveSelectedElements: (dx: number, dy: number) => void;
-  resizeElement: (id: string, width: number, height: number) => void;
+  resizeElement: (
+    id: string,
+    width: number,
+    height: number,
+    preserveAspectRatio?: boolean
+  ) => void;
   resizeSelectedElements: (
     baseId: string,
     newWidth: number,
-    newHeight: number
+    newHeight: number,
+    preserveAspectRatio?: boolean
   ) => void;
   updateTextContent: (id: string, content: string) => void;
   resetCanvas: () => void;
@@ -79,6 +86,7 @@ interface CanvasStoreState {
     align: "left" | "center" | "right"
   ) => void;
   updateVerticalAlign: (id: string, align: "top" | "middle" | "bottom") => void;
+  toggleAspectRatioLock: (id: string) => void;
   clearSelection: () => void;
   getSelectedElementData: () => CanvasElementData | undefined;
   getSelectedElementsData: () => CanvasElementData[];
@@ -229,30 +237,81 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           : el
       ),
     })),
-  resizeElement: (id, width, height) =>
+  resizeElement: (id, width, height, preserveAspectRatio = false) =>
     set((state) => ({
       elements: state.elements.map((el) =>
-        el.id === id ? { ...el, width, height } : el
+        el.id === id
+          ? { ...el, width: Math.max(20, width), height: Math.max(20, height) }
+          : el
       ),
     })),
-  resizeSelectedElements: (baseId, newWidth, newHeight) =>
+  resizeSelectedElements: (
+    baseId,
+    newWidth,
+    newHeight,
+    preserveAspectRatio = false
+  ) =>
     set((state) => {
       const baseElement = state.elements.find((el) => el.id === baseId);
       if (!baseElement || !state.selectedElements.includes(baseId)) {
         return state;
       }
 
-      const scaleX = newWidth / baseElement.width;
-      const scaleY = newHeight / baseElement.height;
+      let scaleX = newWidth / baseElement.width;
+      let scaleY = newHeight / baseElement.height;
+
+      // If preserving aspect ratio, use the smaller scale to maintain proportions
+      if (preserveAspectRatio) {
+        const scale = Math.min(scaleX, scaleY);
+        scaleX = scale;
+        scaleY = scale;
+      }
 
       return {
         elements: state.elements.map((el) => {
           if (state.selectedElements.includes(el.id)) {
-            return {
-              ...el,
-              width: Math.max(20, Math.round(el.width * scaleX)),
-              height: Math.max(20, Math.round(el.height * scaleY)),
-            };
+            // For text elements, also scale font size
+            if (el.type === "text") {
+              const currentFontSize = el.fontSize || 16;
+              const currentLineHeight = el.lineHeight || 20;
+
+              // Use the average scale for font sizing to match the orange button behavior
+              const fontScale = (scaleX + scaleY) / 2;
+              const newFontSize = Math.max(
+                8,
+                Math.round(currentFontSize * fontScale)
+              );
+              const newLineHeight = Math.max(
+                10,
+                Math.round(currentLineHeight * fontScale)
+              );
+
+              return {
+                ...el,
+                width: Math.max(20, Math.round(el.width * scaleX)),
+                height: Math.max(20, Math.round(el.height * scaleY)),
+                fontSize: newFontSize,
+                lineHeight: newLineHeight,
+              };
+            } else {
+              // For non-text elements in multi-selection, only respect shift key (preserveAspectRatio)
+              // Individual lockAspectRatio settings are ignored during multi-selection
+              let finalScaleX = scaleX;
+              let finalScaleY = scaleY;
+
+              if (preserveAspectRatio) {
+                // When shift is pressed, use the smaller scale to maintain proportions
+                const scale = Math.min(scaleX, scaleY);
+                finalScaleX = scale;
+                finalScaleY = scale;
+              }
+
+              return {
+                ...el,
+                width: Math.max(20, Math.round(el.width * finalScaleX)),
+                height: Math.max(20, Math.round(el.height * finalScaleY)),
+              };
+            }
           }
           return el;
         }),
@@ -544,6 +603,16 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           : el
       ),
     })),
+  toggleAspectRatioLock: (id) =>
+    set((state) => {
+      const { addToHistory } = get();
+      return {
+        ...addToHistory(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, lockAspectRatio: !el.lockAspectRatio } : el
+        ),
+      };
+    }),
   // File operations
   exportCanvas: (filename?: string) => {
     const { elements, artboardDimensions } = get();

@@ -17,6 +17,8 @@ import {
   AlignStartVertical,
   AlignVerticalJustifyCenter,
   AlignEndVertical,
+  Link,
+  Unlink,
 } from "lucide-react";
 
 interface TextPropertiesProps {
@@ -30,6 +32,7 @@ interface TextPropertiesProps {
   height: number;
   letterSpacing: number;
   lineHeight: number;
+  lockAspectRatio?: boolean;
   onNameChange: (name: string) => void;
   onContentChange: (content: string) => void;
   onColorChange: (color: string) => void;
@@ -40,6 +43,7 @@ interface TextPropertiesProps {
   onLineHeightChange: (height: number) => void;
   onHorizontalAlignChange: (align: "left" | "center" | "right") => void;
   onVerticalAlignChange: (align: "top" | "middle" | "bottom") => void;
+  onToggleAspectRatioLock: () => void;
 }
 
 export function TextProperties({
@@ -53,6 +57,7 @@ export function TextProperties({
   height,
   letterSpacing,
   lineHeight,
+  lockAspectRatio,
   onNameChange,
   onContentChange,
   onColorChange,
@@ -63,6 +68,7 @@ export function TextProperties({
   onLineHeightChange,
   onHorizontalAlignChange,
   onVerticalAlignChange,
+  onToggleAspectRatioLock,
 }: TextPropertiesProps) {
   return (
     <>
@@ -134,12 +140,34 @@ export function TextProperties({
         <PropertyStack distribution="column">
           <PropertyInput>
             <PropertyLabel>Width</PropertyLabel>
-            <NumberInput
-              value={width}
-              onChange={(val) => onDimensionsChange(val, height)}
-              onInstantChange={(val) => onDimensionsChange(val, height)}
-              aria-label="Text width"
-            />
+            <div className="flex items-center gap-2">
+              <NumberInput
+                value={width}
+                onChange={(val) => onDimensionsChange(val, height)}
+                onInstantChange={(val) => onDimensionsChange(val, height)}
+                aria-label="Text width"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggleAspectRatioLock}
+                className={`h-6 w-6 ${
+                  lockAspectRatio ? "text-blue-600" : "text-gray-400"
+                }`}
+                title={
+                  lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"
+                }
+                aria-label={
+                  lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"
+                }
+              >
+                {lockAspectRatio ? (
+                  <Link className="h-3 w-3" />
+                ) : (
+                  <Unlink className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
           </PropertyInput>
           <PropertyInput>
             <PropertyLabel>Height</PropertyLabel>

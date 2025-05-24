@@ -179,9 +179,11 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
         aria-label={ariaLabel}
       >
         <div
-          className="w-full h-full rounded-sm flex-shrink-0"
+          className="grid place-items-center w-full h-full rounded-sm flex-shrink-0"
           style={{ backgroundColor: value }}
-        />
+        >
+          <span className="">{value}</span>
+        </div>
       </Button>
     </div>
   );

@@ -11,8 +11,18 @@ interface ArtboardProps {
   onSelectElement: (id: string | null, addToSelection?: boolean) => void;
   onMoveElement: (id: string, dx: number, dy: number) => void;
   onMoveSelectedElements: (dx: number, dy: number) => void;
-  onResizeElement: (id: string, w: number, h: number) => void;
-  onResizeSelectedElements: (baseId: string, w: number, h: number) => void;
+  onResizeElement: (
+    id: string,
+    w: number,
+    h: number,
+    preserveAspectRatio?: boolean
+  ) => void;
+  onResizeSelectedElements: (
+    baseId: string,
+    w: number,
+    h: number,
+    preserveAspectRatio?: boolean
+  ) => void;
   onTextChange: (id: string, content: string) => void;
   selectedTool: string | null;
   canvasPosition: { x: number; y: number };
@@ -108,16 +118,16 @@ const Artboard: React.FC<ArtboardProps> = ({
                 onMoveElement(element.id, dx, dy);
               }
             }}
-            onResize={(w, h) => {
+            onResize={(w, h, preserveAspectRatio) => {
               if (
                 selectedElements.length > 1 &&
                 selectedElements.includes(element.id)
               ) {
                 // Resize all selected elements proportionally
-                onResizeSelectedElements(element.id, w, h);
+                onResizeSelectedElements(element.id, w, h, preserveAspectRatio);
               } else {
                 // Resize single element
-                onResizeElement(element.id, w, h);
+                onResizeElement(element.id, w, h, preserveAspectRatio);
               }
             }}
             onTextChange={(content) => onTextChange(element.id, content)}

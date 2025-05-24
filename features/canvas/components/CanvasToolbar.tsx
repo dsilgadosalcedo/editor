@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCanvasStore } from "../store/useCanvasStore";
+import { Separator } from "@/components/ui/separator";
 
 interface CanvasToolbarProps {
   zoom: number;
@@ -120,7 +121,9 @@ export default function CanvasToolbar({
         </Button>
 
         {/* Separator */}
-        <div className="w-px h-6 bg-blue-200/40 mx-1" />
+        <div className="h-6">
+          <Separator orientation="vertical" />
+        </div>
 
         {/* Zoom Controls */}
         <Button
@@ -211,7 +214,10 @@ export default function CanvasToolbar({
         </Button> */}
 
         {/* Undo/Redo Controls */}
-        <div className="w-px h-6 bg-blue-200/40 mx-1" />
+        <div className="h-6">
+          <Separator orientation="vertical" />
+        </div>
+
         <Button
           variant="ghost"
           size="icon"
