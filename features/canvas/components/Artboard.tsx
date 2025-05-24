@@ -100,8 +100,8 @@ const Artboard: React.FC<ArtboardProps> = ({
           transformOrigin: transformOrigin,
           transition: "transform 0.2s ease",
           position: "absolute",
-          left: "50%",
-          top: "50%",
+          left: "calc(50% - 90px)", // Adjusted to account for left UI elements and better visual centering
+          top: "calc(50% - 40px)", // Adjusted to account for bottom toolbar (approximately 80px height + margin)
           marginLeft: `-${artboardDimensions.width / 2}px`,
           marginTop: `-${artboardDimensions.height / 2}px`,
         }}
