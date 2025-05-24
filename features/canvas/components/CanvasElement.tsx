@@ -86,6 +86,7 @@ export default function CanvasElement({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [justDragged, setJustDragged] = useState(false);
+  const [prepareDrag, setPrepareDrag] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({
     width: 0,
@@ -155,7 +156,7 @@ export default function CanvasElement({
 
     // Reset justDragged state for new interaction
     setJustDragged(false);
-    setIsDragging(true);
+    setPrepareDrag(true);
     setDragStart({ x: e.clientX, y: e.clientY });
   };
 
@@ -181,7 +182,7 @@ export default function CanvasElement({
 
     // Reset justDragged state for new interaction
     setJustDragged(false);
-    setIsDragging(true);
+    setPrepareDrag(true);
     setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
 
@@ -286,6 +287,12 @@ export default function CanvasElement({
   // Set up global mouse/touch move and up handlers
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      if (prepareDrag && !isDragging) {
+        // Start dragging when movement is detected
+        setIsDragging(true);
+        setPrepareDrag(false);
+      }
+
       if (isDragging) {
         const deltaX = (e.clientX - dragStart.x) / (zoom / 100);
         const deltaY = (e.clientY - dragStart.y) / (zoom / 100);
@@ -422,6 +429,12 @@ export default function CanvasElement({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      if (prepareDrag && !isDragging) {
+        // Start dragging when movement is detected
+        setIsDragging(true);
+        setPrepareDrag(false);
+      }
+
       if (isDragging) {
         const deltaX = (e.touches[0].clientX - dragStart.x) / (zoom / 100);
         const deltaY = (e.touches[0].clientY - dragStart.y) / (zoom / 100);
@@ -496,6 +509,7 @@ export default function CanvasElement({
       setIsDragging(false);
       setIsResizing(false);
       setIsRotating(false);
+      setPrepareDrag(false);
       setResizeDir(null);
     };
 
@@ -503,10 +517,11 @@ export default function CanvasElement({
       setIsDragging(false);
       setIsResizing(false);
       setIsRotating(false);
+      setPrepareDrag(false);
       setResizeDir(null);
     };
 
-    if (isDragging || isResizing || isRotating) {
+    if (isDragging || isResizing || isRotating || prepareDrag) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
       document.addEventListener("touchmove", handleTouchMove);
@@ -523,6 +538,7 @@ export default function CanvasElement({
     isDragging,
     isResizing,
     isRotating,
+    prepareDrag,
     resizeDir,
     dragStart,
     resizeStart,

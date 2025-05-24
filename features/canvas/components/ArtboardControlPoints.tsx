@@ -88,7 +88,7 @@ const ArtboardControlPoints: React.FC<ArtboardControlPointsProps> = ({
   };
 
   const controlPointStyle =
-    "absolute border-2 border-desert-sand shadow-lg cursor-pointer hover:scale-110 transition-transform z-50 bg-sky-harbor opacity-50 hover:opacity-100";
+    "absolute border-2 border-desert-sand shadow-lg cursor-pointer hover:scale-110 transition-transform bg-sky-harbor opacity-50 hover:opacity-100";
   const cornerPointStyle = `${controlPointStyle} w-4.5 h-4.5  rounded-full`;
   const sidePointStyle = `${controlPointStyle} w-3.5 h-3.5  transform rotate-45`;
 
