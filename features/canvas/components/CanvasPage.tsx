@@ -357,7 +357,7 @@ export default function CanvasPage() {
 
   return (
     <ColorPickerProvider>
-      <div className="bg-background flex h-screen w-full">
+      <div className="bg-background flex h-dvh w-full overflow-hidden">
         {/* Left Sidebar */}
         <ToolSidebar
           selectedTool={selectedTool}

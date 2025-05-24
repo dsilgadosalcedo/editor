@@ -98,7 +98,10 @@ export default function CanvasToolbar({
   };
 
   return (
-    <div className="absolute grid place-items-center bottom-5 z-10 w-full">
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50 w-full grid place-items-center"
+      style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}
+    >
       <div className="bg-card/60 w-fit flex items-center gap-2 backdrop-blur-lg p-2 rounded-xl shadow-lg border border-sky-harbor/80">
         {/* Export/Import Controls */}
         <Button

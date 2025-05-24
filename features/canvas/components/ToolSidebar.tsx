@@ -134,7 +134,7 @@ export default function ToolSidebar({
               <MoreHorizontal className="h-6 w-6 group-active:text-properties-gold dark:group-active:text-properties-gold group-active:scale-90 transition-all duration-200 text-properties-text dark:text-foreground" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="end" className="w-48">
+          <DropdownMenuContent side="right" align="end" className="w-48 z-[60]">
             <DropdownMenuItem onClick={handleDownloadAsSVG}>
               <Download className="w-4 h-4 mr-2" />
               Download as SVG

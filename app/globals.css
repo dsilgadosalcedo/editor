@@ -139,6 +139,22 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Safe area support for mobile/tablet devices */
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  }
+
+  /* Ensure full height for mobile viewports */
+  html,
+  body {
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+  }
 }
 
 @theme {
