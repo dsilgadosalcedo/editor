@@ -305,7 +305,8 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
 
   // Handle dragging the entire picker
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (pickerRef.current) {
+    if (pickerRef.current && e.target === e.currentTarget) {
+      e.preventDefault();
       setDragOffset({
         x: e.clientX - pickerPosition.x,
         y: e.clientY - pickerPosition.y,
@@ -316,6 +317,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
 
   // Handle saturation/value picker
   const handleSaturationMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setIsDraggingSaturation(true);
     updateSaturationFromMouse(e);
@@ -327,8 +329,8 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
       const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
 
-      const newSaturation = (x / rect.width) * 100;
-      const newValue = 100 - (y / rect.height) * 100;
+      const newSaturation = Math.round((x / rect.width) * 100 * 100) / 100; // Round to 2 decimal places
+      const newValue = Math.round((100 - (y / rect.height) * 100) * 100) / 100; // Round to 2 decimal places
 
       setSaturation(newSaturation);
       setValue(newValue);
@@ -341,6 +343,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
 
   // Handle hue picker
   const handleHueMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setIsDraggingHue(true);
     updateHueFromMouse(e);
@@ -349,8 +352,8 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const updateHueFromMouse = (e: React.MouseEvent | MouseEvent) => {
     if (hueRef.current) {
       const rect = hueRef.current.getBoundingClientRect();
-      const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-      const newHue = (y / rect.height) * 360;
+      const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      const newHue = Math.min(359, (x / rect.width) * 360); // Ensure hue stays within 0-359
 
       setHue(newHue);
 
@@ -362,6 +365,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
 
   // Handle alpha picker
   const handleAlphaMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setIsDraggingAlpha(true);
     updateAlphaFromMouse(e);
@@ -371,7 +375,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     if (alphaRef.current) {
       const rect = alphaRef.current.getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-      const newAlpha = x / rect.width;
+      const newAlpha = Math.round((x / rect.width) * 100) / 100; // Round to 2 decimal places
 
       setAlpha(newAlpha);
 
@@ -383,6 +387,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
       if (isDragging) {
         setPickerPosition({
           x: e.clientX - dragOffset.x,
@@ -397,7 +402,8 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
+      e.preventDefault();
       setIsDragging(false);
       setIsDraggingSaturation(false);
       setIsDraggingHue(false);
@@ -410,8 +416,10 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       isDraggingHue ||
       isDraggingAlpha
     ) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("mousemove", handleMouseMove, {
+        passive: false,
+      });
+      document.addEventListener("mouseup", handleMouseUp, { passive: false });
     }
 
     return () => {
@@ -440,14 +448,14 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     <div
       ref={pickerRef}
       data-color-picker
-      className={`fixed z-50 bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 ${
+      className={`fixed z-50 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 ${
         isTransitioning ? "transition-all duration-300 ease-out" : ""
       }`}
       style={{
         left: pickerPosition.x,
         top: pickerPosition.y,
         cursor: isDragging ? "grabbing" : "default",
-        width: "280px",
+        width: "300px",
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -484,11 +492,11 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       </div>
 
       {/* Main color picker area */}
-      <div className="flex gap-3 mb-4">
+      <div className="mb-4">
         {/* Saturation/Value picker */}
         <div
           ref={saturationRef}
-          className="relative w-44 h-32 cursor-crosshair"
+          className="relative w-full h-36 mb-3 cursor-crosshair rounded-lg overflow-hidden"
           style={{
             background: `
               linear-gradient(to top, #000, transparent),
@@ -497,7 +505,6 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
           }}
           onMouseDown={handleSaturationMouseDown}
         >
-          {/* Saturation/Value indicator */}
           <div
             className="absolute w-3 h-3 border-2 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
             style={{
@@ -510,9 +517,9 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         {/* Hue picker */}
         <div
           ref={hueRef}
-          className="relative w-5 h-32 rounded cursor-ns-resize"
+          className="relative w-full h-4 rounded-lg cursor-ew-resize"
           style={{
-            background: `linear-gradient(to bottom, 
+            background: `linear-gradient(to right, 
               hsl(0, 100%, 50%) 0%,
               hsl(60, 100%, 50%) 16.66%,
               hsl(120, 100%, 50%) 33.33%,
@@ -525,9 +532,10 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         >
           {/* Hue indicator */}
           <div
-            className="absolute w-7 h-1 bg-white border border-gray-300 rounded transform -translate-x-1 -translate-y-1/2 pointer-events-none shadow-lg"
+            className="absolute w-3 h-6 bg-white border border-gray-300 rounded transform -translate-x-1/2 -translate-y-1/2 pointer-events-none shadow-lg"
             style={{
-              top: `${(hue / 360) * 100}%`,
+              left: `${(hue / 360) * 100}%`,
+              top: "50%",
             }}
           />
         </div>
@@ -536,17 +544,17 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       {/* Alpha slider - only show for formats that support alpha */}
       {shouldShowAlpha && (
         <div className="mb-4">
-          <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+          <Label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">
             Alpha: {Math.round(alpha * 100)}%
           </Label>
           <div
             ref={alphaRef}
-            className="relative w-full h-4 rounded cursor-ew-resize"
+            className="relative w-full h-4 rounded-lg cursor-ew-resize overflow-hidden"
             style={{
               background: `linear-gradient(to right, 
                 transparent 0%, 
                 hsl(${hue}, ${saturation}%, ${value / 2}%) 100%),
-                repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50% / 10px 10px`,
+                repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50% / 8px 8px`,
             }}
             onMouseDown={handleAlphaMouseDown}
           >
