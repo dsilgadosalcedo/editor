@@ -310,6 +310,17 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
                 ...el,
                 width: Math.max(20, width),
                 height: Math.max(20, height),
+                // Clamp corner radius to new dimensions
+                cornerRadius: el.cornerRadius
+                  ? Math.max(
+                      0,
+                      Math.min(
+                        el.cornerRadius,
+                        Math.max(20, width) / 2,
+                        Math.max(20, height) / 2
+                      )
+                    )
+                  : el.cornerRadius,
               }
             : el
         ),
@@ -319,7 +330,22 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     set((state) => ({
       elements: state.elements.map((el) =>
         el.id === id
-          ? { ...el, width: Math.max(20, width), height: Math.max(20, height) }
+          ? {
+              ...el,
+              width: Math.max(20, width),
+              height: Math.max(20, height),
+              // Clamp corner radius to new dimensions
+              cornerRadius: el.cornerRadius
+                ? Math.max(
+                    0,
+                    Math.min(
+                      el.cornerRadius,
+                      Math.max(20, width) / 2,
+                      Math.max(20, height) / 2
+                    )
+                  )
+                : el.cornerRadius,
+            }
           : el
       ),
     })),
@@ -390,6 +416,17 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
                 ...el,
                 width: Math.max(20, Math.round(el.width * finalScaleX)),
                 height: Math.max(20, Math.round(el.height * finalScaleY)),
+                // Clamp corner radius to new dimensions
+                cornerRadius: el.cornerRadius
+                  ? Math.max(
+                      0,
+                      Math.min(
+                        el.cornerRadius,
+                        Math.max(20, Math.round(el.width * finalScaleX)) / 2,
+                        Math.max(20, Math.round(el.height * finalScaleY)) / 2
+                      )
+                    )
+                  : el.cornerRadius,
               };
             }
           }
@@ -462,6 +499,17 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
                 ...el,
                 width: Math.max(20, Math.round(el.width * finalScaleX)),
                 height: Math.max(20, Math.round(el.height * finalScaleY)),
+                // Clamp corner radius to new dimensions
+                cornerRadius: el.cornerRadius
+                  ? Math.max(
+                      0,
+                      Math.min(
+                        el.cornerRadius,
+                        Math.max(20, Math.round(el.width * finalScaleX)) / 2,
+                        Math.max(20, Math.round(el.height * finalScaleY)) / 2
+                      )
+                    )
+                  : el.cornerRadius,
               };
             }
           }

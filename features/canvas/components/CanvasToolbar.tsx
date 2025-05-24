@@ -243,7 +243,7 @@ export default function CanvasToolbar({
         </Button>
 
         {/* Reset Canvas */}
-        <Button
+        {/* <Button
           variant="ghost"
           size="icon"
           onClick={() => {
@@ -259,7 +259,7 @@ export default function CanvasToolbar({
           aria-label="Reset Canvas"
         >
           <Eraser className="h-4 w-4" />
-        </Button>
+        </Button> */}
       </div>
     </div>
   );

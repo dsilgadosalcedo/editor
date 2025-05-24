@@ -1211,16 +1211,31 @@ export default function CanvasElement({
             {/* Corner radius handle for rectangles and images */}
             {(element.type === "rectangle" || element.type === "image") && (
               <div
-                className="absolute w-3 h-3 hover:scale-125 transition-all duration-100 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer"
+                className="absolute w-3 h-3 hover:scale-125 transition-all duration-300 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer"
                 onMouseDown={handleCornerRadiusDragStart}
                 title="Drag to adjust corner radius"
                 style={{
-                  left: `${-element.width / 2 + (element.cornerRadius || 0)}px`,
-                  top: `${-element.height / 2 + (element.cornerRadius || 0)}px`,
+                  left: `${
+                    -element.width / 2 +
+                    Math.min(
+                      element.cornerRadius || 0,
+                      element.width / 2,
+                      element.height / 2
+                    )
+                  }px`,
+                  top: `${
+                    -element.height / 2 +
+                    Math.min(
+                      element.cornerRadius || 0,
+                      element.width / 2,
+                      element.height / 2
+                    )
+                  }px`,
                   transform: `scale(${100 / zoom}) translate(-50%, -50%)`,
                   transformOrigin: "top left",
                   pointerEvents: "auto",
                   zIndex: 9999,
+                  opacity: isResizing ? 0 : 1,
                 }}
               />
             )}
