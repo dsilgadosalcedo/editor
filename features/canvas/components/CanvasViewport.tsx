@@ -62,7 +62,7 @@ export default function CanvasViewport({
           backgroundImage: showGuides
             ? `linear-gradient(to right, var(--sidebar) 1px, transparent 1px), linear-gradient(to bottom, var(--sidebar) 1px, transparent 1px)`
             : "none",
-          backgroundSize: "20px 20px",
+          backgroundSize: "40px 40px",
         }}
         onMouseDown={(e) => {
           clearSelection();
