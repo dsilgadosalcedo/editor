@@ -61,6 +61,8 @@ export default function CanvasViewport({
     updateCornerRadiusNoHistory,
     updateFontSize,
     updateLineHeight,
+    updateRotation,
+    updateRotationNoHistory,
     clearSelection,
     setArtboardDimensions,
     addToHistory,
@@ -139,6 +141,8 @@ export default function CanvasViewport({
           onUpdateCornerRadiusNoHistory={updateCornerRadiusNoHistory}
           onUpdateFontSize={updateFontSize}
           onUpdateLineHeight={updateLineHeight}
+          onUpdateRotation={updateRotation}
+          onUpdateRotationNoHistory={updateRotationNoHistory}
           onResizeArtboard={(width, height) =>
             setArtboardDimensions({ width, height })
           }

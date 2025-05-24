@@ -30,6 +30,7 @@ export interface CanvasElementData {
   lockAspectRatio?: boolean;
   parentId?: string; // For grouped elements
   children?: string[]; // For frame elements
+  rotation?: number; // Rotation in degrees
 }
 
 interface CanvasStoreState {
@@ -129,6 +130,9 @@ interface CanvasStoreState {
   // Grouping
   groupElements: () => void;
   ungroupElements: () => void;
+  // Rotation
+  updateRotation: (id: string, rotation: number) => void;
+  updateRotationNoHistory: (id: string, rotation: number) => void;
 }
 
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
@@ -175,6 +179,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         color: "#3b82f6",
         selected: true,
         visible: true,
+        rotation: 0,
       };
     } else if (type === "text") {
       newElement = {
@@ -194,6 +199,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         horizontalAlign: "left",
         verticalAlign: "top",
         visible: true,
+        rotation: 0,
       };
     } else if (type === "image") {
       newElement = {
@@ -207,6 +213,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         color: "transparent",
         selected: true,
         visible: true,
+        rotation: 0,
       };
     } else {
       return; // Invalid type
@@ -779,6 +786,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         x: state.clipboard.x + 20,
         y: state.clipboard.y + 20,
         selected: true,
+        rotation: 0,
       };
       return {
         elements: [
@@ -887,6 +895,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
                 ...el,
                 id: newId,
                 selected: true, // Auto-select imported elements
+                rotation: 0,
               };
             }
           );
@@ -1047,6 +1056,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       visible: true,
       children: state.selectedElements,
       name: "Frame",
+      rotation: 0,
     };
 
     // Update selected elements to have this frame as parent
@@ -1093,4 +1103,21 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       selectedElements: childrenIds,
     });
   },
+  // Rotation
+  updateRotation: (id, rotation) =>
+    set((state) => {
+      const { getHistoryUpdate } = get();
+      return {
+        ...getHistoryUpdate(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, rotation } : el
+        ),
+      };
+    }),
+  updateRotationNoHistory: (id, rotation) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, rotation } : el
+      ),
+    })),
 }));

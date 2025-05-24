@@ -10,6 +10,7 @@ interface ElementFloatingToolbarProps {
   elementColor: string;
   position: { x: number; y: number };
   zoom: number;
+  isRotating?: boolean;
 }
 
 const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
@@ -18,6 +19,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
   elementColor,
   position,
   zoom,
+  isRotating = false,
 }) => {
   const { moveElementUp, moveElementDown, updateFillColor } = useCanvasStore();
   const { openColorPicker } = useColorPicker();
@@ -69,11 +71,14 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
   const toolbarScale = 1 / (zoom / 100);
   // Scale the offset distance to maintain consistent visual spacing
   // 24 is the height of the toolbar, 8 is the padding, 2+2=4 is the borders
-  const scaledYOffset = (24 + 8 + 2 + 2 + 16) * (100 / zoom);
+  const baseYOffset = (24 + 8 + 2 + 2 + 16) * (100 / zoom);
+  // Add extra offset when rotating to avoid overlapping with rotation indicator
+  const rotationExtraOffset = isRotating ? 20 * (100 / zoom) : 0;
+  const scaledYOffset = baseYOffset + rotationExtraOffset;
 
   return (
     <div
-      className="absolute pointer-events-auto z-50"
+      className="absolute pointer-events-auto z-50 transition-all duration-200 ease-out"
       style={{
         left: position.x,
         top: position.y - scaledYOffset,
@@ -85,7 +90,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
       onTouchStart={(e) => e.stopPropagation()}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center gap-1 p-1"
+        className="bg-card rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center gap-1 p-1"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >

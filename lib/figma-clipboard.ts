@@ -58,6 +58,7 @@ const createRectangleSVG = (element: CanvasElementData): string => {
     cornerRadius = 0,
     shadowBlur = 0,
     shadowColor = "#000000",
+    rotation = 0,
   } = element;
 
   let svgContent = "";
@@ -75,6 +76,11 @@ const createRectangleSVG = (element: CanvasElementData): string => {
       </defs>`;
   }
 
+  // Calculate transform
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+  const transform = rotation ? `rotate(${rotation} ${centerX} ${centerY})` : "";
+
   // Create the rectangle
   svgContent += `<rect 
     x="${x}" 
@@ -89,6 +95,7 @@ const createRectangleSVG = (element: CanvasElementData): string => {
     }
     ${cornerRadius > 0 ? `rx="${cornerRadius}" ry="${cornerRadius}"` : ""}
     ${shadowBlur > 0 ? `filter="url(#shadow-${element.id})"` : ""}
+    ${transform ? `transform="${transform}"` : ""}
   />`;
 
   return svgContent;
@@ -109,6 +116,7 @@ const createTextSVG = (element: CanvasElementData): string => {
     fontWeight = 400,
     horizontalAlign = "left",
     verticalAlign = "top",
+    rotation = 0,
   } = element;
 
   // Calculate text position based on alignment
@@ -141,6 +149,11 @@ const createTextSVG = (element: CanvasElementData): string => {
       break;
   }
 
+  // Calculate transform
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+  const transform = rotation ? `rotate(${rotation} ${centerX} ${centerY})` : "";
+
   return `<text 
     x="${textX}" 
     y="${textY}" 
@@ -149,6 +162,7 @@ const createTextSVG = (element: CanvasElementData): string => {
     font-weight="${fontWeight}"
     text-anchor="${textAnchor}"
     dominant-baseline="${dominantBaseline}"
+    ${transform ? `transform="${transform}"` : ""}
   >${escapeXml(content)}</text>`;
 };
 
@@ -164,7 +178,13 @@ const createFrameSVG = (element: CanvasElementData): string => {
     borderWidth = 1,
     borderColor = "#3b82f6",
     cornerRadius = 0,
+    rotation = 0,
   } = element;
+
+  // Calculate transform
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+  const transform = rotation ? `rotate(${rotation} ${centerX} ${centerY})` : "";
 
   return `<rect 
     x="${x}" 
@@ -176,6 +196,7 @@ const createFrameSVG = (element: CanvasElementData): string => {
     stroke-width="${borderWidth}"
     ${cornerRadius > 0 ? `rx="${cornerRadius}" ry="${cornerRadius}"` : ""}
     stroke-dasharray="5,5"
+    ${transform ? `transform="${transform}"` : ""}
   />`;
 };
 
@@ -183,7 +204,12 @@ const createFrameSVG = (element: CanvasElementData): string => {
  * Create SVG for image elements
  */
 const createImageSVG = (element: CanvasElementData): string => {
-  const { x, y, width, height, src } = element;
+  const { x, y, width, height, src, rotation = 0 } = element;
+
+  // Calculate transform
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+  const transform = rotation ? `rotate(${rotation} ${centerX} ${centerY})` : "";
 
   if (!src) {
     // Fallback for images without src - create a placeholder rectangle
@@ -196,6 +222,7 @@ const createImageSVG = (element: CanvasElementData): string => {
       stroke="#d1d5db" 
       stroke-width="1"
       stroke-dasharray="5,5"
+      ${transform ? `transform="${transform}"` : ""}
     />
     <text 
       x="${x + width / 2}" 
@@ -204,6 +231,7 @@ const createImageSVG = (element: CanvasElementData): string => {
       font-size="12"
       text-anchor="middle"
       dominant-baseline="central"
+      ${transform ? `transform="${transform}"` : ""}
     >Image</text>`;
   }
 
@@ -213,6 +241,7 @@ const createImageSVG = (element: CanvasElementData): string => {
     width="${width}" 
     height="${height}" 
     href="${src}"
+    ${transform ? `transform="${transform}"` : ""}
   />`;
 };
 

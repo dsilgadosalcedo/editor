@@ -48,6 +48,8 @@ interface ArtboardProps {
   onUpdateCornerRadiusNoHistory?: (id: string, cornerRadius: number) => void;
   onUpdateFontSize?: (id: string, fontSize: number) => void;
   onUpdateLineHeight?: (id: string, lineHeight: number) => void;
+  onUpdateRotation?: (id: string, rotation: number) => void;
+  onUpdateRotationNoHistory?: (id: string, rotation: number) => void;
   onResizeArtboard: (width: number, height: number) => void;
   onAddToHistory?: () => void;
 }
@@ -77,6 +79,8 @@ const Artboard: React.FC<ArtboardProps> = ({
   onUpdateCornerRadiusNoHistory,
   onUpdateFontSize,
   onUpdateLineHeight,
+  onUpdateRotation,
+  onUpdateRotationNoHistory,
   onResizeArtboard,
   onAddToHistory,
 }) => {
@@ -192,6 +196,8 @@ const Artboard: React.FC<ArtboardProps> = ({
             onUpdateCornerRadiusNoHistory={onUpdateCornerRadiusNoHistory}
             onUpdateFontSize={onUpdateFontSize}
             onUpdateLineHeight={onUpdateLineHeight}
+            onUpdateRotation={onUpdateRotation}
+            onUpdateRotationNoHistory={onUpdateRotationNoHistory}
             onAddToHistory={onAddToHistory}
             isMultipleSelected={selectedElements.length > 1}
           />
