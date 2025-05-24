@@ -19,14 +19,26 @@ export default function DragDropOverlay({ onFileDrop }: DragDropOverlayProps) {
       e.preventDefault();
       dragCounter++;
 
-      if (e.dataTransfer?.items) {
+      // Only show overlay for external file drops, not internal drag operations
+      if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+        // Check if this is an external file drag operation
+        const hasFiles = Array.from(e.dataTransfer.items).some(
+          (item) => item.kind === "file"
+        );
+
+        // Check if any of the files are JSON files
         const hasJsonFile = Array.from(e.dataTransfer.items).some(
           (item) =>
             item.type === "application/json" ||
-            (item.type === "" && item.kind === "file")
+            (item.kind === "file" && item.type === "")
         );
-        setIsValidFile(hasJsonFile);
-        setIsDragging(true);
+
+        // Only show the overlay if we have actual files being dragged
+        // This prevents internal drag operations (like layer reordering) from triggering the overlay
+        if (hasFiles) {
+          setIsValidFile(hasJsonFile);
+          setIsDragging(true);
+        }
       }
     };
 
