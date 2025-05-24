@@ -204,9 +204,13 @@ export default function CanvasPage() {
     handleMouseDown: handlePanMouseDown,
     handleMouseMove: handlePanMouseMove,
     handleMouseUp: handlePanMouseUp,
+    handleTouchStart: handlePanTouchStart,
+    handleTouchMove: handlePanTouchMove,
+    handleTouchEnd: handlePanTouchEnd,
     isPanning,
     setIsPanning,
     panStartRef,
+    gestureState,
   } = useCanvasPanZoom(artboardRef, canvasRef, selectedTool);
 
   // Drag selection logic
@@ -243,6 +247,20 @@ export default function CanvasPage() {
   const handleMouseUp = () => {
     handleSelectionEnd();
     handlePanMouseUp();
+  };
+
+  // Combined touch handlers
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    // For touch, prioritize pan/zoom over selection when appropriate
+    handlePanTouchStart(e);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    handlePanTouchMove(e);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    handlePanTouchEnd(e);
   };
 
   // Helper: Zoom to fit selection
@@ -309,6 +327,9 @@ export default function CanvasPage() {
           handleMouseDown={handleMouseDown}
           handleMouseMove={handleMouseMove}
           handleMouseUp={handleMouseUp}
+          handleTouchStart={handleTouchStart}
+          handleTouchMove={handleTouchMove}
+          handleTouchEnd={handleTouchEnd}
           selectionRectangle={getSelectionRectangle()}
         />
 
