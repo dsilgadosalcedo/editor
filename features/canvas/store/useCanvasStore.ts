@@ -36,6 +36,7 @@ interface CanvasStoreState {
   past: CanvasElementData[][];
   future: CanvasElementData[][];
   clipboard: CanvasElementData | null;
+  rightSidebarDocked: boolean;
   // Helper
   addToHistory: () => {
     past: CanvasElementData[][];
@@ -95,6 +96,8 @@ interface CanvasStoreState {
   saveCanvas: (title?: string) => Promise<string | null>;
   loadCanvas: (id: string) => Promise<boolean>;
   listCanvases: () => Promise<any[]>;
+  // Sidebar state
+  toggleRightSidebarDock: () => void;
 }
 
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
@@ -104,6 +107,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   past: [],
   future: [],
   clipboard: null,
+  rightSidebarDocked: true,
 
   // Helper function to add current state to history
   addToHistory: () => {
@@ -720,4 +724,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       return [];
     }
   },
+  // Sidebar state actions
+  toggleRightSidebarDock: () =>
+    set((state) => ({
+      rightSidebarDocked: !state.rightSidebarDocked,
+    })),
 }));

@@ -35,7 +35,7 @@ function PropertyTitle({ ...props }: React.ComponentProps<"h4">) {
 }
 
 function PropertyInput({
-  distribution = "column",
+  distribution = "row",
   ...props
 }: React.ComponentProps<"div"> & {
   distribution?: "row" | "column";

@@ -57,7 +57,7 @@ export default function CanvasViewport({
     >
       {/* Grid Background */}
       <div
-        className="z-10 fixed w-full h-full top-0 left-0 inset-0"
+        className="fixed z-10 w-full h-full top-0 left-0"
         style={{
           backgroundImage: showGuides
             ? `linear-gradient(to right, var(--sidebar) 1px, transparent 1px), linear-gradient(to bottom, var(--sidebar) 1px, transparent 1px)`
