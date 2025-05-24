@@ -63,7 +63,7 @@ const LayersPanel: React.FC = () => {
       className="bg-card/60 z-20 space-y-1 absolute bottom-4 left-26 w-48 backdrop-blur-sm rounded-xl shadow-lg border border-sky-harbor/80 p-1"
     >
       <CollapsibleTrigger
-        className="w-full p-3 rounded-xl hover:bg-card/90 duration-300 transition-colors"
+        className="w-full p-3 rounded-lg hover:bg-card/90 duration-300 transition-colors"
         aria-label={open ? "Collapse Layers" : "Expand Layers"}
       >
         <div className="flex items-center justify-between">
@@ -76,64 +76,66 @@ const LayersPanel: React.FC = () => {
         </div>
       </CollapsibleTrigger>
 
-      <CollapsibleContent>
-        <ul className="space-y-1 max-h-64 overflow-auto">
-          {[...elements].reverse().map((el, revIdx) => {
-            const actualIdx = elements.length - 1 - revIdx;
-            return (
-              <React.Fragment key={el.id}>
-                {dragOverIndex === actualIdx && (
-                  <li className="h-0">
-                    <div className="mx-1 border-t-2 border-properties-blue dark:border-white/20" />
-                  </li>
-                )}
-                <li
-                  data-index={actualIdx}
-                  draggable
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onClick={(e) => {
-                    const isMultiSelectKey = e.ctrlKey || e.metaKey;
-                    selectElement(el.id, isMultiSelectKey);
-                  }}
-                  className={cn(
-                    "flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-colors",
-                    "group",
-                    selectedElements.includes(el.id)
-                      ? "border-storm-slate dark:border-sky-harbor/80"
-                      : "border-transparent hover:border-sky-harbor/80 dark:hover:border-storm-slate"
+      {elements.length > 0 && (
+        <CollapsibleContent>
+          <ul className="space-y-1 max-h-64 overflow-auto">
+            {[...elements].reverse().map((el, revIdx) => {
+              const actualIdx = elements.length - 1 - revIdx;
+              return (
+                <React.Fragment key={el.id}>
+                  {dragOverIndex === actualIdx && (
+                    <li className="h-0">
+                      <div className="mx-1 border-t-2 border-properties-blue dark:border-white/20" />
+                    </li>
                   )}
-                >
-                  <span className="text-sm text-properties-text dark:text-foreground">
-                    {el.name ||
-                      el.type.charAt(0).toUpperCase() + el.type.slice(1)}
-                  </span>
-                  <div className="flex items-center space-x-1.5 mr-1">
-                    {el.visible !== false ? (
-                      <Eye
-                        onClick={(e) => handleToggleVisibility(e, el.id)}
-                        className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
-                        aria-label="Hide element"
-                      />
-                    ) : (
-                      <EyeOff
-                        onClick={(e) => handleToggleVisibility(e, el.id)}
-                        className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
-                        aria-label="Show element"
-                      />
+                  <li
+                    data-index={actualIdx}
+                    draggable
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onClick={(e) => {
+                      const isMultiSelectKey = e.ctrlKey || e.metaKey;
+                      selectElement(el.id, isMultiSelectKey);
+                    }}
+                    className={cn(
+                      "flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-colors",
+                      "group",
+                      selectedElements.includes(el.id)
+                        ? "border-storm-slate dark:border-sky-harbor/80"
+                        : "border-transparent hover:border-sky-harbor/80 dark:hover:border-storm-slate"
                     )}
-                    <Trash2
-                      onClick={(e) => handleDeleteElement(e, el.id)}
-                      className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
-                    />
-                  </div>
-                </li>
-              </React.Fragment>
-            );
-          })}
-        </ul>
-      </CollapsibleContent>
+                  >
+                    <span className="text-sm text-properties-text dark:text-foreground">
+                      {el.name ||
+                        el.type.charAt(0).toUpperCase() + el.type.slice(1)}
+                    </span>
+                    <div className="flex items-center space-x-1.5 mr-1">
+                      {el.visible !== false ? (
+                        <Eye
+                          onClick={(e) => handleToggleVisibility(e, el.id)}
+                          className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
+                          aria-label="Hide element"
+                        />
+                      ) : (
+                        <EyeOff
+                          onClick={(e) => handleToggleVisibility(e, el.id)}
+                          className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
+                          aria-label="Show element"
+                        />
+                      )}
+                      <Trash2
+                        onClick={(e) => handleDeleteElement(e, el.id)}
+                        className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
+                      />
+                    </div>
+                  </li>
+                </React.Fragment>
+              );
+            })}
+          </ul>
+        </CollapsibleContent>
+      )}
     </Collapsible>
   );
 };
