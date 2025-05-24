@@ -3,6 +3,17 @@ import { create } from "zustand";
 export type ElementType = "rectangle" | "text" | "image" | "frame";
 export type ToolType = ElementType | "hand" | null;
 
+export interface SavedCanvasData {
+  id: string;
+  title: string;
+  data: {
+    elements: CanvasElementData[];
+    artboardDimensions: { width: number; height: number };
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CanvasElementData {
   id: string;
   type: ElementType;
@@ -59,6 +70,7 @@ interface CanvasStoreState {
   setPanSensitivity: (sensitivity: number) => void;
   setZoomSensitivity: (sensitivity: number) => void;
   addElement: (type: ElementType) => void;
+  addImageElement: (src: string, x?: number, y?: number) => void;
   selectElement: (id: string, addToSelection?: boolean) => void;
   selectMultipleElements: (ids: string[]) => void;
   moveElement: (id: string, dx: number, dy: number) => void;
@@ -131,7 +143,7 @@ interface CanvasStoreState {
   // API functions
   saveCanvas: (title?: string) => Promise<string | null>;
   loadCanvas: (id: string) => Promise<boolean>;
-  listCanvases: () => Promise<any[]>;
+  listCanvases: () => Promise<SavedCanvasData[]>;
   // Sidebar state
   toggleRightSidebarDock: () => void;
   // Grouping
@@ -254,6 +266,89 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       ],
       selectedElements: [newElement.id],
     }));
+  },
+  addImageElement: (src, x, y) => {
+    const { artboardDimensions, elements, getHistoryUpdate } = get();
+
+    // Create image to get dimensions
+    const img = new Image();
+    img.onload = () => {
+      const maxWidth = 400;
+      const maxHeight = 300;
+
+      // Calculate dimensions maintaining aspect ratio
+      let width = img.naturalWidth;
+      let height = img.naturalHeight;
+
+      if (width > maxWidth || height > maxHeight) {
+        const scale = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+
+      const newElement: CanvasElementData = {
+        id: `image-${Date.now()}`,
+        type: "image",
+        x:
+          x !== undefined
+            ? x
+            : Math.round(artboardDimensions.width / 2 - width / 2),
+        y:
+          y !== undefined
+            ? y
+            : Math.round(artboardDimensions.height / 2 - height / 2),
+        width,
+        height,
+        src,
+        color: "transparent",
+        selected: true,
+        visible: true,
+        rotation: 0,
+      };
+
+      set((state) => ({
+        ...getHistoryUpdate(),
+        elements: [
+          ...state.elements.map((el) => ({ ...el, selected: false })),
+          newElement,
+        ],
+        selectedElements: [newElement.id],
+      }));
+    };
+
+    img.onerror = () => {
+      // Fallback if image fails to load
+      const newElement: CanvasElementData = {
+        id: `image-${Date.now()}`,
+        type: "image",
+        x:
+          x !== undefined
+            ? x
+            : Math.round(artboardDimensions.width / 2 - 150 / 2),
+        y:
+          y !== undefined
+            ? y
+            : Math.round(artboardDimensions.height / 2 - 112 / 2),
+        width: 150,
+        height: 112,
+        src,
+        color: "transparent",
+        selected: true,
+        visible: true,
+        rotation: 0,
+      };
+
+      set((state) => ({
+        ...getHistoryUpdate(),
+        elements: [
+          ...state.elements.map((el) => ({ ...el, selected: false })),
+          newElement,
+        ],
+        selectedElements: [newElement.id],
+      }));
+    };
+
+    img.src = src;
   },
   selectElement: (id, addToSelection = false) =>
     set((state) => {
@@ -693,9 +788,17 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       const { getHistoryUpdate } = get();
       return {
         ...getHistoryUpdate(),
-        elements: state.elements.map((el) =>
-          el.id === id ? { ...el, borderWidth } : el
-        ),
+        elements: state.elements.map((el) => {
+          if (el.id === id) {
+            // If setting a border width and no border color exists, set it to black
+            const updatedElement = { ...el, borderWidth };
+            if (borderWidth > 0 && !el.borderColor) {
+              updatedElement.borderColor = "#000000";
+            }
+            return updatedElement;
+          }
+          return el;
+        }),
       };
     }),
   updateBorderColor: (id, borderColor) =>
@@ -992,7 +1095,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
           // Keep current artboard dimensions (don't change them)
           // Import project name if it exists in the imported data
-          const updateData: any = {
+          const updateData: Partial<CanvasStoreState> = {
             ...getHistoryUpdate(),
             elements: updatedElements,
             selectedElements: importedElementIds, // Auto-select all imported elements
