@@ -116,6 +116,8 @@ export function TextProperties({
             value={color}
             onChange={(newColor) => onColorChange(newColor)}
             aria-label="Text color"
+            layerName={name || `Text ${id.split("-").pop()}`}
+            propertyName="Text Color"
           />
         </PropertyInput>
       </PropertySection>

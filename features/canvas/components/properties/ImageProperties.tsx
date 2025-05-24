@@ -191,6 +191,8 @@ export function ImageProperties({
               value={borderColor || "#000000"}
               onChange={(color) => onBorderColorChange(color)}
               aria-label="Border color"
+              layerName={name || `Image ${id.split("-").pop()}`}
+              propertyName="Border"
             />
           </PropertyInput>
         </PropertyStack>
@@ -216,6 +218,8 @@ export function ImageProperties({
               value={shadowColor || "#000000"}
               onChange={(color) => onShadowColorChange(color)}
               aria-label="Shadow color"
+              layerName={name || `Image ${id.split("-").pop()}`}
+              propertyName="Shadow"
             />
           </PropertyInput>
         </PropertyStack>

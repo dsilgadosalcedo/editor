@@ -28,7 +28,10 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   ...rest
 }) => {
   const [internalValue, setInternalValue] = useState<string>(value.toString());
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   const lastPropValue = useRef<number>(value);
+  const dragStartX = useRef<number>(0);
+  const dragStartValue = useRef<number>(0);
 
   // Sync internal value if prop changes from outside
   React.useEffect(() => {
@@ -80,10 +83,76 @@ export const NumberInput: React.FC<NumberInputProps> = ({
     }
   };
 
+  const handleIconMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartX.current = e.clientX;
+    dragStartValue.current = Number(internalValue) || value;
+
+    // Add cursor style to body during drag
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - dragStartX.current;
+      // Sensitivity: 1 pixel = 0.1 steps, adjust as needed
+      const sensitivity = 0.1;
+      const valueChange = deltaX * sensitivity * step;
+      let newValue = dragStartValue.current + valueChange;
+
+      // Apply min/max constraints
+      if (typeof min === "number" && newValue < min) newValue = min;
+      if (typeof max === "number" && newValue > max) newValue = max;
+
+      // Fix floating point precision issues
+      const decimalPlaces = step.toString().split(".")[1]?.length || 0;
+      newValue =
+        Math.round(newValue * Math.pow(10, decimalPlaces)) /
+        Math.pow(10, decimalPlaces);
+
+      setInternalValue(newValue.toString());
+      onInstantChange(newValue);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+
+      // Trigger onChange on drag end
+      const finalValue = Number(internalValue);
+      if (!isNaN(finalValue) && finalValue !== value) {
+        onChange(finalValue);
+      }
+
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
   if (icon) {
     return (
       <div className="relative w-full flex items-center">
-        <div className="absolute left-2 z-10 text-properties-text/70 dark:text-foreground/70">
+        <div
+          className={`absolute left-2 z-10 text-properties-text/70 dark:text-foreground/70 cursor-ew-resize select-none ${
+            isDragging
+              ? "text-blue-500"
+              : "hover:text-properties-text dark:hover:text-foreground"
+          }`}
+          onMouseDown={handleIconMouseDown}
+          role="button"
+          tabIndex={0}
+          aria-label="Drag to adjust value"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              // Could implement keyboard drag mode here if needed
+            }
+          }}
+        >
           {icon}
         </div>
         <Input

@@ -354,6 +354,14 @@ export default function PropertiesPanel() {
                             updateFillColor(selectedElementData.id, color)
                           }
                           aria-label="Background color"
+                          layerName={
+                            selectedElementData.name ||
+                            `${
+                              selectedElementData.type.charAt(0).toUpperCase() +
+                              selectedElementData.type.slice(1)
+                            } ${selectedElementData.id.split("-").pop()}`
+                          }
+                          propertyName="Background"
                         />
                       </PropertyInput>
                       <PropertyInput>
@@ -434,6 +442,14 @@ export default function PropertiesPanel() {
                             updateBorderColor(selectedElementData.id, color)
                           }
                           aria-label="Border color"
+                          layerName={
+                            selectedElementData.name ||
+                            `${
+                              selectedElementData.type.charAt(0).toUpperCase() +
+                              selectedElementData.type.slice(1)
+                            } ${selectedElementData.id.split("-").pop()}`
+                          }
+                          propertyName="Border"
                         />
                       </PropertyInput>
                     </PropertyStack>
@@ -465,6 +481,14 @@ export default function PropertiesPanel() {
                             updateShadowColor(selectedElementData.id, color)
                           }
                           aria-label="Shadow color"
+                          layerName={
+                            selectedElementData.name ||
+                            `${
+                              selectedElementData.type.charAt(0).toUpperCase() +
+                              selectedElementData.type.slice(1)
+                            } ${selectedElementData.id.split("-").pop()}`
+                          }
+                          propertyName="Shadow"
                         />
                       </PropertyInput>
                     </PropertyStack>
