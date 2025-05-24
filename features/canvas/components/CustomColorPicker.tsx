@@ -50,11 +50,13 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const [isDraggingAlpha, setIsDraggingAlpha] = useState(false);
   const [isInternalUpdate, setIsInternalUpdate] = useState(false);
   const [colorFormat, setColorFormat] = useState<ColorFormat>("hex");
+  const [lastUpdateTime, setLastUpdateTime] = useState(0);
 
   const pickerRef = useRef<HTMLDivElement>(null);
   const saturationRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
   const alphaRef = useRef<HTMLDivElement>(null);
+  const updateTimeoutRef = useRef<number | null>(null);
 
   // Parse color from any format to HSVA
   const parseColorToHsva = (colorStr: string) => {
@@ -109,20 +111,20 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     );
   };
 
-  // Convert RGB string to HSVA
+  // Convert RGB string to HSVA with improved dark zone handling
   const rgbToHsva = (rgbStr: string, alphaValue?: number) => {
     const match = rgbStr.match(/rgba?\(([^)]+)\)/);
     if (!match) return { h: 0, s: 0, v: 0, a: 1 };
 
     const values = match[1].split(",").map((v) => parseFloat(v.trim()));
-    const r = values[0] / 255;
-    const g = values[1] / 255;
-    const b = values[2] / 255;
+    const r = Math.max(0, Math.min(255, values[0])) / 255;
+    const g = Math.max(0, Math.min(255, values[1])) / 255;
+    const b = Math.max(0, Math.min(255, values[2])) / 255;
     const a =
       alphaValue !== undefined
         ? alphaValue
         : values[3] !== undefined
-        ? values[3]
+        ? Math.max(0, Math.min(1, values[3]))
         : 1;
 
     const max = Math.max(r, g, b);
@@ -130,18 +132,29 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     const delta = max - min;
 
     let h = 0;
-    if (delta !== 0) {
-      if (max === r) h = ((g - b) / delta) % 6;
-      else if (max === g) h = (b - r) / delta + 2;
-      else h = (r - g) / delta + 4;
+    if (delta > 0.001) {
+      // Use threshold to avoid precision issues
+      if (max === r) {
+        h = ((g - b) / delta) % 6;
+      } else if (max === g) {
+        h = (b - r) / delta + 2;
+      } else {
+        h = (r - g) / delta + 4;
+      }
+      h = h * 60;
+      if (h < 0) h += 360;
     }
-    h = Math.round(h * 60);
-    if (h < 0) h += 360;
 
-    const s = max === 0 ? 0 : (delta / max) * 100;
+    // Improved saturation and value calculations
+    const s = max < 0.001 ? 0 : (delta / max) * 100;
     const v = max * 100;
 
-    return { h, s, v, a };
+    return {
+      h: Math.round(h * 10) / 10,
+      s: Math.round(s * 10) / 10,
+      v: Math.round(v * 10) / 10,
+      a: Math.round(a * 100) / 100,
+    };
   };
 
   // Convert HSL string to HSVA
@@ -162,10 +175,22 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     return { h, s: sNew, v, a };
   };
 
-  // Convert HSVA to RGBA
+  // Convert HSVA to RGBA with improved precision for dark zones
   const hsvaToRgba = (h: number, s: number, v: number, a: number = 1) => {
-    s /= 100;
-    v /= 100;
+    // Normalize inputs
+    s = Math.max(0, Math.min(100, s)) / 100;
+    v = Math.max(0, Math.min(100, v)) / 100;
+    h = ((h % 360) + 360) % 360; // Ensure hue is between 0-360
+
+    // Handle edge cases for dark zones
+    if (v === 0) {
+      return { r: 0, g: 0, b: 0, a };
+    }
+
+    if (s === 0) {
+      const gray = Math.round(v * 255);
+      return { r: gray, g: gray, b: gray, a };
+    }
 
     const c = v * s;
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
@@ -174,38 +199,53 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     let r = 0,
       g = 0,
       b = 0;
-    if (h >= 0 && h < 60) {
-      r = c;
-      g = x;
-      b = 0;
-    } else if (h >= 60 && h < 120) {
-      r = x;
-      g = c;
-      b = 0;
-    } else if (h >= 120 && h < 180) {
-      r = 0;
-      g = c;
-      b = x;
-    } else if (h >= 180 && h < 240) {
-      r = 0;
-      g = x;
-      b = c;
-    } else if (h >= 240 && h < 300) {
-      r = x;
-      g = 0;
-      b = c;
-    } else if (h >= 300 && h < 360) {
-      r = c;
-      g = 0;
-      b = x;
+
+    // Use more precise boundaries
+    const hueSegment = Math.floor(h / 60);
+    switch (hueSegment) {
+      case 0:
+        r = c;
+        g = x;
+        b = 0;
+        break;
+      case 1:
+        r = x;
+        g = c;
+        b = 0;
+        break;
+      case 2:
+        r = 0;
+        g = c;
+        b = x;
+        break;
+      case 3:
+        r = 0;
+        g = x;
+        b = c;
+        break;
+      case 4:
+        r = x;
+        g = 0;
+        b = c;
+        break;
+      case 5:
+        r = c;
+        g = 0;
+        b = x;
+        break;
+      default:
+        r = c;
+        g = x;
+        b = 0;
+        break;
     }
 
-    return {
-      r: Math.round((r + m) * 255),
-      g: Math.round((g + m) * 255),
-      b: Math.round((b + m) * 255),
-      a,
-    };
+    // Apply more precise rounding for dark values
+    const finalR = Math.max(0, Math.min(255, Math.round((r + m) * 255)));
+    const finalG = Math.max(0, Math.min(255, Math.round((g + m) * 255)));
+    const finalB = Math.max(0, Math.min(255, Math.round((b + m) * 255)));
+
+    return { r: finalR, g: finalG, b: finalB, a };
   };
 
   // Convert HSVA to HSL
@@ -303,6 +343,15 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     setPickerPosition(position);
   }, [position]);
 
+  // Cleanup animation frames on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        cancelAnimationFrame(updateTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Handle dragging the entire picker
   const handleMouseDown = (e: React.MouseEvent) => {
     if (pickerRef.current && e.target === e.currentTarget) {
@@ -329,15 +378,61 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
       const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
 
-      const newSaturation = Math.round((x / rect.width) * 100 * 100) / 100; // Round to 2 decimal places
-      const newValue = Math.round((100 - (y / rect.height) * 100) * 100) / 100; // Round to 2 decimal places
+      // Calculate new values with improved precision
+      let newSaturation = (x / rect.width) * 100;
+      let newValue = 100 - (y / rect.height) * 100;
 
+      // Apply threshold-based smoothing for dark zones to prevent jumping
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastUpdateTime;
+
+      // Dynamic threshold based on value (darker = higher threshold)
+      const dynamicThreshold = newValue < 10 ? 2 : newValue < 30 ? 1 : 0.5;
+
+      // Skip micro-movements and enforce minimum time between updates
+      if (
+        timeSinceLastUpdate < 16 && // ~60fps throttling
+        Math.abs(newSaturation - saturation) < dynamicThreshold &&
+        Math.abs(newValue - value) < dynamicThreshold
+      ) {
+        return;
+      }
+
+      setLastUpdateTime(now);
+
+      // Round values appropriately based on value range
+      if (newValue < 10) {
+        // In very dark zones, use coarser granularity
+        newSaturation = Math.round(newSaturation / 2) * 2;
+        newValue = Math.round(newValue / 2) * 2;
+      } else if (newValue < 30) {
+        // In dark zones, use medium granularity
+        newSaturation = Math.round(newSaturation);
+        newValue = Math.round(newValue);
+      } else {
+        // In normal zones, use fine granularity
+        newSaturation = Math.round(newSaturation * 10) / 10;
+        newValue = Math.round(newValue * 10) / 10;
+      }
+
+      // Clamp values
+      newSaturation = Math.max(0, Math.min(100, newSaturation));
+      newValue = Math.max(0, Math.min(100, newValue));
+
+      // Update immediately for visual feedback
       setSaturation(newSaturation);
       setValue(newValue);
 
-      // Update color immediately
-      setIsInternalUpdate(true);
-      onChange(formatColor(hue, newSaturation, newValue, alpha));
+      // Debounce the onChange callback to prevent excessive calls
+      if (updateTimeoutRef.current) {
+        cancelAnimationFrame(updateTimeoutRef.current);
+      }
+
+      updateTimeoutRef.current = requestAnimationFrame(() => {
+        setIsInternalUpdate(true);
+        onChange(formatColor(hue, newSaturation, newValue, alpha));
+        updateTimeoutRef.current = null;
+      });
     }
   };
 
@@ -353,13 +448,24 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     if (hueRef.current) {
       const rect = hueRef.current.getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-      const newHue = Math.min(359, (x / rect.width) * 360); // Ensure hue stays within 0-359
+      const newHue = Math.min(
+        359,
+        Math.round((x / rect.width) * 360 * 10) / 10
+      ); // Ensure hue stays within 0-359
 
+      // Update immediately for visual feedback
       setHue(newHue);
 
-      // Update color immediately
-      setIsInternalUpdate(true);
-      onChange(formatColor(newHue, saturation, value, alpha));
+      // Debounce the onChange callback
+      if (updateTimeoutRef.current) {
+        cancelAnimationFrame(updateTimeoutRef.current);
+      }
+
+      updateTimeoutRef.current = requestAnimationFrame(() => {
+        setIsInternalUpdate(true);
+        onChange(formatColor(newHue, saturation, value, alpha));
+        updateTimeoutRef.current = null;
+      });
     }
   };
 
@@ -377,11 +483,19 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
       const newAlpha = Math.round((x / rect.width) * 100) / 100; // Round to 2 decimal places
 
+      // Update immediately for visual feedback
       setAlpha(newAlpha);
 
-      // Update color immediately
-      setIsInternalUpdate(true);
-      onChange(formatColor(hue, saturation, value, newAlpha));
+      // Debounce the onChange callback
+      if (updateTimeoutRef.current) {
+        cancelAnimationFrame(updateTimeoutRef.current);
+      }
+
+      updateTimeoutRef.current = requestAnimationFrame(() => {
+        setIsInternalUpdate(true);
+        onChange(formatColor(hue, saturation, value, newAlpha));
+        updateTimeoutRef.current = null;
+      });
     }
   };
 
