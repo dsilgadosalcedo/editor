@@ -97,8 +97,8 @@ export default function CanvasToolbar({
   };
 
   return (
-    <div className="absolute grid place-items-center bottom-4 z-10 w-full">
-      <div className="bg-card/60 w-fit flex items-center gap-2 backdrop-blur-md p-2 rounded-xl shadow-lg border border-sky-harbor/80">
+    <div className="absolute grid place-items-center bottom-5 z-10 w-full">
+      <div className="bg-card/60 w-fit flex items-center gap-2 backdrop-blur-lg p-2 rounded-xl shadow-lg border border-sky-harbor/80">
         {/* Export/Import Controls */}
         <Button
           variant="ghost"

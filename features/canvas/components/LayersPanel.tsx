@@ -60,7 +60,7 @@ const LayersPanel: React.FC = () => {
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="bg-card/60 z-20 space-y-1 absolute bottom-4 left-26 w-48 backdrop-blur-sm rounded-xl shadow-lg border border-sky-harbor/80 p-1"
+      className="bg-card/60 z-20 space-y-1 absolute bottom-5 left-26 w-48 backdrop-blur-lg rounded-xl shadow-lg border border-sky-harbor/80 p-1"
     >
       <CollapsibleTrigger
         className="w-full p-3 rounded-lg hover:bg-card/90 duration-300 transition-colors"
