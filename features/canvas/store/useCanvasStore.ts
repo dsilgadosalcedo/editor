@@ -145,7 +145,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   artboardDimensions: { width: 800, height: 600 },
   projectName: "Untitled Project",
   panSensitivity: 1.6,
-  zoomSensitivity: 1.0,
+  zoomSensitivity: 0.6,
   past: [],
   future: [],
   clipboard: null,

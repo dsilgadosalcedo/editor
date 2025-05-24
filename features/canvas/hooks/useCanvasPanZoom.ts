@@ -10,7 +10,7 @@ export const useCanvasPanZoom = (
   canvasRef: React.RefObject<HTMLDivElement | null>,
   selectedTool: string | null,
   panSensitivity: number = 1.6,
-  zoomSensitivity: number = 1.0
+  zoomSensitivity: number = 0.6
 ) => {
   const [zoom, setZoom] = useState(100);
   const [canvasPosition, setCanvasPosition] = useState({ x: 0, y: 0 });
