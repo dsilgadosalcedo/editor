@@ -75,6 +75,7 @@ export function ImageProperties({
           <Input
             value={name || ""}
             onChange={(e) => onNameChange(e.target.value)}
+            placeholder="Image"
             className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
             aria-label="Element name"
           />
@@ -191,7 +192,7 @@ export function ImageProperties({
               value={borderColor || "#000000"}
               onChange={(color) => onBorderColorChange(color)}
               aria-label="Border color"
-              layerName={name || `Image ${id.split("-").pop()}`}
+              layerName={name || "Image"}
               propertyName="Border"
             />
           </PropertyInput>
@@ -218,7 +219,7 @@ export function ImageProperties({
               value={shadowColor || "#000000"}
               onChange={(color) => onShadowColorChange(color)}
               aria-label="Shadow color"
-              layerName={name || `Image ${id.split("-").pop()}`}
+              layerName={name || "Image"}
               propertyName="Shadow"
             />
           </PropertyInput>

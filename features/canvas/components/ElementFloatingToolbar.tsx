@@ -11,6 +11,7 @@ interface ElementFloatingToolbarProps {
   position: { x: number; y: number };
   zoom: number;
   isRotating?: boolean;
+  elementName?: string;
 }
 
 const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
@@ -20,6 +21,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
   position,
   zoom,
   isRotating = false,
+  elementName,
 }) => {
   const { moveElementUp, moveElementDown, updateFillColor } = useCanvasStore();
   const { openColorPicker } = useColorPicker();
@@ -64,7 +66,17 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
       updateFillColor(elementId, newColor);
     };
 
-    openColorPicker(elementColor, handleColorChange, { x, y });
+    const layerName =
+      elementName || elementType.charAt(0).toUpperCase() + elementType.slice(1);
+    const propertyName = elementType === "text" ? "Text Color" : "Background";
+
+    openColorPicker(
+      elementColor,
+      handleColorChange,
+      { x, y },
+      layerName,
+      propertyName
+    );
   };
 
   // Apply inverse scaling to keep toolbar at consistent size regardless of zoom

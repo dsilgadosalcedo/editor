@@ -15,7 +15,9 @@ interface ColorPickerContextType {
   openColorPicker: (
     color: string,
     onChange: (color: string) => void,
-    position: { x: number; y: number }
+    position: { x: number; y: number },
+    layerName?: string,
+    propertyName?: string
   ) => void;
   closeColorPicker: () => void;
   openOpacityPicker: (
@@ -42,6 +44,10 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
     ((color: string) => void) | null
   >(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [layerName, setLayerName] = useState<string | undefined>(undefined);
+  const [propertyName, setPropertyName] = useState<string | undefined>(
+    undefined
+  );
 
   // Opacity picker state
   const [isOpacityOpen, setIsOpacityOpen] = useState(false);
@@ -55,12 +61,16 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
   const openColorPicker = (
     color: string,
     onChange: (color: string) => void,
-    newPosition: { x: number; y: number }
+    newPosition: { x: number; y: number },
+    newLayerName?: string,
+    newPropertyName?: string
   ) => {
     const wasAlreadyOpen = isOpen;
 
     setCurrentColor(color);
     setCurrentOnChange(() => onChange);
+    setLayerName(newLayerName);
+    setPropertyName(newPropertyName);
 
     if (wasAlreadyOpen) {
       // If already open, smoothly transition to new position
@@ -82,6 +92,8 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
     setIsOpen(false);
     setCurrentOnChange(null);
     setIsTransitioning(false);
+    setLayerName(undefined);
+    setPropertyName(undefined);
   };
 
   const openOpacityPicker = (
@@ -113,30 +125,40 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
     setIsOpacityTransitioning(false);
   };
 
-  // Close color picker when clicking outside
+  // Close pickers when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+
+      // Check if clicked outside color picker
       if (isOpen) {
-        const target = event.target as HTMLElement;
-        // Don't close if clicking on color picker buttons or the picker itself
         if (
           !target.closest("[data-color-picker]") &&
           !target.closest("[data-color-picker-trigger]")
         ) {
           closeColorPicker();
+        }
+      }
+
+      // Check if clicked outside opacity picker
+      if (isOpacityOpen) {
+        if (
+          !target.closest("[data-opacity-picker]") &&
+          !target.closest("[data-color-picker-trigger]")
+        ) {
           closeOpacityPicker();
         }
       }
     };
 
-    if (isOpen) {
+    if (isOpen || isOpacityOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, isOpacityOpen]);
 
   const handleColorChange = (color: string) => {
     setCurrentColor(color);
@@ -169,6 +191,8 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
         onChange={handleColorChange}
         position={position}
         isTransitioning={isTransitioning}
+        layerName={layerName}
+        propertyName={propertyName}
       />
       <OpacityPicker
         isOpen={isOpacityOpen}
@@ -197,6 +221,8 @@ interface ColorPickerProps {
   onChange: (color: string) => void;
   className?: string;
   "aria-label"?: string;
+  layerName?: string;
+  propertyName?: string;
 }
 
 export const ColorPicker: React.FC<ColorPickerProps> = ({
@@ -204,6 +230,8 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   onChange,
   className = "",
   "aria-label": ariaLabel,
+  layerName,
+  propertyName,
 }) => {
   const { openColorPicker, openOpacityPicker } = useColorPicker();
   const colorButtonRef = useRef<HTMLButtonElement>(null);
@@ -276,7 +304,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
       // Final bounds check
       y = Math.max(8, Math.min(y, viewportHeight - colorPickerHeight - 8));
 
-      openColorPicker(value, onChange, { x, y });
+      openColorPicker(value, onChange, { x, y }, layerName, propertyName);
     }
   };
 

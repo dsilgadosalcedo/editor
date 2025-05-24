@@ -21,6 +21,8 @@ interface CustomColorPickerProps {
   onChange: (color: string) => void;
   position: { x: number; y: number };
   isTransitioning?: boolean;
+  layerName?: string;
+  propertyName?: string;
 }
 
 type ColorFormat = "hex" | "rgb" | "rgba" | "hsl" | "hsla";
@@ -32,6 +34,8 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   onChange,
   position,
   isTransitioning = false,
+  layerName,
+  propertyName,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -354,14 +358,19 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
 
   // Handle dragging the entire picker
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (pickerRef.current && e.target === e.currentTarget) {
-      e.preventDefault();
-      setDragOffset({
-        x: e.clientX - pickerPosition.x,
-        y: e.clientY - pickerPosition.y,
-      });
-      setIsDragging(true);
+    // Only start dragging if not clicking on a button
+    const target = e.target as HTMLElement;
+    if (target.closest("button")) {
+      return;
     }
+
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOffset({
+      x: e.clientX - pickerPosition.x,
+      y: e.clientY - pickerPosition.y,
+    });
+    setIsDragging(true);
   };
 
   // Handle saturation/value picker
@@ -501,23 +510,35 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      e.preventDefault();
       if (isDragging) {
+        e.preventDefault();
+        e.stopPropagation();
         setPickerPosition({
           x: e.clientX - dragOffset.x,
           y: e.clientY - dragOffset.y,
         });
       } else if (isDraggingSaturation) {
+        e.preventDefault();
         updateSaturationFromMouse(e);
       } else if (isDraggingHue) {
+        e.preventDefault();
         updateHueFromMouse(e);
       } else if (isDraggingAlpha) {
+        e.preventDefault();
         updateAlphaFromMouse(e);
       }
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-      e.preventDefault();
+      if (
+        isDragging ||
+        isDraggingSaturation ||
+        isDraggingHue ||
+        isDraggingAlpha
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       setIsDragging(false);
       setIsDraggingSaturation(false);
       setIsDraggingHue(false);
@@ -534,11 +555,15 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         passive: false,
       });
       document.addEventListener("mouseup", handleMouseUp, { passive: false });
+      document.addEventListener("selectstart", (e) => e.preventDefault(), {
+        passive: false,
+      });
     }
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("selectstart", (e) => e.preventDefault());
     };
   }, [
     isDragging,
@@ -558,11 +583,23 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const shouldShowAlpha =
     colorFormat === "rgba" || colorFormat === "hsla" || colorFormat === "hex";
 
+  // Generate dynamic header text
+  const getHeaderText = () => {
+    if (propertyName && layerName) {
+      return `${propertyName} of ${layerName}`;
+    } else if (propertyName) {
+      return propertyName;
+    } else if (layerName) {
+      return `Color of ${layerName}`;
+    }
+    return "Color Picker";
+  };
+
   return (
     <div
       ref={pickerRef}
       data-color-picker
-      className={`fixed z-50 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 ${
+      className={`fixed z-50 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 ${
         isTransitioning ? "transition-all duration-300 ease-out" : ""
       }`}
       style={{
@@ -574,14 +611,25 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       onMouseDown={(e) => e.stopPropagation()}
     >
       {/* Header with drag handle */}
-      <div
-        className="flex items-center justify-between mb-4 cursor-grab active:cursor-grabbing"
+      <header
+        className="flex items-center justify-between cursor-grab active:cursor-grabbing p-4 select-none"
         onMouseDown={handleMouseDown}
+        style={{ userSelect: "none" }}
       >
-        <div className="flex items-center gap-2">
-          <Move className="w-4 h-4 text-gray-500" />
-          <span className="select-none hover:cursor-default text-sm font-medium text-gray-700 dark:text-gray-300">
-            Color Picker
+        <div
+          className="flex items-center gap-2 cursor-grab active:cursor-grabbing flex-1 select-none"
+          onMouseDown={handleMouseDown}
+          style={{ userSelect: "none" }}
+        >
+          <Move
+            className="w-4 h-4 text-gray-500 cursor-grab pointer-events-none"
+            style={{ userSelect: "none" }}
+          />
+          <span
+            className="cursor-grab text-sm font-medium text-gray-700 dark:text-gray-300 pointer-events-none"
+            style={{ userSelect: "none" }}
+          >
+            {getHeaderText()}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -589,6 +637,10 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
             variant="ghost"
             size="icon"
             onClick={handleEyeDropper}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             title="Pick color from screen"
             className="h-6 w-6"
           >
@@ -598,42 +650,47 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
             variant="ghost"
             size="icon"
             onClick={onClose}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             className="h-6 w-6"
           >
             <X className="w-4 h-4" />
           </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Main color picker area */}
-      <div className="mb-4">
-        {/* Saturation/Value picker */}
-        <div
-          ref={saturationRef}
-          className="relative w-full h-36 mb-3 cursor-crosshair rounded-lg overflow-hidden"
-          style={{
-            background: `
+      <section className="p-4 pt-0">
+        {/* Main color picker area */}
+        <div className="mb-4">
+          {/* Saturation/Value picker */}
+          <div
+            ref={saturationRef}
+            className="relative w-full h-36 mb-3 cursor-crosshair rounded-lg overflow-hidden"
+            style={{
+              background: `
               linear-gradient(to top, #000, transparent),
               linear-gradient(to right, #fff, hsl(${hue}, 100%, 50%))
             `,
-          }}
-          onMouseDown={handleSaturationMouseDown}
-        >
-          <div
-            className="absolute w-3 h-3 border-2 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            style={{
-              left: `${saturation}%`,
-              top: `${100 - value}%`,
             }}
-          />
-        </div>
+            onMouseDown={handleSaturationMouseDown}
+          >
+            <div
+              className="absolute w-3 h-3 border-2 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              style={{
+                left: `${saturation}%`,
+                top: `${100 - value}%`,
+              }}
+            />
+          </div>
 
-        {/* Hue picker */}
-        <div
-          ref={hueRef}
-          className="relative w-full h-4 rounded-lg cursor-ew-resize"
-          style={{
-            background: `linear-gradient(to right, 
+          {/* Hue picker */}
+          <div
+            ref={hueRef}
+            className="relative w-full h-4 rounded-lg cursor-ew-resize"
+            style={{
+              background: `linear-gradient(to right, 
               hsl(0, 100%, 50%) 0%,
               hsl(60, 100%, 50%) 16.66%,
               hsl(120, 100%, 50%) 33.33%,
@@ -641,96 +698,97 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
               hsl(240, 100%, 50%) 66.66%,
               hsl(300, 100%, 50%) 83.33%,
               hsl(360, 100%, 50%) 100%)`,
-          }}
-          onMouseDown={handleHueMouseDown}
-        >
-          {/* Hue indicator */}
-          <div
-            className="absolute w-3 h-6 bg-white border border-gray-300 rounded transform -translate-x-1/2 -translate-y-1/2 pointer-events-none shadow-lg"
-            style={{
-              left: `${(hue / 360) * 100}%`,
-              top: "50%",
             }}
-          />
-        </div>
-      </div>
-
-      {/* Alpha slider - only show for formats that support alpha */}
-      {shouldShowAlpha && (
-        <div className="mb-4">
-          <Label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">
-            Alpha: {Math.round(alpha * 100)}%
-          </Label>
-          <div
-            ref={alphaRef}
-            className="relative w-full h-4 rounded-lg cursor-ew-resize overflow-hidden"
-            style={{
-              background: `linear-gradient(to right, 
-                transparent 0%, 
-                hsl(${hue}, ${saturation}%, ${value / 2}%) 100%),
-                repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50% / 8px 8px`,
-            }}
-            onMouseDown={handleAlphaMouseDown}
+            onMouseDown={handleHueMouseDown}
           >
-            {/* Alpha indicator */}
+            {/* Hue indicator */}
             <div
               className="absolute w-3 h-6 bg-white border border-gray-300 rounded transform -translate-x-1/2 -translate-y-1/2 pointer-events-none shadow-lg"
               style={{
-                left: `${alpha * 100}%`,
+                left: `${(hue / 360) * 100}%`,
                 top: "50%",
               }}
             />
           </div>
         </div>
-      )}
 
-      {/* Format selector */}
-      <div className="mb-4">
-        <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-          Format
-        </Label>
-        <Select
-          value={colorFormat}
-          onValueChange={(newFormat: ColorFormat) => {
-            setColorFormat(newFormat);
-            onChange(formatColor(hue, saturation, value, alpha));
-          }}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="hex">Hex</SelectItem>
-            <SelectItem value="rgb">RGB</SelectItem>
-            <SelectItem value="rgba">RGBA</SelectItem>
-            <SelectItem value="hsl">HSL</SelectItem>
-            <SelectItem value="hsla">HSLA</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+        {/* Alpha slider - only show for formats that support alpha */}
+        {shouldShowAlpha && (
+          <div className="mb-4">
+            <Label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">
+              Alpha: {Math.round(alpha * 100)}%
+            </Label>
+            <div
+              ref={alphaRef}
+              className="relative w-full h-4 rounded-lg cursor-ew-resize overflow-hidden"
+              style={{
+                background: `linear-gradient(to right, 
+                transparent 0%, 
+                hsl(${hue}, ${saturation}%, ${value / 2}%) 100%),
+                repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50% / 8px 8px`,
+              }}
+              onMouseDown={handleAlphaMouseDown}
+            >
+              {/* Alpha indicator */}
+              <div
+                className="absolute w-3 h-6 bg-white border border-gray-300 rounded transform -translate-x-1/2 -translate-y-1/2 pointer-events-none shadow-lg"
+                style={{
+                  left: `${alpha * 100}%`,
+                  top: "50%",
+                }}
+              />
+            </div>
+          </div>
+        )}
 
-      {/* Color preview and value */}
-      <div className="flex gap-2">
-        <div
-          className="w-12 h-9 rounded-md border relative overflow-hidden"
-          style={{
-            backgroundColor: currentColor,
-            backgroundImage:
-              alpha < 1
-                ? "repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50% / 10px 10px"
-                : "none",
-          }}
-        />
-        <Input
-          type="text"
-          value={currentColor}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-          className="flex-1 font-mono text-sm"
-          placeholder="Color value"
-        />
-      </div>
+        {/* Format selector */}
+        <div className="mb-4">
+          <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+            Format
+          </Label>
+          <Select
+            value={colorFormat}
+            onValueChange={(newFormat: ColorFormat) => {
+              setColorFormat(newFormat);
+              onChange(formatColor(hue, saturation, value, alpha));
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hex">Hex</SelectItem>
+              <SelectItem value="rgb">RGB</SelectItem>
+              <SelectItem value="rgba">RGBA</SelectItem>
+              <SelectItem value="hsl">HSL</SelectItem>
+              <SelectItem value="hsla">HSLA</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Color preview and value */}
+        <div className="flex gap-2">
+          <div
+            className="w-12 h-9 rounded-md border relative overflow-hidden"
+            style={{
+              backgroundColor: currentColor,
+              backgroundImage:
+                alpha < 1
+                  ? "repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50% / 10px 10px"
+                  : "none",
+            }}
+          />
+          <Input
+            type="text"
+            value={currentColor}
+            onChange={(e) => {
+              onChange(e.target.value);
+            }}
+            className="flex-1 font-mono text-sm"
+            placeholder="Color value"
+          />
+        </div>
+      </section>
     </div>
   );
 };

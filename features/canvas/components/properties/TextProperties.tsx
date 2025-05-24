@@ -92,6 +92,7 @@ export function TextProperties({
           <Input
             value={name || ""}
             onChange={(e) => onNameChange(e.target.value)}
+            placeholder="Text"
             className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
             aria-label="Element name"
           />
@@ -116,7 +117,7 @@ export function TextProperties({
             value={color}
             onChange={(newColor) => onColorChange(newColor)}
             aria-label="Text color"
-            layerName={name || `Text ${id.split("-").pop()}`}
+            layerName={name || "Text"}
             propertyName="Text Color"
           />
         </PropertyInput>

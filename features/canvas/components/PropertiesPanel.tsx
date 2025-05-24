@@ -253,6 +253,10 @@ export default function PropertiesPanel() {
                         onChange={(e) =>
                           updateName(selectedElementData.id, e.target.value)
                         }
+                        placeholder={
+                          selectedElementData.type.charAt(0).toUpperCase() +
+                          selectedElementData.type.slice(1)
+                        }
                         className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                         aria-label="Element name"
                       />
@@ -356,10 +360,8 @@ export default function PropertiesPanel() {
                           aria-label="Background color"
                           layerName={
                             selectedElementData.name ||
-                            `${
-                              selectedElementData.type.charAt(0).toUpperCase() +
+                            selectedElementData.type.charAt(0).toUpperCase() +
                               selectedElementData.type.slice(1)
-                            } ${selectedElementData.id.split("-").pop()}`
                           }
                           propertyName="Background"
                         />
@@ -444,10 +446,8 @@ export default function PropertiesPanel() {
                           aria-label="Border color"
                           layerName={
                             selectedElementData.name ||
-                            `${
-                              selectedElementData.type.charAt(0).toUpperCase() +
+                            selectedElementData.type.charAt(0).toUpperCase() +
                               selectedElementData.type.slice(1)
-                            } ${selectedElementData.id.split("-").pop()}`
                           }
                           propertyName="Border"
                         />
@@ -483,10 +483,8 @@ export default function PropertiesPanel() {
                           aria-label="Shadow color"
                           layerName={
                             selectedElementData.name ||
-                            `${
-                              selectedElementData.type.charAt(0).toUpperCase() +
+                            selectedElementData.type.charAt(0).toUpperCase() +
                               selectedElementData.type.slice(1)
-                            } ${selectedElementData.id.split("-").pop()}`
                           }
                           propertyName="Shadow"
                         />

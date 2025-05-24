@@ -1454,6 +1454,7 @@ export default function CanvasElement({
             }}
             zoom={zoom}
             isRotating={isRotating}
+            elementName={element.name}
           />
         )}
     </>
