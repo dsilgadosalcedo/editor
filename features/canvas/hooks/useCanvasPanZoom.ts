@@ -226,6 +226,9 @@ export const useCanvasPanZoom = (
     if (!canvas) return;
 
     const handleWheel = (e: WheelEvent) => {
+      // Always prevent default browser zoom/scroll behavior on canvas
+      e.preventDefault();
+
       if (e.deltaMode !== 0) return;
 
       const isPinchZoom = e.ctrlKey; // macOS trackpad pinch gesture
@@ -245,8 +248,6 @@ export const useCanvasPanZoom = (
 
         // Only proceed if we're in panning state
         if (gestureState !== "panning") return;
-
-        e.preventDefault();
 
         // Apply trackpad panning with appropriate sensitivity
         const panSensitivity = 1.0;
@@ -274,7 +275,6 @@ export const useCanvasPanZoom = (
         // Only proceed if we're in zooming state
         if (gestureState !== "zooming") return;
 
-        e.preventDefault();
         setTransformOrigin("center center");
 
         const minZoom = 50;
