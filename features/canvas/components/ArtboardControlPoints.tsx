@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import React, { useState, useRef } from "react";
 
 interface ArtboardControlPointsProps {
@@ -136,37 +137,33 @@ const ArtboardControlPoints: React.FC<ArtboardControlPointsProps> = ({
 
       {/* Side control points (diamonds) */}
       <div
-        className={sidePointStyle}
+        className={cn(sidePointStyle, "left-[calc(50%-7.2px)]")}
         style={{
-          left: "50%",
           top: -offset - 6,
           cursor: "n-resize",
         }}
         onMouseDown={(e) => handleMouseDown(e, "top")}
       />
       <div
-        className={sidePointStyle}
+        className={cn(sidePointStyle, "left-[calc(50%-7.2px)]")}
         style={{
-          left: "50%",
           bottom: -offset - 6,
           cursor: "s-resize",
         }}
         onMouseDown={(e) => handleMouseDown(e, "bottom")}
       />
       <div
-        className={sidePointStyle}
+        className={cn(sidePointStyle, "top-[calc(50%-7.2px)]")}
         style={{
           left: -offset - 6,
-          top: "50%",
           cursor: "w-resize",
         }}
         onMouseDown={(e) => handleMouseDown(e, "left")}
       />
       <div
-        className={sidePointStyle}
+        className={cn(sidePointStyle, "top-[calc(50%-7.2px)]")}
         style={{
           right: -offset - 6,
-          top: "50%",
           cursor: "e-resize",
         }}
         onMouseDown={(e) => handleMouseDown(e, "right")}

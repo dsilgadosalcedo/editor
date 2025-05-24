@@ -38,6 +38,8 @@ interface CanvasStoreState {
   selectedElements: string[];
   artboardDimensions: { width: number; height: number };
   projectName: string;
+  panSensitivity: number;
+  zoomSensitivity: number;
   past: CanvasElementData[][];
   future: CanvasElementData[][];
   clipboard: CanvasElementData | null;
@@ -51,6 +53,8 @@ interface CanvasStoreState {
   // Actions
   setArtboardDimensions: (dims: { width: number; height: number }) => void;
   setProjectName: (name: string) => void;
+  setPanSensitivity: (sensitivity: number) => void;
+  setZoomSensitivity: (sensitivity: number) => void;
   addElement: (type: ElementType) => void;
   selectElement: (id: string, addToSelection?: boolean) => void;
   selectMultipleElements: (ids: string[]) => void;
@@ -140,6 +144,8 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   selectedElements: [],
   artboardDimensions: { width: 800, height: 600 },
   projectName: "Untitled Project",
+  panSensitivity: 1.6,
+  zoomSensitivity: 1.0,
   past: [],
   future: [],
   clipboard: null,
@@ -164,6 +170,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
   setArtboardDimensions: (dims) => set({ artboardDimensions: dims }),
   setProjectName: (name) => set({ projectName: name }),
+  setPanSensitivity: (sensitivity) =>
+    set({ panSensitivity: Math.round(sensitivity * 10) / 10 }),
+  setZoomSensitivity: (sensitivity) =>
+    set({ zoomSensitivity: Math.round(sensitivity * 10) / 10 }),
   addElement: (type) => {
     const { artboardDimensions, elements, getHistoryUpdate } = get();
     let newElement: CanvasElementData;

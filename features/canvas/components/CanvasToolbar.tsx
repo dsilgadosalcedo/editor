@@ -131,7 +131,9 @@ export default function CanvasToolbar({
           size="icon"
           onClick={() =>
             setZoom((prev) => {
-              const levels = [10, 25, 50, 75, 100, 125, 150, 200, 300, 400];
+              const levels = [
+                10, 25, 50, 75, 100, 125, 150, 200, 300, 400, 600, 800,
+              ];
               const idx = levels.findIndex((z) => z >= prev);
               return levels[Math.max(0, idx - 1)];
             })
@@ -155,17 +157,23 @@ export default function CanvasToolbar({
             <SelectValue placeholder="Zoom">{zoom}%</SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {[10, 25, 50, 75, 100, 125, 150, 200, 300, 400].map((val) => (
-              <SelectItem key={val} value={String(val)}>
-                {val}%
-              </SelectItem>
-            ))}
+            {[10, 25, 50, 75, 100, 125, 150, 200, 300, 400, 600, 800].map(
+              (val) => (
+                <SelectItem key={val} value={String(val)}>
+                  {val}%
+                </SelectItem>
+              )
+            )}
             <SelectItem
               value="selection"
               className="text-blue-500 font-semibold rounded-none border-t border-blue-100 mt-1"
               disabled={selectedElements.length === 0}
             >
-              Zoom to Selection
+              {selectedElements.length === 0
+                ? "Zoom to Selection"
+                : selectedElements.length === 1
+                ? "Zoom to Selection (1 element)"
+                : `Zoom to Selection (${selectedElements.length} elements)`}
             </SelectItem>
           </SelectContent>
         </Select>
@@ -174,7 +182,9 @@ export default function CanvasToolbar({
           size="icon"
           onClick={() =>
             setZoom((prev) => {
-              const levels = [10, 25, 50, 75, 100, 125, 150, 200, 300, 400];
+              const levels = [
+                10, 25, 50, 75, 100, 125, 150, 200, 300, 400, 600, 800,
+              ];
               const idx = levels.findIndex((z) => z > prev);
               return levels[
                 Math.min(

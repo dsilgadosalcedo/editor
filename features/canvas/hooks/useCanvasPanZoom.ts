@@ -1,11 +1,16 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 type GestureState = "idle" | "panning" | "zooming";
+
+// Utility function to ensure zoom is always an integer
+const ensureIntegerZoom = (zoom: number): number => Math.round(zoom);
 
 export const useCanvasPanZoom = (
   artboardRef: React.RefObject<HTMLDivElement | null>,
   canvasRef: React.RefObject<HTMLDivElement | null>,
-  selectedTool: string | null
+  selectedTool: string | null,
+  panSensitivity: number = 1.6,
+  zoomSensitivity: number = 1.0
 ) => {
   const [zoom, setZoom] = useState(100);
   const [canvasPosition, setCanvasPosition] = useState({ x: 0, y: 0 });
@@ -16,61 +21,113 @@ export const useCanvasPanZoom = (
   const panStartRef = useRef<{ x: number; y: number } | null>(null);
   const gestureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Custom zoom setter that ensures integer values
+  const setZoomInteger = useCallback(
+    (newZoom: number | ((prev: number) => number)) => {
+      if (typeof newZoom === "function") {
+        setZoom((prev) => ensureIntegerZoom(newZoom(prev)));
+      } else {
+        setZoom(ensureIntegerZoom(newZoom));
+      }
+    },
+    []
+  );
+
   // Clear any pending gesture timeout
-  const clearGestureTimeout = () => {
+  const clearGestureTimeout = useCallback(() => {
     if (gestureTimeoutRef.current) {
       clearTimeout(gestureTimeoutRef.current);
       gestureTimeoutRef.current = null;
     }
-  };
+  }, []);
 
-  // Reset gesture state with debounce to prevent rapid state changes
-  const resetGestureState = () => {
+  // Reset gesture state with reduced debounce for faster response
+  const resetGestureState = useCallback(() => {
     clearGestureTimeout();
     gestureTimeoutRef.current = setTimeout(() => {
       setGestureState("idle");
-    }, 100); // Small delay to prevent flickering between gestures
-  };
+    }, 50); // Reduced from 100ms to 50ms for faster response
+  }, [clearGestureTimeout]);
 
-  // Mouse pan handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    // Don't pan if not using hand tool or if another gesture is active
-    if (selectedTool !== "hand" || gestureState !== "idle") return;
+  // Mouse pan handlers - optimized for performance
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      // Middle mouse button (wheel press) always pans, regardless of selected tool
+      if (e.button === 1) {
+        e.preventDefault(); // Prevent default middle mouse behavior
+        setGestureState("panning");
+        setIsPanning(true);
+        clearGestureTimeout();
 
-    // Commit to panning gesture
-    setGestureState("panning");
-    setIsPanning(true);
-    clearGestureTimeout();
+        panStartRef.current = {
+          x: e.clientX - canvasPosition.x,
+          y: e.clientY - canvasPosition.y,
+        };
+        if (canvasRef.current) canvasRef.current.style.cursor = "grabbing";
+        return true; // Indicate that we handled the event
+      }
 
-    panStartRef.current = {
-      x: e.clientX - canvasPosition.x,
-      y: e.clientY - canvasPosition.y,
-    };
-    if (canvasRef.current) canvasRef.current.style.cursor = "grabbing";
-  };
+      // Left mouse button only pans when hand tool is selected and no other gesture is active
+      if (
+        e.button === 0 &&
+        selectedTool === "hand" &&
+        gestureState === "idle"
+      ) {
+        setGestureState("panning");
+        setIsPanning(true);
+        clearGestureTimeout();
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    // Only allow mouse move if we're actively panning
-    if (gestureState !== "panning" || !isPanning || !panStartRef.current)
-      return;
+        panStartRef.current = {
+          x: e.clientX - canvasPosition.x,
+          y: e.clientY - canvasPosition.y,
+        };
+        if (canvasRef.current) canvasRef.current.style.cursor = "grabbing";
+        return true; // Indicate that we handled the event
+      }
 
-    setCanvasPosition({
-      x: e.clientX - panStartRef.current.x,
-      y: e.clientY - panStartRef.current.y,
-    });
-  };
+      return false; // Indicate that we didn't handle the event
+    },
+    [selectedTool, gestureState, clearGestureTimeout, canvasPosition]
+  );
 
-  const handleMouseUp = () => {
-    // Only handle mouse up if we were panning
-    if (gestureState !== "panning" || !isPanning) return;
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      // Only allow mouse move if we're actively panning
+      if (gestureState !== "panning" || !isPanning || !panStartRef.current)
+        return;
 
-    setIsPanning(false);
-    panStartRef.current = null;
-    if (canvasRef.current) canvasRef.current.style.cursor = "grab";
+      // Direct state update for better performance
+      setCanvasPosition({
+        x: e.clientX - panStartRef.current.x,
+        y: e.clientY - panStartRef.current.y,
+      });
+    },
+    [gestureState, isPanning]
+  );
 
-    // Reset gesture state after panning ends
-    resetGestureState();
-  };
+  const handleMouseUp = useCallback(
+    (e?: React.MouseEvent) => {
+      // Only handle mouse up if we were panning
+      if (gestureState !== "panning" || !isPanning) return false;
+
+      setIsPanning(false);
+      panStartRef.current = null;
+
+      // Reset cursor based on whether we're using hand tool or not
+      if (canvasRef.current) {
+        if (selectedTool === "hand") {
+          canvasRef.current.style.cursor = "grab";
+        } else {
+          canvasRef.current.style.cursor = "default";
+        }
+      }
+
+      // Reset gesture state after panning ends
+      resetGestureState();
+      return true; // Indicate that we handled the event
+    },
+    [gestureState, isPanning, resetGestureState, selectedTool]
+  );
 
   // Touch pan/zoom handlers with gesture state management
   const touchStartRef = useRef<{
@@ -96,131 +153,130 @@ export const useCanvasPanZoom = (
     return { x, y };
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    // Block if another gesture is active
-    if (gestureState !== "idle") return;
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      // Block if another gesture is active
+      if (gestureState !== "idle") return;
 
-    const touches = e.touches;
-    lastTouchesRef.current = touches;
+      const touches = e.touches;
+      lastTouchesRef.current = touches;
 
-    if (touches.length === 1) {
-      // Single finger - potential pan (only with hand tool)
-      if (selectedTool === "hand") {
-        setGestureState("panning");
-        setIsPanning(true);
+      if (touches.length === 1) {
+        // Single finger - potential pan (only with hand tool)
+        if (selectedTool === "hand") {
+          setGestureState("panning");
+          setIsPanning(true);
+          clearGestureTimeout();
+
+          touchStartRef.current = {
+            x: touches[0].clientX - canvasPosition.x,
+            y: touches[0].clientY - canvasPosition.y,
+          };
+        }
+      } else if (touches.length === 2) {
+        // Two fingers - potential pinch zoom
+        const distance = getTouchDistance(touches);
+        const center = getTouchCenter(touches);
+
+        setGestureState("zooming");
         clearGestureTimeout();
 
         touchStartRef.current = {
-          x: touches[0].clientX - canvasPosition.x,
-          y: touches[0].clientY - canvasPosition.y,
+          x: center.x,
+          y: center.y,
+          distance: distance,
         };
       }
-    } else if (touches.length === 2) {
-      // Two fingers - potential pinch zoom
-      const distance = getTouchDistance(touches);
-      const center = getTouchCenter(touches);
+    },
+    [gestureState, selectedTool, clearGestureTimeout, canvasPosition]
+  );
 
-      setGestureState("zooming");
-      clearGestureTimeout();
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      const touches = e.touches;
 
-      touchStartRef.current = {
-        x: center.x,
-        y: center.y,
-        distance: distance,
-      };
-    }
-  };
+      if (
+        gestureState === "panning" &&
+        touches.length === 1 &&
+        touchStartRef.current &&
+        selectedTool === "hand"
+      ) {
+        // Handle pan
+        e.preventDefault();
+        setCanvasPosition({
+          x: touches[0].clientX - touchStartRef.current.x,
+          y: touches[0].clientY - touchStartRef.current.y,
+        });
+      } else if (
+        gestureState === "zooming" &&
+        touches.length === 2 &&
+        touchStartRef.current &&
+        touchStartRef.current.distance
+      ) {
+        // Handle pinch zoom - optimized with faster scaling
+        e.preventDefault();
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const touches = e.touches;
+        const currentDistance = getTouchDistance(touches);
+        const currentCenter = getTouchCenter(touches);
+        const scale = currentDistance / touchStartRef.current.distance;
 
-    if (
-      gestureState === "panning" &&
-      touches.length === 1 &&
-      touchStartRef.current &&
-      selectedTool === "hand"
-    ) {
-      // Handle pan
-      e.preventDefault();
-      setCanvasPosition({
-        x: touches[0].clientX - touchStartRef.current.x,
-        y: touches[0].clientY - touchStartRef.current.y,
-      });
-    } else if (
-      gestureState === "zooming" &&
-      touches.length === 2 &&
-      touchStartRef.current &&
-      touchStartRef.current.distance
-    ) {
-      // Handle pinch zoom
-      e.preventDefault();
+        // Calculate new zoom with extended range and faster response
+        const minZoom = 10; // Extended zoom out range
+        const maxZoom = 800; // Extended zoom in range
+        const newZoom = Math.round(
+          Math.min(maxZoom, Math.max(minZoom, zoom * scale))
+        );
 
-      const currentDistance = getTouchDistance(touches);
-      const currentCenter = getTouchCenter(touches);
-      const scale = currentDistance / touchStartRef.current.distance;
+        if (Math.abs(newZoom - zoom) > 0.5) {
+          // Only update if change is significant - simple center-based zoom
+          setZoomInteger(newZoom);
+        }
 
-      // Calculate new zoom
-      const minZoom = 50;
-      const maxZoom = 400;
-      const newZoom = Math.min(maxZoom, Math.max(minZoom, zoom * scale));
-
-      if (newZoom !== zoom && artboardRef.current) {
-        const artboardRect = artboardRef.current.getBoundingClientRect();
-        const scaleBefore = zoom / 100;
-        const scaleAfter = newZoom / 100;
-        const centerX = artboardRect.left + artboardRect.width / 2;
-        const centerY = artboardRect.top + artboardRect.height / 2;
-        const offsetX = currentCenter.x - centerX;
-        const offsetY = currentCenter.y - centerY;
-
-        setCanvasPosition((prev) => ({
-          x: prev.x + offsetX * (1 - scaleAfter / scaleBefore),
-          y: prev.y + offsetY * (1 - scaleAfter / scaleBefore),
-        }));
-
-        setZoom(newZoom);
-      }
-
-      // Update distance for next move
-      touchStartRef.current = {
-        ...touchStartRef.current,
-        distance: currentDistance,
-      };
-    }
-
-    lastTouchesRef.current = touches;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    // Only handle if we were actively in a gesture
-    if (gestureState === "idle") return;
-
-    const touches = e.touches;
-
-    if (touches.length === 0) {
-      // All fingers lifted
-      if (gestureState === "panning") {
-        setIsPanning(false);
-      }
-      touchStartRef.current = null;
-      lastTouchesRef.current = null;
-      resetGestureState();
-    } else if (gestureState === "zooming" && touches.length === 1) {
-      // Went from pinch to single finger - could transition to pan if hand tool
-      if (selectedTool === "hand") {
-        setGestureState("panning");
-        setIsPanning(true);
+        // Update distance for next move
         touchStartRef.current = {
-          x: touches[0].clientX - canvasPosition.x,
-          y: touches[0].clientY - canvasPosition.y,
+          ...touchStartRef.current,
+          distance: currentDistance,
         };
-      } else {
-        resetGestureState();
       }
-    }
-  };
 
-  // Enhanced wheel handler for both trackpad pan/zoom and mouse wheel zoom
+      lastTouchesRef.current = touches;
+    },
+    [gestureState, selectedTool, zoom, setZoomInteger]
+  );
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      // Only handle if we were actively in a gesture
+      if (gestureState === "idle") return;
+
+      const touches = e.touches;
+
+      if (touches.length === 0) {
+        // All fingers lifted
+        if (gestureState === "panning") {
+          setIsPanning(false);
+        }
+        touchStartRef.current = null;
+        lastTouchesRef.current = null;
+        resetGestureState();
+      } else if (gestureState === "zooming" && touches.length === 1) {
+        // Went from pinch to single finger - could transition to pan if hand tool
+        if (selectedTool === "hand") {
+          setGestureState("panning");
+          setIsPanning(true);
+          touchStartRef.current = {
+            x: touches[0].clientX - canvasPosition.x,
+            y: touches[0].clientY - canvasPosition.y,
+          };
+        } else {
+          resetGestureState();
+        }
+      }
+    },
+    [gestureState, selectedTool, canvasPosition, resetGestureState]
+  );
+
+  // Enhanced wheel handler for both trackpad pan/zoom and mouse wheel zoom - OPTIMIZED
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -231,38 +287,12 @@ export const useCanvasPanZoom = (
 
       if (e.deltaMode !== 0) return;
 
-      const isPinchZoom = e.ctrlKey; // macOS trackpad pinch gesture
-      const isTrackpadPan =
-        !isPinchZoom && (Math.abs(e.deltaX) > 0 || Math.abs(e.deltaY) > 0);
+      const isZoomModifier = e.ctrlKey || e.metaKey; // Ctrl on Windows/Linux, Cmd on macOS
+      const hasHorizontalDelta = Math.abs(e.deltaX) > 0;
+      const hasVerticalDelta = Math.abs(e.deltaY) > 0;
 
-      // Handle trackpad panning (two-finger scroll without pinch) - works with any tool
-      if (isTrackpadPan) {
-        // Block if zooming is in progress
-        if (gestureState === "zooming") return;
-
-        // Commit to panning gesture
-        if (gestureState === "idle") {
-          setGestureState("panning");
-          clearGestureTimeout();
-        }
-
-        // Only proceed if we're in panning state
-        if (gestureState !== "panning") return;
-
-        // Apply trackpad panning with appropriate sensitivity
-        const panSensitivity = 1.0;
-        setCanvasPosition((prev) => ({
-          x: prev.x - e.deltaX * panSensitivity,
-          y: prev.y - e.deltaY * panSensitivity,
-        }));
-
-        // Reset gesture state after a short delay
-        resetGestureState();
-        return;
-      }
-
-      // Handle zoom (trackpad pinch or mouse wheel when not panning)
-      if (isPinchZoom || (!isTrackpadPan && !isPinchZoom)) {
+      // Handle zoom with Ctrl/Cmd + scroll wheel (both trackpad and mouse)
+      if (isZoomModifier && hasVerticalDelta) {
         // Block if panning is in progress
         if (gestureState === "panning") return;
 
@@ -277,45 +307,73 @@ export const useCanvasPanZoom = (
 
         setTransformOrigin("center center");
 
-        const minZoom = 50;
-        const maxZoom = 400;
-        const zoomStep = isPinchZoom ? 2 : 5; // Finer control for trackpad pinch
+        const minZoom = 10; // Extended zoom out range
+        const maxZoom = 800; // Extended zoom in range
+
+        // Zoom steps - trackpad pinch typically has smaller deltaY values
+        const isTrackpadPinch = Math.abs(e.deltaY) < 50; // Trackpad pinch gestures typically have smaller delta values
+        const zoomStep = isTrackpadPinch
+          ? Math.max(1, zoom * 0.15 * zoomSensitivity) // Finer control for trackpad pinch
+          : Math.max(5, zoom * 0.15 * zoomSensitivity); // Faster for mouse wheel
+
         let newZoom = zoom;
 
-        if (e.deltaY < 0) newZoom = Math.min(maxZoom, zoom + zoomStep);
-        else if (e.deltaY > 0) newZoom = Math.max(minZoom, zoom - zoomStep);
+        if (e.deltaY < 0)
+          newZoom = Math.round(Math.min(maxZoom, zoom + zoomStep));
+        else if (e.deltaY > 0)
+          newZoom = Math.round(Math.max(minZoom, zoom - zoomStep));
 
-        if (newZoom === zoom) {
-          // No zoom change, reset gesture state
+        if (Math.abs(newZoom - zoom) < 0.1) {
+          // No significant zoom change, reset gesture state
           resetGestureState();
           return;
         }
 
-        if (artboardRef.current) {
-          const artboardRect = artboardRef.current.getBoundingClientRect();
-          const scaleBefore = zoom / 100;
-          const scaleAfter = newZoom / 100;
-          const centerX = artboardRect.left + artboardRect.width / 2;
-          const centerY = artboardRect.top + artboardRect.height / 2;
-          const offsetX = e.clientX - centerX;
-          const offsetY = e.clientY - centerY;
-
-          setCanvasPosition((prev) => ({
-            x: prev.x + offsetX * (1 - scaleAfter / scaleBefore),
-            y: prev.y + offsetY * (1 - scaleAfter / scaleBefore),
-          }));
-        }
-
-        setZoom(newZoom);
+        // Simple center-based zoom - no pointer-following behavior
+        setZoomInteger(newZoom);
 
         // Reset gesture state after zoom completes
         resetGestureState();
+        return;
+      }
+
+      // Handle panning (trackpad scroll or mouse wheel without modifier)
+      if ((hasHorizontalDelta || hasVerticalDelta) && !isZoomModifier) {
+        // Block if zooming is in progress
+        if (gestureState === "zooming") return;
+
+        // Commit to panning gesture
+        if (gestureState === "idle") {
+          setGestureState("panning");
+          clearGestureTimeout();
+        }
+
+        // Only proceed if we're in panning state
+        if (gestureState !== "panning") return;
+
+        // Pan with sensitivity
+        setCanvasPosition((prev) => ({
+          x: prev.x - e.deltaX * panSensitivity,
+          y: prev.y - e.deltaY * panSensitivity,
+        }));
+
+        // Reset gesture state after panning
+        resetGestureState();
+        return;
       }
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [zoom, artboardRef, canvasRef, selectedTool, gestureState]);
+  }, [
+    zoom,
+    gestureState,
+    clearGestureTimeout,
+    resetGestureState,
+    panSensitivity,
+    zoomSensitivity,
+    setZoomInteger,
+  ]);
 
   // Update cursor based on tool and gesture state
   useEffect(() => {
@@ -333,18 +391,18 @@ export const useCanvasPanZoom = (
         canvasRef.current.style.cursor = "default";
       }
     }
-  }, [selectedTool, isPanning, gestureState, canvasRef]);
+  }, [selectedTool, isPanning, gestureState]);
 
   // Cleanup gesture timeout on unmount
   useEffect(() => {
     return () => {
       clearGestureTimeout();
     };
-  }, []);
+  }, [clearGestureTimeout]);
 
   return {
     zoom,
-    setZoom,
+    setZoom: setZoomInteger,
     canvasPosition,
     setCanvasPosition,
     transformOrigin,

@@ -172,18 +172,16 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
         data-color-picker-trigger
         onClick={handleClick}
         className={cn(
-          "flex max-w-[159.51px] overflow-x-scroll items-center w-full rounded-md border bg-transparent dark:bg-input/30 p-0 border-input transition-colors hover:bg-transparent dark:hover:bg-input/30 hover:cursor-pointer",
+          "flex max-w-[159.51px] w-full items-center rounded-md border border-input transition-colors hover:bg-transparent hover:cursor-pointer",
           className
         )}
         variant="ghost"
         aria-label={ariaLabel}
+        style={{ backgroundColor: value }}
       >
-        <div
-          className="grid place-items-center w-full h-full rounded-sm flex-shrink-0"
-          style={{ backgroundColor: value }}
-        >
-          <span className="text-white">{value}</span>
-        </div>
+        <span className="text-white text-ellipsis overflow-hidden">
+          {value}
+        </span>
       </Button>
     </div>
   );

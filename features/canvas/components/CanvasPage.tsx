@@ -29,6 +29,8 @@ export default function CanvasPage() {
     elements,
     selectedElements,
     artboardDimensions,
+    panSensitivity,
+    zoomSensitivity,
     deleteElement,
     undo,
     redo,
@@ -211,7 +213,13 @@ export default function CanvasPage() {
     setIsPanning,
     panStartRef,
     gestureState,
-  } = useCanvasPanZoom(artboardRef, canvasRef, selectedTool);
+  } = useCanvasPanZoom(
+    artboardRef,
+    canvasRef,
+    selectedTool,
+    panSensitivity,
+    zoomSensitivity
+  );
 
   // Drag selection logic
   const {
@@ -231,12 +239,15 @@ export default function CanvasPage() {
 
   // Combined mouse handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Try drag selection first (returns true if it handles the event)
-    if (handleSelectionStart(e)) {
-      return;
+    // Always try pan handling first (especially for middle mouse button)
+    if (handlePanMouseDown(e)) {
+      return; // Pan handler handled it (middle mouse or hand tool)
     }
-    // Otherwise handle panning
-    handlePanMouseDown(e);
+
+    // Only try drag selection if pan didn't handle it (left click on non-hand tool)
+    if (e.button === 0) {
+      handleSelectionStart(e);
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -244,9 +255,19 @@ export default function CanvasPage() {
     handlePanMouseMove(e);
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Try pan handler first
+    if (handlePanMouseUp(e)) {
+      return; // Pan handler handled it
+    }
+
+    // Handle selection end
     handleSelectionEnd();
-    handlePanMouseUp();
+  };
+
+  // Prevent context menu on canvas (especially for middle mouse button)
+  const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
   };
 
   // Combined touch handlers
@@ -266,23 +287,54 @@ export default function CanvasPage() {
   // Helper: Zoom to fit selection
   const handleZoomToSelection = () => {
     if (selectedElements.length === 0) return;
-    const el = elements.find((el) => el.id === selectedElements[0]);
-    if (!el) return;
-    // Get artboard and canvas sizes
+
+    // Get all selected elements
+    const selectedElementsData = elements.filter((el) =>
+      selectedElements.includes(el.id)
+    );
+
+    if (selectedElementsData.length === 0) return;
+
+    // Calculate bounding box of all selected elements
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    selectedElementsData.forEach((el) => {
+      minX = Math.min(minX, el.x);
+      minY = Math.min(minY, el.y);
+      maxX = Math.max(maxX, el.x + el.width);
+      maxY = Math.max(maxY, el.y + el.height);
+    });
+
+    // Calculate selection bounds
+    const selectionWidth = maxX - minX;
+    const selectionHeight = maxY - minY;
+    const selectionCenterX = minX + selectionWidth / 2;
+    const selectionCenterY = minY + selectionHeight / 2;
+
+    // Get artboard dimensions
     const artboardW = artboardDimensions.width;
     const artboardH = artboardDimensions.height;
-    const padding = 40; // px, for some margin
-    const scaleX = (artboardW - padding * 2) / el.width;
-    const scaleY = (artboardH - padding * 2) / el.height;
-    const newZoom = Math.min(
-      400,
-      Math.max(10, Math.floor(Math.min(scaleX, scaleY) * 100))
+    const padding = 40; // px margin around selection
+
+    // Calculate zoom to fit selection with padding
+    const scaleX = (artboardW - padding * 2) / selectionWidth;
+    const scaleY = (artboardH - padding * 2) / selectionHeight;
+    const newZoom = Math.round(
+      Math.min(
+        800, // Extended max zoom (was 400)
+        Math.max(10, Math.min(scaleX, scaleY) * 100) // Extended min zoom (was 50)
+      )
     );
+
     setZoom(newZoom);
-    // Center the element
+
+    // Center the selection in the artboard
     setCanvasPosition({
-      x: artboardW / 2 - (el.x + el.width / 2) * (newZoom / 100),
-      y: artboardH / 2 - (el.y + el.height / 2) * (newZoom / 100),
+      x: artboardW / 2 - selectionCenterX * (newZoom / 100),
+      y: artboardH / 2 - selectionCenterY * (newZoom / 100),
     });
   };
 
@@ -327,6 +379,7 @@ export default function CanvasPage() {
           handleMouseDown={handleMouseDown}
           handleMouseMove={handleMouseMove}
           handleMouseUp={handleMouseUp}
+          handleContextMenu={handleContextMenu}
           handleTouchStart={handleTouchStart}
           handleTouchMove={handleTouchMove}
           handleTouchEnd={handleTouchEnd}

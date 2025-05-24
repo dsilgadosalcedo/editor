@@ -4,7 +4,6 @@ import type React from "react";
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useElementDragResize } from "../hooks/useElementDragResize";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
 
 interface CanvasElementProps {
@@ -793,16 +792,6 @@ export default function CanvasElement({
     return null;
   }
 
-  const topPoint = element.y - (4.25 + 1 / 2) * (100 / zoom);
-  const leftPoint = element.x - (4.25 + 1 / 2) * (100 / zoom);
-  const bottomPoint =
-    element.y + element.height - (4.25 - 1 / 2) * (100 / zoom);
-  const rightPoint = element.x + element.width - (4.25 - 1 / 2) * (100 / zoom);
-  const middleXPoint =
-    element.x + element.width / 2 - (4.25 - 1 / 2) * (100 / zoom);
-  const middleYPoint =
-    element.y + element.height / 2 - (4.25 - 1 / 2) * (100 / zoom);
-
   return (
     <>
       <div
@@ -1227,7 +1216,7 @@ export default function CanvasElement({
             {/* Corner radius handle for rectangles and images */}
             {(element.type === "rectangle" || element.type === "image") && (
               <div
-                className="absolute w-3 h-3 hover:scale-125 transition-all duration-300 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer"
+                className="absolute w-3 h-3 hover:scale-125 transition-all duration-200 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer"
                 onMouseDown={handleCornerRadiusDragStart}
                 title="Drag to adjust corner radius"
                 style={{

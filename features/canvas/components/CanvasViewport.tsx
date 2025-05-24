@@ -15,6 +15,7 @@ interface CanvasViewportProps {
   handleMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleMouseUp: (e: React.MouseEvent<HTMLDivElement>) => void;
+  handleContextMenu?: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleTouchStart: (e: React.TouchEvent<HTMLDivElement>) => void;
   handleTouchMove: (e: React.TouchEvent<HTMLDivElement>) => void;
   handleTouchEnd: (e: React.TouchEvent<HTMLDivElement>) => void;
@@ -38,6 +39,7 @@ export default function CanvasViewport({
   handleMouseDown,
   handleMouseMove,
   handleMouseUp,
+  handleContextMenu,
   handleTouchStart,
   handleTouchMove,
   handleTouchEnd,
@@ -76,6 +78,7 @@ export default function CanvasViewport({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onContextMenu={handleContextMenu}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

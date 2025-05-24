@@ -58,6 +58,13 @@ export const NumberInput: React.FC<NumberInputProps> = ({
       if (e.key === "ArrowDown") newValue -= step;
       if (typeof min === "number" && newValue < min) newValue = min;
       if (typeof max === "number" && newValue > max) newValue = max;
+
+      // Fix floating point precision issues by rounding to appropriate decimal places
+      const decimalPlaces = step.toString().split(".")[1]?.length || 0;
+      newValue =
+        Math.round(newValue * Math.pow(10, decimalPlaces)) /
+        Math.pow(10, decimalPlaces);
+
       setInternalValue(newValue.toString());
       onInstantChange(newValue);
     } else if (e.key === "Enter") {

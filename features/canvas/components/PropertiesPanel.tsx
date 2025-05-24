@@ -1,12 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  PanelRight,
-  PanelLeftOpen,
-  PanelRightOpen,
-  Link,
-  Unlink,
-} from "lucide-react";
+import { PanelLeftOpen, PanelRightOpen, Link, Unlink } from "lucide-react";
 import { NumberInput } from "./NumberInput";
 import { ColorPicker } from "./ColorPicker";
 import { useCanvasStore } from "../store/useCanvasStore";
@@ -27,10 +21,6 @@ import { Separator } from "@/components/ui/separator";
 
 export default function PropertiesPanel() {
   const {
-    artboardDimensions,
-    setArtboardDimensions,
-    projectName,
-    setProjectName,
     selectedElements,
     getSelectedElementData,
     hasMultipleSelection,
@@ -59,14 +49,6 @@ export default function PropertiesPanel() {
 
   const selectedElementData = getSelectedElementData();
 
-  const handleUpdateArtboardWidth = (width: number) => {
-    setArtboardDimensions({ ...artboardDimensions, width });
-  };
-
-  const handleUpdateArtboardHeight = (height: number) => {
-    setArtboardDimensions({ ...artboardDimensions, height });
-  };
-
   return (
     <div
       className={`z-20  flex flex-col bg-card/95 shadow-xl backdrop-blur-md border border-white/20 transition-all duration-300 p-1 rounded-[1.25rem] ${
@@ -75,9 +57,9 @@ export default function PropertiesPanel() {
           : "p-1 rounded-r-none"
       }`}
     >
-      <div className="flex-1 overflow-y-auto bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl w-64">
+      <aside className="flex-1 overflow-y-auto bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl w-64">
         {/* Header with dock/undock button */}
-        <div className="flex items-center justify-between p-3">
+        <header className="flex items-center justify-between p-3">
           <h3 className="text-sm font-medium text-properties-text dark:text-foreground">
             Properties
           </h3>
@@ -96,50 +78,29 @@ export default function PropertiesPanel() {
               <PanelRightOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
             )}
           </Button>
-        </div>
+        </header>
 
         <Separator />
 
         {/* Content */}
         <div className="p-4">
-          {selectedElements.length === 0 ? (
-            <>
-              <ArtboardProperties
-                dimensions={artboardDimensions}
-                onWidthChange={handleUpdateArtboardWidth}
-                onHeightChange={handleUpdateArtboardHeight}
-              />
-
-              <Separator className="my-4" />
-
-              <PropertySection>
-                <PropertyTitle>Project Name</PropertyTitle>
-                <PropertyInput>
-                  <Input
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
-                    aria-label="Project name"
-                    placeholder="Enter project name"
-                  />
-                </PropertyInput>
-              </PropertySection>
-            </>
-          ) : hasMultipleSelection() ? (
-            <div className="space-y-4">
-              <PropertySection>
-                <PropertyTitle>Multiple Selection</PropertyTitle>
-                <div className="text-sm text-muted-foreground">
-                  {selectedElements.length} elements selected
-                </div>
-                <div className="text-xs text-muted-foreground mt-2">
-                  Individual properties are not available when multiple elements
-                  are selected. You can still move and delete the selected
-                  elements.
-                </div>
-              </PropertySection>
-            </div>
-          ) : selectedElementData ? (
+          {selectedElements.length === 0 || hasMultipleSelection() ? (
+            <ArtboardProperties />
+          ) : // ) : hasMultipleSelection() ? (
+          //   <div className="space-y-4">
+          //     <PropertySection>
+          //       <PropertyTitle>Multiple Selection</PropertyTitle>
+          //       <div className="text-sm text-muted-foreground">
+          //         {selectedElements.length} elements selected
+          //       </div>
+          //       <div className="text-xs text-muted-foreground mt-2">
+          //         Individual properties are not available when multiple elements
+          //         are selected. You can still move and delete the selected
+          //         elements.
+          //       </div>
+          //     </PropertySection>
+          //   </div>
+          selectedElementData ? (
             <div className="space-y-6">
               {selectedElementData.type === "text" ? (
                 <>
@@ -353,7 +314,7 @@ export default function PropertiesPanel() {
 
                   <PropertySection>
                     <PropertyTitle>Appearance</PropertyTitle>
-                    <PropertyStack distribution="column">
+                    <PropertyStack>
                       <PropertyInput>
                         <PropertyLabel>Background</PropertyLabel>
                         <ColorPicker
@@ -503,7 +464,7 @@ export default function PropertiesPanel() {
             </div>
           ) : null}
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
