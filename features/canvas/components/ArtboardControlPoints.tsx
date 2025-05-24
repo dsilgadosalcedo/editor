@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import React, { useState, useRef } from "react";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
 
 interface ArtboardControlPointsProps {
   artboardDimensions: { width: number; height: number };
@@ -22,6 +23,7 @@ const ArtboardControlPoints: React.FC<ArtboardControlPointsProps> = ({
   onResizeArtboard,
   zoom,
 }) => {
+  const { artboardAspectRatio } = useCanvasStore();
   const [isDragging, setIsDragging] = useState(false);
   const [activeHandle, setActiveHandle] = useState<ResizeHandle | null>(null);
   const startDimensions = useRef({ width: 0, height: 0 });
@@ -43,35 +45,99 @@ const ArtboardControlPoints: React.FC<ArtboardControlPointsProps> = ({
       let newWidth = startDimensions.current.width;
       let newHeight = startDimensions.current.height;
 
-      switch (handle) {
-        case "top-left":
-          newWidth = Math.max(200, startDimensions.current.width - deltaX);
-          newHeight = Math.max(150, startDimensions.current.height - deltaY);
-          break;
-        case "top-right":
-          newWidth = Math.max(200, startDimensions.current.width + deltaX);
-          newHeight = Math.max(150, startDimensions.current.height - deltaY);
-          break;
-        case "bottom-left":
-          newWidth = Math.max(200, startDimensions.current.width - deltaX);
-          newHeight = Math.max(150, startDimensions.current.height + deltaY);
-          break;
-        case "bottom-right":
-          newWidth = Math.max(200, startDimensions.current.width + deltaX);
-          newHeight = Math.max(150, startDimensions.current.height + deltaY);
-          break;
-        case "top":
-          newHeight = Math.max(150, startDimensions.current.height - deltaY);
-          break;
-        case "bottom":
-          newHeight = Math.max(150, startDimensions.current.height + deltaY);
-          break;
-        case "left":
-          newWidth = Math.max(200, startDimensions.current.width - deltaX);
-          break;
-        case "right":
-          newWidth = Math.max(200, startDimensions.current.width + deltaX);
-          break;
+      if (artboardAspectRatio !== null) {
+        // Aspect ratio is locked - maintain ratio during resize
+        switch (handle) {
+          case "top-left":
+          case "top-right":
+          case "bottom-left":
+          case "bottom-right":
+            // Corner handles - use the larger delta to maintain aspect ratio
+            const widthDelta = handle.includes("right") ? deltaX : -deltaX;
+            const heightDelta = handle.includes("bottom") ? deltaY : -deltaY;
+
+            // Calculate new dimensions based on width change
+            const newWidthFromWidth = Math.max(
+              200,
+              startDimensions.current.width + widthDelta
+            );
+            const newHeightFromWidth = Math.max(
+              150,
+              newWidthFromWidth / artboardAspectRatio
+            );
+
+            // Calculate new dimensions based on height change
+            const newHeightFromHeight = Math.max(
+              150,
+              startDimensions.current.height + heightDelta
+            );
+            const newWidthFromHeight = Math.max(
+              200,
+              newHeightFromHeight * artboardAspectRatio
+            );
+
+            // Use the change that results in larger dimensions to give better user control
+            if (Math.abs(widthDelta) > Math.abs(heightDelta)) {
+              newWidth = newWidthFromWidth;
+              newHeight = newHeightFromWidth;
+            } else {
+              newWidth = newWidthFromHeight;
+              newHeight = newHeightFromHeight;
+            }
+            break;
+          case "top":
+          case "bottom":
+            // Vertical handles - adjust width to maintain ratio
+            newHeight = Math.max(
+              150,
+              startDimensions.current.height +
+                (handle === "bottom" ? deltaY : -deltaY)
+            );
+            newWidth = Math.max(200, newHeight * artboardAspectRatio);
+            break;
+          case "left":
+          case "right":
+            // Horizontal handles - adjust height to maintain ratio
+            newWidth = Math.max(
+              200,
+              startDimensions.current.width +
+                (handle === "right" ? deltaX : -deltaX)
+            );
+            newHeight = Math.max(150, newWidth / artboardAspectRatio);
+            break;
+        }
+      } else {
+        // Custom ratio - allow free resizing
+        switch (handle) {
+          case "top-left":
+            newWidth = Math.max(200, startDimensions.current.width - deltaX);
+            newHeight = Math.max(150, startDimensions.current.height - deltaY);
+            break;
+          case "top-right":
+            newWidth = Math.max(200, startDimensions.current.width + deltaX);
+            newHeight = Math.max(150, startDimensions.current.height - deltaY);
+            break;
+          case "bottom-left":
+            newWidth = Math.max(200, startDimensions.current.width - deltaX);
+            newHeight = Math.max(150, startDimensions.current.height + deltaY);
+            break;
+          case "bottom-right":
+            newWidth = Math.max(200, startDimensions.current.width + deltaX);
+            newHeight = Math.max(150, startDimensions.current.height + deltaY);
+            break;
+          case "top":
+            newHeight = Math.max(150, startDimensions.current.height - deltaY);
+            break;
+          case "bottom":
+            newHeight = Math.max(150, startDimensions.current.height + deltaY);
+            break;
+          case "left":
+            newWidth = Math.max(200, startDimensions.current.width - deltaX);
+            break;
+          case "right":
+            newWidth = Math.max(200, startDimensions.current.width + deltaX);
+            break;
+        }
       }
 
       onResizeArtboard(Math.round(newWidth), Math.round(newHeight));

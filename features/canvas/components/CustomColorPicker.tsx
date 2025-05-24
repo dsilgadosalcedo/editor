@@ -23,7 +23,7 @@ interface CustomColorPickerProps {
   isTransitioning?: boolean;
 }
 
-type ColorFormat = "hex" | "rgb" | "rgba" | "hsl" | "hsla" | "oklch";
+type ColorFormat = "hex" | "rgb" | "rgba" | "hsl" | "hsla";
 
 const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   isOpen,
@@ -73,11 +73,6 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     // HSL/HSLA format
     if (trimmed.startsWith("hsl")) {
       return hslToHsva(trimmed);
-    }
-
-    // OKLCH format
-    if (trimmed.startsWith("oklch")) {
-      return oklchToHsva(trimmed);
     }
 
     // Fallback to hex parsing
@@ -167,20 +162,6 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     return { h, s: sNew, v, a };
   };
 
-  // Convert OKLCH string to HSVA (simplified conversion)
-  const oklchToHsva = (oklchStr: string) => {
-    const match = oklchStr.match(/oklch\(([^)]+)\)/);
-    if (!match) return { h: 0, s: 0, v: 0, a: 1 };
-
-    const values = match[1].split(" ").map((v) => parseFloat(v.trim()));
-    const l = values[0] * 100;
-    const c = values[1] * 100;
-    const h = values[2] || 0;
-
-    // Simplified conversion - this is approximate
-    return { h, s: c, v: l, a: 1 };
-  };
-
   // Convert HSVA to RGBA
   const hsvaToRgba = (h: number, s: number, v: number, a: number = 1) => {
     s /= 100;
@@ -242,41 +223,6 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     };
   };
 
-  // Convert RGB to OKLCH
-  const rgbToOklch = (r: number, g: number, b: number) => {
-    // Linear RGB
-    const toLinear = (c: number) => {
-      c = c / 255;
-      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-    };
-
-    const rLin = toLinear(r);
-    const gLin = toLinear(g);
-    const bLin = toLinear(b);
-
-    // Linear RGB to OKLab
-    const l = 0.4122214708 * rLin + 0.5363325363 * gLin + 0.0514459929 * bLin;
-    const m = 0.2119034982 * rLin + 0.6806995451 * gLin + 0.1073969566 * bLin;
-    const s = 0.0883024619 * rLin + 0.2817188376 * gLin + 0.6299787005 * bLin;
-
-    const l_ = Math.cbrt(l);
-    const m_ = Math.cbrt(m);
-    const s_ = Math.cbrt(s);
-
-    const L = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
-    const a = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_;
-    const b2 = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_;
-
-    const C = Math.sqrt(a * a + b2 * b2);
-    const h = (Math.atan2(b2, a) * 180) / Math.PI;
-
-    return {
-      l: L,
-      c: C,
-      h: h < 0 ? h + 360 : h,
-    };
-  };
-
   // Format color based on selected format
   const formatColor = (h: number, s: number, v: number, a: number) => {
     const rgba = hsvaToRgba(h, s, v, a);
@@ -310,12 +256,6 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       case "hsla":
         const hsla = hsvaToHsl(h, s, v);
         return `hsla(${hsla.h}, ${hsla.s}%, ${hsla.l}%, ${a.toFixed(2)})`;
-
-      case "oklch":
-        const oklch = rgbToOklch(rgba.r, rgba.g, rgba.b);
-        return `oklch(${oklch.l.toFixed(3)} ${oklch.c.toFixed(
-          3
-        )} ${oklch.h.toFixed(1)})`;
 
       default:
         return `#${rgba.r.toString(16).padStart(2, "0")}${rgba.g
@@ -643,7 +583,6 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
             <SelectItem value="rgba">RGBA</SelectItem>
             <SelectItem value="hsl">HSL</SelectItem>
             <SelectItem value="hsla">HSLA</SelectItem>
-            <SelectItem value="oklch">OKLCH</SelectItem>
           </SelectContent>
         </Select>
       </div>

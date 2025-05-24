@@ -338,9 +338,9 @@ export default function CanvasPage() {
     });
   };
 
-  // Helper: Reset view to artboard at 100% zoom
+  // Helper: Reset view to artboard at 75% zoom
   const handleResetView = () => {
-    setZoom(100);
+    setZoom(75);
     // Center the artboard in the viewport
     setCanvasPosition({
       x: 0,

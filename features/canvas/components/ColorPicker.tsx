@@ -7,7 +7,9 @@ import React, {
   useState,
   ReactNode,
 } from "react";
+import { Blend } from "lucide-react";
 import CustomColorPicker from "./CustomColorPicker";
+import OpacityPicker from "./OpacityPicker";
 
 interface ColorPickerContextType {
   openColorPicker: (
@@ -16,6 +18,12 @@ interface ColorPickerContextType {
     position: { x: number; y: number }
   ) => void;
   closeColorPicker: () => void;
+  openOpacityPicker: (
+    color: string,
+    onChange: (color: string) => void,
+    position: { x: number; y: number }
+  ) => void;
+  closeOpacityPicker: () => void;
 }
 
 const ColorPickerContext = createContext<ColorPickerContextType | null>(null);
@@ -34,6 +42,15 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
     ((color: string) => void) | null
   >(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Opacity picker state
+  const [isOpacityOpen, setIsOpacityOpen] = useState(false);
+  const [opacityPosition, setOpacityPosition] = useState({ x: 0, y: 0 });
+  const [currentOpacityColor, setCurrentOpacityColor] = useState("#000000");
+  const [currentOpacityOnChange, setCurrentOpacityOnChange] = useState<
+    ((color: string) => void) | null
+  >(null);
+  const [isOpacityTransitioning, setIsOpacityTransitioning] = useState(false);
 
   const openColorPicker = (
     color: string,
@@ -67,6 +84,35 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
     setIsTransitioning(false);
   };
 
+  const openOpacityPicker = (
+    color: string,
+    onChange: (color: string) => void,
+    newPosition: { x: number; y: number }
+  ) => {
+    const wasAlreadyOpen = isOpacityOpen;
+
+    setCurrentOpacityColor(color);
+    setCurrentOpacityOnChange(() => onChange);
+
+    if (wasAlreadyOpen) {
+      setIsOpacityTransitioning(true);
+      setOpacityPosition(newPosition);
+
+      setTimeout(() => {
+        setIsOpacityTransitioning(false);
+      }, 300);
+    } else {
+      setOpacityPosition(newPosition);
+      setIsOpacityOpen(true);
+    }
+  };
+
+  const closeOpacityPicker = () => {
+    setIsOpacityOpen(false);
+    setCurrentOpacityOnChange(null);
+    setIsOpacityTransitioning(false);
+  };
+
   // Close color picker when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -78,6 +124,7 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
           !target.closest("[data-color-picker-trigger]")
         ) {
           closeColorPicker();
+          closeOpacityPicker();
         }
       }
     };
@@ -98,8 +145,22 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
     }
   };
 
+  const handleOpacityChange = (color: string) => {
+    setCurrentOpacityColor(color);
+    if (currentOpacityOnChange) {
+      currentOpacityOnChange(color);
+    }
+  };
+
   return (
-    <ColorPickerContext.Provider value={{ openColorPicker, closeColorPicker }}>
+    <ColorPickerContext.Provider
+      value={{
+        openColorPicker,
+        closeColorPicker,
+        openOpacityPicker,
+        closeOpacityPicker,
+      }}
+    >
       {children}
       <CustomColorPicker
         isOpen={isOpen}
@@ -108,6 +169,14 @@ export const ColorPickerProvider: React.FC<ColorPickerProviderProps> = ({
         onChange={handleColorChange}
         position={position}
         isTransitioning={isTransitioning}
+      />
+      <OpacityPicker
+        isOpen={isOpacityOpen}
+        onClose={closeOpacityPicker}
+        color={currentOpacityColor}
+        onChange={handleOpacityChange}
+        position={opacityPosition}
+        isTransitioning={isOpacityTransitioning}
       />
     </ColorPickerContext.Provider>
   );
@@ -136,87 +205,151 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   className = "",
   "aria-label": ariaLabel,
 }) => {
-  const { openColorPicker } = useColorPicker();
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const { openColorPicker, openOpacityPicker } = useColorPicker();
+  const colorButtonRef = useRef<HTMLButtonElement>(null);
+  const opacityButtonRef = useRef<HTMLButtonElement>(null);
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const colorPickerWidth = 280; // Width of the CustomColorPicker
-      const colorPickerHeight = 420; // More accurate height estimate including all components
+  // Convert any color to hex for display (without #)
+  const getHexDisplay = (color: string): string => {
+    const trimmed = color.trim().toLowerCase();
+
+    if (trimmed.startsWith("#")) {
+      return trimmed.slice(1).toUpperCase();
+    } else if (trimmed.startsWith("rgb")) {
+      const match = trimmed.match(/rgba?\(([^)]+)\)/);
+      if (match) {
+        const values = match[1].split(",").map((v) => parseInt(v.trim()));
+        return `${values[0].toString(16).padStart(2, "0")}${values[1]
+          .toString(16)
+          .padStart(2, "0")}${values[2]
+          .toString(16)
+          .padStart(2, "0")}`.toUpperCase();
+      }
+    }
+
+    return color.replace("#", "").toUpperCase();
+  };
+
+  const handleColorClick = (e: React.MouseEvent) => {
+    if (colorButtonRef.current) {
+      const rect = colorButtonRef.current.getBoundingClientRect();
+      const colorPickerWidth = 280;
+      const colorPickerHeight = 400;
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      const margin = 16; // Increased margin for better spacing
+      const gap = 8;
 
-      // Calculate horizontal position
+      // Calculate distances from each edge
+      const distanceFromTop = rect.top;
+      const distanceFromBottom = viewportHeight - rect.bottom;
+      const distanceFromLeft = rect.left;
+      const distanceFromRight = viewportWidth - rect.right;
+
+      // Position horizontally (prefer left alignment, but adjust if needed)
       let x = rect.left;
-      if (rect.left + colorPickerWidth > viewportWidth - margin) {
-        // Position to the left of the button if it would go off-screen
+      if (distanceFromRight < colorPickerWidth) {
+        // Not enough space on the right, position to the left
         x = rect.right - colorPickerWidth;
       }
-      // Ensure it doesn't go off the edges with margin
-      x = Math.max(
-        margin,
-        Math.min(x, viewportWidth - colorPickerWidth - margin)
-      );
+      // Ensure it stays within viewport
+      x = Math.max(8, Math.min(x, viewportWidth - colorPickerWidth - 8));
 
-      // Calculate vertical position
-      let y = rect.bottom + margin;
-
-      // Check if positioning below would go off-screen
-      if (y + colorPickerHeight > viewportHeight - margin) {
-        // Try positioning above the button
-        const yAbove = rect.top - colorPickerHeight - margin;
-
-        // If positioning above would also go off-screen (near top)
-        if (yAbove < margin) {
-          // Check available space and position optimally
-          const spaceAbove = rect.top - margin;
-          const spaceBelow = viewportHeight - rect.bottom - margin;
-
-          if (spaceBelow >= spaceAbove && spaceBelow > colorPickerHeight / 2) {
-            // More space below and sufficient, position to use available space below
-            y = rect.bottom + margin;
-          } else if (spaceAbove > colorPickerHeight / 2) {
-            // Sufficient space above, position to use available space above
-            y = Math.max(margin, rect.top - colorPickerHeight - margin);
-          } else {
-            // Neither space is sufficient, position at top with margin
-            y = margin;
-          }
+      // Position vertically based on available space
+      let y;
+      if (distanceFromBottom >= colorPickerHeight + gap) {
+        // Enough space below - position below
+        y = rect.bottom + gap;
+      } else if (distanceFromTop >= colorPickerHeight + gap) {
+        // Enough space above - position above
+        y = rect.top - colorPickerHeight - gap;
+      } else {
+        // Not enough space in either direction - position where there's more space
+        if (distanceFromBottom > distanceFromTop) {
+          // More space below
+          y = rect.bottom + gap;
         } else {
-          // Position above the button
-          y = yAbove;
+          // More space above
+          y = Math.max(8, rect.top - colorPickerHeight - gap);
         }
       }
 
-      // Final safety check to ensure it's within viewport bounds
-      y = Math.max(
-        margin,
-        Math.min(y, viewportHeight - colorPickerHeight - margin)
-      );
+      // Final bounds check
+      y = Math.max(8, Math.min(y, viewportHeight - colorPickerHeight - 8));
 
       openColorPicker(value, onChange, { x, y });
     }
   };
 
+  const handleOpacityClick = (e: React.MouseEvent) => {
+    if (opacityButtonRef.current) {
+      const rect = opacityButtonRef.current.getBoundingClientRect();
+      const pickerWidth = 200;
+      const pickerHeight = 80;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const gap = 8;
+
+      // Calculate distances from each edge
+      const distanceFromTop = rect.top;
+      const distanceFromBottom = viewportHeight - rect.bottom;
+      const distanceFromRight = viewportWidth - rect.right;
+
+      // Position horizontally (prefer left alignment)
+      let x = rect.left;
+      if (distanceFromRight < pickerWidth) {
+        x = rect.right - pickerWidth;
+      }
+      x = Math.max(8, Math.min(x, viewportWidth - pickerWidth - 8));
+
+      // Position vertically
+      let y;
+      if (distanceFromBottom >= pickerHeight + gap) {
+        y = rect.bottom + gap;
+      } else if (distanceFromTop >= pickerHeight + gap) {
+        y = rect.top - pickerHeight - gap;
+      } else {
+        y =
+          distanceFromBottom > distanceFromTop
+            ? rect.bottom + gap
+            : Math.max(8, rect.top - pickerHeight - gap);
+      }
+
+      y = Math.max(8, Math.min(y, viewportHeight - pickerHeight - 8));
+
+      openOpacityPicker(value, onChange, { x, y });
+    }
+  };
+
   return (
-    <div className="relative w-full">
+    <div className="flex gap-1 w-full">
       <Button
-        ref={buttonRef}
+        ref={colorButtonRef}
         data-color-picker-trigger
-        onClick={handleClick}
+        onClick={handleColorClick}
         className={cn(
-          "flex max-w-[159.51px] w-full items-center rounded-md border border-input transition-colors hover:bg-transparent hover:cursor-pointer",
+          "flex items-center rounded-md border border-input transition-colors hover:bg-transparent hover:cursor-pointer flex-1",
           className
         )}
         variant="ghost"
         aria-label={ariaLabel}
         style={{ backgroundColor: value }}
       >
-        <span className="text-white text-ellipsis overflow-hidden">
-          {value}
+        <span className="text-white text-ellipsis overflow-hidden font-mono text-sm">
+          {getHexDisplay(value)}
         </span>
+      </Button>
+      <Button
+        ref={opacityButtonRef}
+        data-color-picker-trigger
+        onClick={handleOpacityClick}
+        className={cn(
+          "flex items-center justify-center rounded-md border border-input transition-colors hover:bg-accent hover:cursor-pointer w-10 h-10",
+          className
+        )}
+        variant="ghost"
+        aria-label="Adjust opacity"
+      >
+        <Blend className="w-4 h-4" />
       </Button>
     </div>
   );

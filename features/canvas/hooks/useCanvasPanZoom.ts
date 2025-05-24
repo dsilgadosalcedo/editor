@@ -12,7 +12,7 @@ export const useCanvasPanZoom = (
   panSensitivity: number = 1.6,
   zoomSensitivity: number = 0.6
 ) => {
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(75);
   const [canvasPosition, setCanvasPosition] = useState({ x: 0, y: 0 });
   const [transformOrigin, setTransformOrigin] =
     useState<string>("center center");

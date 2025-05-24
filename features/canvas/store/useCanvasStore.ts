@@ -38,6 +38,7 @@ interface CanvasStoreState {
   elements: CanvasElementData[];
   selectedElements: string[];
   artboardDimensions: { width: number; height: number };
+  artboardAspectRatio: number | null; // null means custom/unlocked
   projectName: string;
   panSensitivity: number;
   zoomSensitivity: number;
@@ -53,6 +54,7 @@ interface CanvasStoreState {
   };
   // Actions
   setArtboardDimensions: (dims: { width: number; height: number }) => void;
+  setArtboardAspectRatio: (ratio: number | null) => void;
   setProjectName: (name: string) => void;
   setPanSensitivity: (sensitivity: number) => void;
   setZoomSensitivity: (sensitivity: number) => void;
@@ -154,7 +156,8 @@ interface CanvasStoreState {
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   elements: [],
   selectedElements: [],
-  artboardDimensions: { width: 800, height: 600 },
+  artboardDimensions: { width: 1024, height: 576 },
+  artboardAspectRatio: 16 / 9, // Default to 16:9 ratio
   projectName: "Untitled Project",
   panSensitivity: 1.6,
   zoomSensitivity: 0.6,
@@ -181,6 +184,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   },
 
   setArtboardDimensions: (dims) => set({ artboardDimensions: dims }),
+  setArtboardAspectRatio: (ratio) => set({ artboardAspectRatio: ratio }),
   setProjectName: (name) => set({ projectName: name }),
   setPanSensitivity: (sensitivity) =>
     set({ panSensitivity: Math.round(sensitivity * 10) / 10 }),
