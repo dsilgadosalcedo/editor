@@ -36,6 +36,8 @@ export const elementToSVG = (element: CanvasElementData): string => {
       return createTextSVG(element);
     case "image":
       return createImageSVG(element);
+    case "frame":
+      return createFrameSVG(element);
     default:
       return "";
   }
@@ -148,6 +150,33 @@ const createTextSVG = (element: CanvasElementData): string => {
     text-anchor="${textAnchor}"
     dominant-baseline="${dominantBaseline}"
   >${escapeXml(content)}</text>`;
+};
+
+/**
+ * Create SVG for frame elements
+ */
+const createFrameSVG = (element: CanvasElementData): string => {
+  const {
+    x,
+    y,
+    width,
+    height,
+    borderWidth = 1,
+    borderColor = "#3b82f6",
+    cornerRadius = 0,
+  } = element;
+
+  return `<rect 
+    x="${x}" 
+    y="${y}" 
+    width="${width}" 
+    height="${height}" 
+    fill="none"
+    stroke="${borderColor}" 
+    stroke-width="${borderWidth}"
+    ${cornerRadius > 0 ? `rx="${cornerRadius}" ry="${cornerRadius}"` : ""}
+    stroke-dasharray="5,5"
+  />`;
 };
 
 /**
@@ -347,4 +376,38 @@ export const copyToFigmaClipboard = async (
     console.error("Failed to copy to clipboard:", error);
     throw new Error("Failed to copy to clipboard");
   }
+};
+
+/**
+ * Download canvas elements as SVG file
+ */
+export const downloadCanvasAsSVG = (
+  elements: CanvasElementData[],
+  filename: string = "canvas",
+  options: {
+    includeBackground?: boolean;
+    backgroundColor?: string;
+    padding?: number;
+    scale?: number;
+  } = {}
+): void => {
+  if (elements.length === 0) {
+    throw new Error("No elements to export");
+  }
+
+  const svgContent = elementsToSVG(elements, options);
+
+  // Create download link
+  const blob = new Blob([svgContent], { type: "image/svg+xml" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${filename}.svg`;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
 };

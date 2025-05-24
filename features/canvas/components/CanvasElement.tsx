@@ -10,7 +10,7 @@ import ElementFloatingToolbar from "./ElementFloatingToolbar";
 interface CanvasElementProps {
   element: {
     id: string;
-    type: "rectangle" | "text" | "image";
+    type: "rectangle" | "text" | "image" | "frame";
     x: number;
     y: number;
     width: number;
@@ -32,6 +32,8 @@ interface CanvasElementProps {
     verticalAlign?: "top" | "middle" | "bottom";
     visible?: boolean;
     lockAspectRatio?: boolean;
+    name?: string;
+    children?: string[];
   };
   onSelect: (addToSelection?: boolean) => void;
   onMove: (deltaX: number, deltaY: number) => void;
@@ -711,17 +713,24 @@ export default function CanvasElement({
             element.type === "rectangle" ? element.color : "transparent",
           zIndex: 1,
           borderRadius:
-            element.type === "rectangle"
+            element.type === "rectangle" || element.type === "frame"
               ? `${element.cornerRadius || 0}px`
               : undefined,
-          borderWidth: element.type !== "image" ? element.borderWidth ?? 0 : 0,
+          borderWidth:
+            element.type !== "image"
+              ? element.borderWidth ?? (element.type === "frame" ? 1 : 0)
+              : 0,
           borderStyle:
-            element.type !== "image" && element.borderWidth
-              ? "solid"
+            element.type !== "image" &&
+            (element.borderWidth || element.type === "frame")
+              ? element.type === "frame"
+                ? "dashed"
+                : "solid"
               : undefined,
           borderColor:
             element.type !== "image"
-              ? element.borderColor ?? "transparent"
+              ? element.borderColor ??
+                (element.type === "frame" ? "#3b82f6" : "transparent")
               : undefined,
           boxShadow: element.shadowBlur
             ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
@@ -782,6 +791,16 @@ export default function CanvasElement({
             }}
           >
             {!isEditing && element.content}
+          </div>
+        )}
+        {element.type === "frame" && (
+          <div
+            className="absolute -top-5 left-0 text-xs text-blue-600 bg-white/80 px-1 rounded pointer-events-none font-medium"
+            style={{
+              fontSize: `${Math.max(8, 10 * (zoom / 100))}px`,
+            }}
+          >
+            {element.name || "Frame"}
           </div>
         )}
       </div>

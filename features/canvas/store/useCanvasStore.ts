@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ElementType = "rectangle" | "text" | "image";
+export type ElementType = "rectangle" | "text" | "image" | "frame";
 export type ToolType = ElementType | "hand" | null;
 
 export interface CanvasElementData {
@@ -28,6 +28,8 @@ export interface CanvasElementData {
   verticalAlign?: "top" | "middle" | "bottom";
   visible?: boolean;
   lockAspectRatio?: boolean;
+  parentId?: string; // For grouped elements
+  children?: string[]; // For frame elements
 }
 
 interface CanvasStoreState {
@@ -124,6 +126,9 @@ interface CanvasStoreState {
   listCanvases: () => Promise<any[]>;
   // Sidebar state
   toggleRightSidebarDock: () => void;
+  // Grouping
+  groupElements: () => void;
+  ungroupElements: () => void;
 }
 
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
@@ -1003,4 +1008,89 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     set((state) => ({
       rightSidebarDocked: !state.rightSidebarDocked,
     })),
+  // Grouping
+  groupElements: () => {
+    const state = get();
+    const { getHistoryUpdate } = get();
+
+    if (state.selectedElements.length < 2) return;
+
+    const selectedElements = state.elements.filter((el) =>
+      state.selectedElements.includes(el.id)
+    );
+
+    // Calculate bounding box for the frame
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+
+    selectedElements.forEach((el) => {
+      minX = Math.min(minX, el.x);
+      minY = Math.min(minY, el.y);
+      maxX = Math.max(maxX, el.x + el.width);
+      maxY = Math.max(maxY, el.y + el.height);
+    });
+
+    const frameId = `frame-${Date.now()}`;
+    const frameElement: CanvasElementData = {
+      id: frameId,
+      type: "frame",
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      color: "transparent",
+      borderWidth: 1,
+      borderColor: "#3b82f6",
+      selected: true,
+      visible: true,
+      children: state.selectedElements,
+      name: "Frame",
+    };
+
+    // Update selected elements to have this frame as parent
+    const updatedElements = state.elements.map((el) => {
+      if (state.selectedElements.includes(el.id)) {
+        return { ...el, parentId: frameId, selected: false };
+      }
+      return el;
+    });
+
+    set({
+      ...getHistoryUpdate(),
+      elements: [...updatedElements, frameElement],
+      selectedElements: [frameId],
+    });
+  },
+  ungroupElements: () => {
+    const state = get();
+    const { getHistoryUpdate } = get();
+
+    if (state.selectedElements.length !== 1) return;
+
+    const selectedElement = state.elements.find(
+      (el) => el.id === state.selectedElements[0]
+    );
+
+    if (!selectedElement || selectedElement.type !== "frame") return;
+
+    const childrenIds = selectedElement.children || [];
+
+    // Remove the frame and update children to remove parentId
+    const updatedElements = state.elements
+      .filter((el) => el.id !== selectedElement.id)
+      .map((el) => {
+        if (childrenIds.includes(el.id)) {
+          return { ...el, parentId: undefined, selected: true };
+        }
+        return el;
+      });
+
+    set({
+      ...getHistoryUpdate(),
+      elements: updatedElements,
+      selectedElements: childrenIds,
+    });
+  },
 }));

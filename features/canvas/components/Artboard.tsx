@@ -1,6 +1,7 @@
 import React from "react";
 import CanvasElement from "./CanvasElement";
 import ArtboardControlPoints from "./ArtboardControlPoints";
+import MultiSelectFloatingToolbar from "./MultiSelectFloatingToolbar";
 
 interface ArtboardProps {
   artboardDimensions: { width: number; height: number };
@@ -201,6 +202,44 @@ const Artboard: React.FC<ArtboardProps> = ({
           onResizeArtboard={onResizeArtboard}
           zoom={zoom}
         />
+
+        {/* Multi-Select Floating Toolbar */}
+        {(() => {
+          const selectedElementsData = elements.filter((el) =>
+            selectedElements.includes(el.id)
+          );
+
+          // Check if we have multiple elements selected or a single frame
+          const singleFrame =
+            selectedElementsData.length === 1 &&
+            selectedElementsData[0]?.type === "frame";
+          const multipleElements = selectedElementsData.length > 1;
+
+          if (!singleFrame && !multipleElements) return null;
+
+          // Calculate the center position of the selection
+          let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+
+          selectedElementsData.forEach((el) => {
+            minX = Math.min(minX, el.x);
+            minY = Math.min(minY, el.y);
+            maxX = Math.max(maxX, el.x + el.width);
+            maxY = Math.max(maxY, el.y + el.height);
+          });
+
+          const centerX = (minX + maxX) / 2;
+          const centerY = minY; // Position at the top of the selection
+
+          return (
+            <MultiSelectFloatingToolbar
+              position={{ x: centerX, y: centerY }}
+              zoom={zoom}
+            />
+          );
+        })()}
       </div>
     </div>
   );

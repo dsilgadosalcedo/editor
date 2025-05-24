@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Hand,
   Square,
@@ -6,6 +6,8 @@ import {
   Layers,
   Image as ImageIcon,
   MousePointer,
+  MoreHorizontal,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,6 +16,13 @@ import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { downloadCanvasAsSVG } from "@/lib/figma-clipboard";
 
 interface ToolSidebarProps {
   selectedTool: ToolType;
@@ -28,7 +37,22 @@ export default function ToolSidebar({
   onToggleLayers,
   layersOpen,
 }: ToolSidebarProps) {
-  const { addElement, clearSelection } = useCanvasStore();
+  const { addElement, clearSelection, elements, projectName } =
+    useCanvasStore();
+
+  const handleDownloadAsSVG = () => {
+    try {
+      downloadCanvasAsSVG(elements, projectName || "canvas", {
+        includeBackground: true,
+        backgroundColor: "#ffffff",
+        padding: 20,
+        scale: 1,
+      });
+    } catch (error) {
+      console.error("Failed to download SVG:", error);
+      alert("Failed to download SVG. Please try again.");
+    }
+  };
 
   return (
     <div className="z-20 m-4 p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
@@ -96,6 +120,27 @@ export default function ToolSidebar({
             className={cn(layersOpen && "text-properties-gold")}
           />
         </ToolButton>
+
+        <Separator />
+
+        {/* Menu Button */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-md group bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20 dark:active:bg-white/30 active:bg-white/60"
+            >
+              <MoreHorizontal className="h-6 w-6 group-active:text-properties-gold dark:group-active:text-properties-gold group-active:scale-90 transition-all duration-200 text-properties-text dark:text-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="end" className="w-48">
+            <DropdownMenuItem onClick={handleDownloadAsSVG}>
+              <Download className="w-4 h-4 mr-2" />
+              Download as SVG
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

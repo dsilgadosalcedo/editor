@@ -6,7 +6,7 @@ import { useColorPicker } from "./ColorPicker";
 
 interface ElementFloatingToolbarProps {
   elementId: string;
-  elementType: "rectangle" | "text" | "image";
+  elementType: "rectangle" | "text" | "image" | "frame";
   elementColor: string;
   position: { x: number; y: number };
   zoom: number;
