@@ -141,7 +141,7 @@ const OpacityPicker: React.FC<OpacityPickerProps> = ({
   return (
     <div
       ref={pickerRef}
-      data-color-picker
+      data-opacity-picker
       className={`fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 ${
         isTransitioning ? "transition-all duration-300 ease-out" : ""
       }`}
