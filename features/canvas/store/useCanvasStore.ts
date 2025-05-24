@@ -735,15 +735,35 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     const { selectedElements } = get();
     return selectedElements.length > 1;
   },
-  copySelection: () =>
-    set((state) => {
-      // For now, only copy the first selected element
-      const selected =
-        state.selectedElements.length > 0
-          ? state.elements.find((el) => el.id === state.selectedElements[0])
-          : null;
-      return { clipboard: selected ? { ...selected } : null };
-    }),
+  copySelection: () => {
+    const state = get();
+    const selectedElements = state.elements.filter((el) =>
+      state.selectedElements.includes(el.id)
+    );
+
+    // Update internal clipboard (for backward compatibility)
+    const selected =
+      selectedElements.length > 0 ? { ...selectedElements[0] } : null;
+
+    set({ clipboard: selected });
+
+    // Also copy to system clipboard for Figma compatibility
+    if (selectedElements.length > 0) {
+      // Import the function dynamically to avoid issues during SSR
+      import("@/lib/figma-clipboard")
+        .then(({ copyToFigmaClipboard }) => {
+          return copyToFigmaClipboard(selectedElements, {
+            includeBackground: false,
+            padding: 20,
+            scale: 1,
+          });
+        })
+        .catch((error) => {
+          console.warn("Failed to copy to system clipboard:", error);
+          // Silently fail - the internal clipboard still works
+        });
+    }
+  },
   pasteClipboard: () =>
     set((state) => {
       if (!state.clipboard) return {};

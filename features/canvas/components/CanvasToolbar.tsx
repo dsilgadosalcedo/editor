@@ -191,14 +191,17 @@ export default function CanvasToolbar({
         </Button>
 
         {/* Copy/Paste Controls */}
-        {/* <div className="w-px h-6 bg-blue-200/40 mx-1" />
+        <div className="h-6">
+          <Separator orientation="vertical" />
+        </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={copySelection}
-          disabled={!selectedElement}
+          disabled={selectedElements.length === 0}
           className="h-8 w-8"
-          aria-label="Copy"
+          aria-label="Copy (also copies to system clipboard for Figma)"
+          title="Copy selection - also copies to system clipboard for pasting into Figma"
         >
           <Copy className="h-4 w-4" />
         </Button>
@@ -211,7 +214,7 @@ export default function CanvasToolbar({
           aria-label="Paste"
         >
           <Clipboard className="h-4 w-4" />
-        </Button> */}
+        </Button>
 
         {/* Undo/Redo Controls */}
         <div className="h-6">
