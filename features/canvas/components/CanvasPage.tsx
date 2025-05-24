@@ -41,6 +41,7 @@ export default function CanvasPage() {
     clearSelection,
     moveElementUp,
     moveElementDown,
+    moveElement,
     importCanvas,
     rightSidebarDocked,
     selectMultipleElements,
@@ -176,6 +177,51 @@ export default function CanvasPage() {
         }
         return;
       }
+
+      // Move selected elements with arrow keys (when not typing and elements are selected)
+      if (
+        (e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight") &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.shiftKey &&
+        !e.altKey &&
+        !isTyping &&
+        selectedElements.length > 0
+      ) {
+        e.preventDefault();
+
+        // Define movement amount (pixels)
+        const moveAmount = 1;
+
+        // Calculate movement delta based on arrow key
+        let dx = 0;
+        let dy = 0;
+
+        switch (e.key) {
+          case "ArrowUp":
+            dy = -moveAmount;
+            break;
+          case "ArrowDown":
+            dy = moveAmount;
+            break;
+          case "ArrowLeft":
+            dx = -moveAmount;
+            break;
+          case "ArrowRight":
+            dx = moveAmount;
+            break;
+        }
+
+        // Move all selected elements
+        selectedElements.forEach((id) => {
+          moveElement(id, dx, dy);
+        });
+
+        return;
+      }
     };
 
     document.addEventListener("keydown", onKeyDown);
@@ -192,6 +238,7 @@ export default function CanvasPage() {
     clearSelection,
     moveElementUp,
     moveElementDown,
+    moveElement,
     elements,
   ]);
 

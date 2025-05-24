@@ -14,6 +14,7 @@ const shortcuts = [
   { keys: ["Ctrl", "V"], description: "Paste element" },
   { keys: ["Ctrl", "↑"], description: "Move element up one layer" },
   { keys: ["Ctrl", "↓"], description: "Move element down one layer" },
+  { keys: ["↑", "↓", "←", "→"], description: "Move selected elements" },
   { keys: ["?"], description: "Show keyboard shortcuts" },
 ];
 
