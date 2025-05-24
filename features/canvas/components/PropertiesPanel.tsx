@@ -13,6 +13,7 @@ import {
   Zap,
   Move,
   MoveVertical,
+  Scan,
 } from "lucide-react";
 import { NumberInput } from "./NumberInput";
 import { ColorPicker } from "./ColorPicker";
@@ -400,22 +401,8 @@ export default function PropertiesPanel() {
                               )
                             )
                           }
-                          icon={<CornerUpLeft className="h-3 w-3" />}
+                          icon={<Scan className="h-3 w-3" />}
                           aria-label="Corner radius"
-                        />
-                      </PropertyInput>
-                      <PropertyInput>
-                        <PropertyLabel>Opacity</PropertyLabel>
-                        <NumberInput
-                          value={100}
-                          onChange={() => {
-                            console.log("opacity changed");
-                          }}
-                          onInstantChange={() => {
-                            console.log("opacity changed");
-                          }}
-                          icon={<Circle className="h-3 w-3" />}
-                          aria-label="Opacity"
                         />
                       </PropertyInput>
                     </PropertyStack>

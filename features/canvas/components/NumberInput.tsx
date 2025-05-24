@@ -82,7 +82,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
 
   if (icon) {
     return (
-      <div className="relative flex items-center">
+      <div className="relative w-full flex items-center">
         <div className="absolute left-2 z-10 text-properties-text/70 dark:text-foreground/70">
           {icon}
         </div>

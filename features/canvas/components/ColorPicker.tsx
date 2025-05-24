@@ -342,14 +342,11 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
         ref={opacityButtonRef}
         data-color-picker-trigger
         onClick={handleOpacityClick}
-        className={cn(
-          "flex items-center justify-center rounded-md border border-input transition-colors hover:bg-accent hover:cursor-pointer w-10 h-10",
-          className
-        )}
+        size="icon"
         variant="ghost"
         aria-label="Adjust opacity"
       >
-        <Blend className="w-4 h-4" />
+        <Blend />
       </Button>
     </div>
   );
