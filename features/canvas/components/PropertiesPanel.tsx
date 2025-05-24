@@ -303,7 +303,7 @@ export default function PropertiesPanel() {
                             }
                             className={`h-6 w-6 ${
                               selectedElementData.lockAspectRatio
-                                ? "text-blue-600"
+                                ? "text-sky-harbor"
                                 : "text-gray-400"
                             }`}
                             title={
