@@ -816,9 +816,17 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       const { getHistoryUpdate } = get();
       return {
         ...getHistoryUpdate(),
-        elements: state.elements.map((el) =>
-          el.id === id ? { ...el, shadowBlur } : el
-        ),
+        elements: state.elements.map((el) => {
+          if (el.id === id) {
+            // If setting a shadow blur and no shadow color exists, set it to black
+            const updatedElement = { ...el, shadowBlur };
+            if (shadowBlur > 0 && !el.shadowColor) {
+              updatedElement.shadowColor = "#000000";
+            }
+            return updatedElement;
+          }
+          return el;
+        }),
       };
     }),
   updateShadowColor: (id, shadowColor) =>

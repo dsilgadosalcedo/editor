@@ -469,41 +469,37 @@ export default function PropertiesPanel() {
                       </PropertyInput>
                     </PropertyStack>
                   </PropertySection>
-
-                  <PositionProperties
-                    x={selectedElementData.x}
-                    y={selectedElementData.y}
-                    rotation={selectedElementData.rotation || 0}
-                    onXChange={(deltaX) =>
-                      moveElement(selectedElementData.id, deltaX, 0)
-                    }
-                    onYChange={(deltaY) =>
-                      moveElement(selectedElementData.id, 0, deltaY)
-                    }
-                    onRotationChange={(rotation) =>
-                      updateRotation(selectedElementData.id, rotation)
-                    }
-                    onAlignLeft={() =>
-                      alignToArtboardLeft(selectedElementData.id)
-                    }
-                    onAlignRight={() =>
-                      alignToArtboardRight(selectedElementData.id)
-                    }
-                    onAlignTop={() =>
-                      alignToArtboardTop(selectedElementData.id)
-                    }
-                    onAlignBottom={() =>
-                      alignToArtboardBottom(selectedElementData.id)
-                    }
-                    onAlignCenterHorizontal={() =>
-                      alignToArtboardCenterHorizontal(selectedElementData.id)
-                    }
-                    onAlignCenterVertical={() =>
-                      alignToArtboardCenterVertical(selectedElementData.id)
-                    }
-                  />
                 </>
               )}
+
+              <PositionProperties
+                x={selectedElementData.x}
+                y={selectedElementData.y}
+                rotation={selectedElementData.rotation || 0}
+                onXChange={(deltaX) =>
+                  moveElement(selectedElementData.id, deltaX, 0)
+                }
+                onYChange={(deltaY) =>
+                  moveElement(selectedElementData.id, 0, deltaY)
+                }
+                onRotationChange={(rotation) =>
+                  updateRotation(selectedElementData.id, rotation)
+                }
+                onAlignLeft={() => alignToArtboardLeft(selectedElementData.id)}
+                onAlignRight={() =>
+                  alignToArtboardRight(selectedElementData.id)
+                }
+                onAlignTop={() => alignToArtboardTop(selectedElementData.id)}
+                onAlignBottom={() =>
+                  alignToArtboardBottom(selectedElementData.id)
+                }
+                onAlignCenterHorizontal={() =>
+                  alignToArtboardCenterHorizontal(selectedElementData.id)
+                }
+                onAlignCenterVertical={() =>
+                  alignToArtboardCenterVertical(selectedElementData.id)
+                }
+              />
             </div>
           ) : null}
         </div>

@@ -43,6 +43,7 @@ export default function CanvasPage() {
     moveElementDown,
     moveElement,
     importCanvas,
+    addImageElement,
     rightSidebarDocked,
     selectMultipleElements,
   } = useCanvasStore();
@@ -399,6 +400,26 @@ export default function CanvasPage() {
 
   // Handle drag and drop import
   const handleFileDrop = async (file: File) => {
+    // Handle image files
+    if (file.type.startsWith("image/")) {
+      try {
+        const dataURL = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = () => reject(new Error("Failed to read image file"));
+          reader.readAsDataURL(file);
+        });
+
+        // Create image element from dropped file
+        addImageElement(dataURL);
+      } catch (error) {
+        console.error("Error processing image file:", error);
+        alert("Failed to process image file.");
+      }
+      return;
+    }
+
+    // Handle JSON canvas files
     try {
       const result = await importCanvas(file);
       if (!result.success) {

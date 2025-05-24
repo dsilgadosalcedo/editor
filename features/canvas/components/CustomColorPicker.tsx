@@ -580,7 +580,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       >
         <div className="flex items-center gap-2">
           <Move className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="select-none hover:cursor-default text-sm font-medium text-gray-700 dark:text-gray-300">
             Color Picker
           </span>
         </div>

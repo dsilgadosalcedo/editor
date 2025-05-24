@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FileUp, Upload } from "lucide-react";
+// Icons removed as they're not used in this component
 
 interface DragDropOverlayProps {
   onFileDrop: (file: File) => void;
@@ -25,17 +25,21 @@ export default function DragDropOverlay({ onFileDrop }: DragDropOverlayProps) {
           (item) => item.kind === "file"
         );
 
-        // Check if any of the files are JSON files
+        // Check if any of the files are JSON files or image files
         const hasJsonFile = Array.from(e.dataTransfer.items).some(
           (item) =>
             item.type === "application/json" ||
             (item.kind === "file" && item.type === "")
         );
 
+        const hasImageFile = Array.from(e.dataTransfer.items).some((item) =>
+          item.type.startsWith("image/")
+        );
+
         // Only show the overlay if we have actual files being dragged
         // This prevents internal drag operations (like layer reordering) from triggering the overlay
         if (hasFiles) {
-          setIsValidFile(hasJsonFile);
+          setIsValidFile(hasJsonFile || hasImageFile);
           setIsDragging(true);
         }
       }
@@ -62,13 +66,20 @@ export default function DragDropOverlay({ onFileDrop }: DragDropOverlayProps) {
       setIsValidFile(false);
 
       const files = Array.from(e.dataTransfer?.files || []);
+
+      // Check for JSON files first
       const jsonFile = files.find(
         (file) =>
           file.type === "application/json" || file.name.endsWith(".json")
       );
 
+      // Check for image files
+      const imageFile = files.find((file) => file.type.startsWith("image/"));
+
       if (jsonFile) {
         onFileDrop(jsonFile);
+      } else if (imageFile) {
+        onFileDrop(imageFile);
       }
     };
 
@@ -89,7 +100,12 @@ export default function DragDropOverlay({ onFileDrop }: DragDropOverlayProps) {
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 pointer-events-none flex items-center justify-center">
-      <div className="text-white text-4xl font-bold">Drop to import</div>
+      <div className="bg-black/50 rounded-lg p-8 text-center">
+        <div className="text-white text-4xl font-bold mb-2">Drop to import</div>
+        <div className="text-white/70 text-lg">
+          {isValidFile ? "JSON canvas or image files" : "Unsupported file type"}
+        </div>
+      </div>
     </div>
   );
 }
