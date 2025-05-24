@@ -646,11 +646,9 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       {/* Color preview and value */}
       <div className="flex gap-2">
         <div
-          className="w-12 h-9 rounded-md border border-gray-200 dark:border-gray-600"
+          className="w-12 h-9 rounded-md border relative overflow-hidden"
           style={{
-            backgroundColor: `hsla(${hue}, ${saturation}%, ${
-              value / 2
-            }%, ${alpha})`,
+            backgroundColor: currentColor,
             backgroundImage:
               alpha < 1
                 ? "repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50% / 10px 10px"
