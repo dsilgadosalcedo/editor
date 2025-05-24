@@ -338,6 +338,18 @@ export default function CanvasPage() {
     });
   };
 
+  // Helper: Reset view to artboard at 100% zoom
+  const handleResetView = () => {
+    setZoom(100);
+    // Center the artboard in the viewport
+    setCanvasPosition({
+      x: 0,
+      y: 0,
+    });
+    // Reset transform origin to center
+    setTransformOrigin("center center");
+  };
+
   // Handle drag and drop import
   const handleFileDrop = async (file: File) => {
     try {
@@ -394,6 +406,7 @@ export default function CanvasPage() {
           zoom={zoom}
           setZoom={setZoom}
           onZoomToSelection={handleZoomToSelection}
+          onResetView={handleResetView}
         />
 
         {/* Right Sidebar */}

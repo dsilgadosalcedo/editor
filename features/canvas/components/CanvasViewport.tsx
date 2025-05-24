@@ -72,7 +72,7 @@ export default function CanvasViewport({
 
   return (
     <div
-      className="flex-1 relative overflow-hidden"
+      className="z-10 flex-1 relative overflow-hidden"
       ref={canvasRef}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

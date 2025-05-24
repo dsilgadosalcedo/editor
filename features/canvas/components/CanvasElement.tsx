@@ -1,10 +1,38 @@
 "use client";
 
-import type React from "react";
-
-import { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
+import { useCanvasStore } from "../store/useCanvasStore";
+
+// Utility function to measure text dimensions
+const measureText = (
+  text: string,
+  fontSize: number,
+  fontWeight: number,
+  fontFamily: string = "var(--font-geist-sans)",
+  letterSpacing: number = 0,
+  lineHeight: number = fontSize * 1.2
+): { width: number; height: number } => {
+  // Create a temporary element to measure text
+  const tempDiv = document.createElement("div");
+  tempDiv.style.position = "absolute";
+  tempDiv.style.visibility = "hidden";
+  tempDiv.style.whiteSpace = "nowrap";
+  tempDiv.style.fontSize = `${fontSize}px`;
+  tempDiv.style.fontWeight = `${fontWeight}`;
+  tempDiv.style.fontFamily = fontFamily;
+  tempDiv.style.letterSpacing = `${letterSpacing}px`;
+  tempDiv.style.lineHeight = `${lineHeight}px`;
+  tempDiv.textContent = text || "Text";
+
+  document.body.appendChild(tempDiv);
+  const width = tempDiv.offsetWidth;
+  const height = tempDiv.offsetHeight;
+  document.body.removeChild(tempDiv);
+
+  return { width: Math.ceil(width), height: Math.ceil(height) };
+};
 
 interface CanvasElementProps {
   element: {
@@ -34,6 +62,7 @@ interface CanvasElementProps {
     name?: string;
     children?: string[];
     rotation?: number;
+    textResizing?: "auto-width" | "auto-height" | "fixed";
   };
   onSelect: (addToSelection?: boolean) => void;
   onMove: (deltaX: number, deltaY: number) => void;
@@ -119,8 +148,129 @@ export default function CanvasElement({
     centerY: 0,
   });
 
-  // Remove the local content state to prevent the infinite loop
-  // We'll use the element.content directly
+  // Auto-resize text elements based on content and resizing mode
+  useEffect(() => {
+    if (element.type === "text" && element.textResizing) {
+      // Get current content - use textRef content if editing, otherwise element.content
+      const content =
+        isEditing && textRef.current
+          ? textRef.current.textContent || "Text"
+          : element.content || "Text";
+
+      const fontSize = element.fontSize || 16;
+      const fontWeight = element.fontWeight || 400;
+      const letterSpacing = element.letterSpacing || 0;
+      const lineHeight = element.lineHeight || fontSize * 1.2;
+
+      if (element.textResizing === "auto-width") {
+        // Auto-width: measure text and update width, keep height fixed
+        const measured = measureText(
+          content,
+          fontSize,
+          fontWeight,
+          "var(--font-geist-sans)",
+          letterSpacing,
+          lineHeight
+        );
+        const newWidth = Math.max(20, measured.width + 8); // Add some padding
+
+        if (Math.abs(newWidth - element.width) > 2) {
+          // Only update if significant change
+          onResizeNoHistory(newWidth, element.height);
+        }
+      } else if (element.textResizing === "auto-height" && !isEditing) {
+        // Auto-height: only update when not editing to avoid interference
+        const tempDiv = document.createElement("div");
+        tempDiv.style.position = "absolute";
+        tempDiv.style.visibility = "hidden";
+        tempDiv.style.width = `${element.width - 8}px`; // Account for padding
+        tempDiv.style.fontSize = `${fontSize}px`;
+        tempDiv.style.fontWeight = `${fontWeight}`;
+        tempDiv.style.fontFamily = "var(--font-geist-sans)";
+        tempDiv.style.letterSpacing = `${letterSpacing}px`;
+        tempDiv.style.lineHeight = `${lineHeight}px`;
+        tempDiv.style.wordWrap = "break-word";
+        tempDiv.textContent = content;
+
+        document.body.appendChild(tempDiv);
+        const newHeight = Math.max(20, tempDiv.offsetHeight + 8); // Add some padding
+        document.body.removeChild(tempDiv);
+
+        if (Math.abs(newHeight - element.height) > 2) {
+          // Only update if significant change
+          onResizeNoHistory(element.width, newHeight);
+        }
+      }
+      // Fixed mode: no auto-resizing
+    }
+  }, [
+    element.content,
+    element.fontSize,
+    element.fontWeight,
+    element.letterSpacing,
+    element.lineHeight,
+    element.textResizing,
+    element.width,
+    element.height,
+    isEditing,
+    onResizeNoHistory,
+  ]);
+
+  // Additional effect to handle real-time content changes during editing
+  useEffect(() => {
+    if (
+      !isEditing ||
+      !textRef.current ||
+      element.type !== "text" ||
+      element.textResizing !== "auto-width"
+    ) {
+      return;
+    }
+
+    const textElement = textRef.current;
+
+    const handleInput = () => {
+      const content = textElement.textContent || "Text";
+      const fontSize = element.fontSize || 16;
+      const fontWeight = element.fontWeight || 400;
+      const letterSpacing = element.letterSpacing || 0;
+      const lineHeight = element.lineHeight || fontSize * 1.2;
+
+      const measured = measureText(
+        content,
+        fontSize,
+        fontWeight,
+        "var(--font-geist-sans)",
+        letterSpacing,
+        lineHeight
+      );
+      const newWidth = Math.max(20, measured.width + 8);
+
+      if (Math.abs(newWidth - element.width) > 2) {
+        onResizeNoHistory(newWidth, element.height);
+      }
+    };
+
+    // Use both 'input' and 'keyup' events to catch all text changes
+    textElement.addEventListener("input", handleInput);
+    textElement.addEventListener("keyup", handleInput);
+
+    return () => {
+      textElement.removeEventListener("input", handleInput);
+      textElement.removeEventListener("keyup", handleInput);
+    };
+  }, [
+    isEditing,
+    element.type,
+    element.textResizing,
+    element.fontSize,
+    element.fontWeight,
+    element.letterSpacing,
+    element.lineHeight,
+    element.width,
+    element.height,
+    onResizeNoHistory,
+  ]);
 
   // Handle element dragging
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -187,10 +337,20 @@ export default function CanvasElement({
 
   // Handle element resizing, track which handle (direction)
   const handleResizeStart = (dir: string, e: React.MouseEvent) => {
-    // if (isPanMode) return;
-
     e.stopPropagation();
     e.preventDefault();
+    setResizeDir(dir);
+
+    // If this is a text element, change to fixed mode when manually resizing
+    if (element.type === "text" && element.textResizing !== "fixed") {
+      const { updateTextResizing } = useCanvasStore.getState();
+      updateTextResizing(element.id, "fixed");
+    }
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = element.width;
+    const startHeight = element.height;
 
     // Add to history at the start of resize operation
     if (typeof onAddToHistory === "function") {
@@ -198,12 +358,11 @@ export default function CanvasElement({
     }
 
     setIsResizing(true);
-    setResizeDir(dir);
     setResizeStart({
-      width: element.width,
-      height: element.height,
-      x: e.clientX,
-      y: e.clientY,
+      width: startWidth,
+      height: startHeight,
+      x: startX,
+      y: startY,
     });
   };
 
@@ -864,7 +1023,7 @@ export default function CanvasElement({
             onInput={handleTextChange}
             onKeyDown={handleTextKeyDown}
             className={cn(
-              "w-full h-full flex outline-none",
+              "w-full h-full flex outline-none overflow-hidden",
               // Dynamic horizontal alignment
               element.horizontalAlign === "left" && "justify-start",
               element.horizontalAlign === "center" && "justify-center",
@@ -885,6 +1044,12 @@ export default function CanvasElement({
               lineHeight: element.lineHeight
                 ? `${element.lineHeight}px`
                 : undefined,
+              // Handle text wrapping based on resizing mode
+              whiteSpace:
+                element.textResizing === "auto-width" ? "nowrap" : "normal",
+              wordWrap:
+                element.textResizing === "auto-width" ? "normal" : "break-word",
+              padding: "4px", // Add some padding
             }}
           >
             {!isEditing && element.content}
@@ -939,10 +1104,12 @@ export default function CanvasElement({
                 <div
                   className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
                   style={{
-                    left: `${element.width / 2 + 4 * (100 / zoom)}px`,
-                    top: `${0}px`,
-                    transform: `scale(${100 / zoom}) translate(-50%, -50%)`,
-                    transformOrigin: "center",
+                    left: `${
+                      element.width / 2 - (4.25 - 1 / 2) * (100 / zoom)
+                    }px`,
+                    top: `${-(4.25 - 1 / 2) * (100 / zoom)}px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "top left",
                     pointerEvents: "auto",
                     zIndex: 9998,
                   }}
@@ -954,10 +1121,12 @@ export default function CanvasElement({
                 <div
                   className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
                   style={{
-                    left: `${0}px`,
-                    top: `${element.height / 2 + 4 * (100 / zoom)}px`,
-                    transform: `scale(${100 / zoom}) translate(-50%, -50%)`,
-                    transformOrigin: "center",
+                    left: `${-(4.25 - 1 / 2) * (100 / zoom)}px`,
+                    top: `${
+                      element.height / 2 - (4.25 - 1 / 2) * (100 / zoom)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "top left",
                     pointerEvents: "auto",
                     zIndex: 9998,
                   }}
@@ -969,10 +1138,14 @@ export default function CanvasElement({
                 <div
                   className="absolute w-3 h-3 hover:scale-125 transition-all duration-100 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-nwse-resize"
                   style={{
-                    left: `${element.width / 2 + 8 * (100 / zoom)}px`,
-                    top: `${element.height / 2 + 8 * (100 / zoom)}px`,
-                    transform: `scale(${100 / zoom}) translate(-50%, -50%)`,
-                    transformOrigin: "center",
+                    left: `${
+                      element.width / 2 - (6.25 - 1 / 2) * (100 / zoom)
+                    }px`,
+                    top: `${
+                      element.height / 2 - (6.25 - 1 / 2) * (100 / zoom)
+                    }px`,
+                    transform: `scale(${100 / zoom})`,
+                    transformOrigin: "top left",
                     pointerEvents: "auto",
                     zIndex: 9998,
                   }}

@@ -55,7 +55,7 @@ export default function ToolSidebar({
   };
 
   return (
-    <div className="z-20 m-4 p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
+    <div className="z-30 m-4 p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
       <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
         <Button
           variant="ghost"

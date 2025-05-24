@@ -1,6 +1,19 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PanelLeftOpen, PanelRightOpen, Link, Unlink } from "lucide-react";
+import {
+  PanelLeftOpen,
+  PanelRightOpen,
+  Link,
+  Unlink,
+  ArrowLeftRight,
+  ArrowUpDown,
+  CornerUpLeft,
+  Circle,
+  Square,
+  Zap,
+  Move,
+  MoveVertical,
+} from "lucide-react";
 import { NumberInput } from "./NumberInput";
 import { ColorPicker } from "./ColorPicker";
 import { useCanvasStore } from "../store/useCanvasStore";
@@ -21,37 +34,46 @@ import { Separator } from "@/components/ui/separator";
 
 export default function PropertiesPanel() {
   const {
+    elements,
     selectedElements,
     getSelectedElementData,
     hasMultipleSelection,
-    updateTextContent,
-    resizeElement,
-    moveElement,
-    updateCornerRadius,
-    updateCornerRadiusNoHistory,
-    updateFillColor,
-    updateBorderWidth,
-    updateBorderColor,
-    updateShadowBlur,
-    updateShadowColor,
     updateName,
+    updateTextContent,
+    updateFillColor,
     updateFontSize,
     updateFontWeight,
     updateLetterSpacing,
     updateLineHeight,
     updateHorizontalAlign,
     updateVerticalAlign,
-    updateImageSrc,
+    resizeElement,
+    moveElement,
+    updateCornerRadius,
+    updateCornerRadiusNoHistory,
+    updateBorderWidth,
+    updateBorderColor,
+    updateShadowBlur,
+    updateShadowColor,
     toggleAspectRatioLock,
+    updateImageSrc,
     rightSidebarDocked,
     toggleRightSidebarDock,
+    updateTextResizing,
+    updateRotation,
+    alignToArtboardLeft,
+    alignToArtboardRight,
+    alignToArtboardTop,
+    alignToArtboardBottom,
+    alignToArtboardCenterHorizontal,
+    alignToArtboardCenterVertical,
   } = useCanvasStore();
 
   const selectedElementData = getSelectedElementData();
 
   return (
     <div
-      className={`z-20  flex flex-col bg-card/95 shadow-xl backdrop-blur-md border border-white/20 transition-all duration-300 p-1 rounded-[1.25rem] ${
+      className={`z-30 flex flex-col bg-card/95 shadow-xl backdrop-blur-md border border-white/20 transition-all duration-300 p-1 rounded-[1.25rem] ${
         rightSidebarDocked
           ? "m-4 bg-card/80 shadow backdrop-blur-sm"
           : "p-1 rounded-r-none"
@@ -118,6 +140,9 @@ export default function PropertiesPanel() {
                     lockAspectRatio={
                       selectedElementData.lockAspectRatio || false
                     }
+                    textResizing={
+                      selectedElementData.textResizing || "auto-width"
+                    }
                     onNameChange={(name) =>
                       updateName(selectedElementData.id, name)
                     }
@@ -155,6 +180,9 @@ export default function PropertiesPanel() {
                     }
                     onToggleAspectRatioLock={() =>
                       toggleAspectRatioLock(selectedElementData.id)
+                    }
+                    onTextResizingChange={(resizing) =>
+                      updateTextResizing(selectedElementData.id, resizing)
                     }
                   />
                 </>
@@ -254,6 +282,7 @@ export default function PropertiesPanel() {
                                 false
                               )
                             }
+                            icon={<ArrowLeftRight className="h-3 w-3" />}
                             aria-label="Rectangle width"
                           />
                           <Button
@@ -306,6 +335,7 @@ export default function PropertiesPanel() {
                               false
                             )
                           }
+                          icon={<ArrowUpDown className="h-3 w-3" />}
                           aria-label="Rectangle height"
                         />
                       </PropertyInput>
@@ -370,6 +400,7 @@ export default function PropertiesPanel() {
                               )
                             )
                           }
+                          icon={<CornerUpLeft className="h-3 w-3" />}
                           aria-label="Corner radius"
                         />
                       </PropertyInput>
@@ -383,6 +414,7 @@ export default function PropertiesPanel() {
                           onInstantChange={() => {
                             console.log("opacity changed");
                           }}
+                          icon={<Circle className="h-3 w-3" />}
                           aria-label="Opacity"
                         />
                       </PropertyInput>
@@ -403,6 +435,7 @@ export default function PropertiesPanel() {
                           onInstantChange={(val) =>
                             updateBorderWidth(selectedElementData.id, val)
                           }
+                          icon={<Square className="h-3 w-3" />}
                           aria-label="Border width"
                         />
                       </PropertyInput>
@@ -433,6 +466,7 @@ export default function PropertiesPanel() {
                           onInstantChange={(val) =>
                             updateShadowBlur(selectedElementData.id, val)
                           }
+                          icon={<Zap className="h-3 w-3" />}
                           aria-label="Shadow blur"
                         />
                       </PropertyInput>
@@ -452,11 +486,33 @@ export default function PropertiesPanel() {
                   <PositionProperties
                     x={selectedElementData.x}
                     y={selectedElementData.y}
+                    rotation={selectedElementData.rotation || 0}
                     onXChange={(deltaX) =>
                       moveElement(selectedElementData.id, deltaX, 0)
                     }
                     onYChange={(deltaY) =>
                       moveElement(selectedElementData.id, 0, deltaY)
+                    }
+                    onRotationChange={(rotation) =>
+                      updateRotation(selectedElementData.id, rotation)
+                    }
+                    onAlignLeft={() =>
+                      alignToArtboardLeft(selectedElementData.id)
+                    }
+                    onAlignRight={() =>
+                      alignToArtboardRight(selectedElementData.id)
+                    }
+                    onAlignTop={() =>
+                      alignToArtboardTop(selectedElementData.id)
+                    }
+                    onAlignBottom={() =>
+                      alignToArtboardBottom(selectedElementData.id)
+                    }
+                    onAlignCenterHorizontal={() =>
+                      alignToArtboardCenterHorizontal(selectedElementData.id)
+                    }
+                    onAlignCenterVertical={() =>
+                      alignToArtboardCenterVertical(selectedElementData.id)
                     }
                   />
                 </>

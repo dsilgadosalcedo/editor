@@ -143,23 +143,58 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const colorPickerWidth = 280; // Width of the CustomColorPicker
-      const colorPickerHeight = 360; // Approximate height of the CustomColorPicker
+      const colorPickerHeight = 420; // More accurate height estimate including all components
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
+      const margin = 16; // Increased margin for better spacing
 
       // Calculate horizontal position
       let x = rect.left;
-      if (rect.left + colorPickerWidth > viewportWidth) {
+      if (rect.left + colorPickerWidth > viewportWidth - margin) {
         // Position to the left of the button if it would go off-screen
         x = rect.right - colorPickerWidth;
       }
+      // Ensure it doesn't go off the edges with margin
+      x = Math.max(
+        margin,
+        Math.min(x, viewportWidth - colorPickerWidth - margin)
+      );
 
       // Calculate vertical position
-      let y = rect.bottom + 8;
-      if (rect.bottom + colorPickerHeight > viewportHeight) {
-        // Position above the button if it would go off-screen
-        y = rect.top - colorPickerHeight - 8;
+      let y = rect.bottom + margin;
+
+      // Check if positioning below would go off-screen
+      if (y + colorPickerHeight > viewportHeight - margin) {
+        // Try positioning above the button
+        const yAbove = rect.top - colorPickerHeight - margin;
+
+        // If positioning above would also go off-screen (near top)
+        if (yAbove < margin) {
+          // Check available space and position optimally
+          const spaceAbove = rect.top - margin;
+          const spaceBelow = viewportHeight - rect.bottom - margin;
+
+          if (spaceBelow >= spaceAbove && spaceBelow > colorPickerHeight / 2) {
+            // More space below and sufficient, position to use available space below
+            y = rect.bottom + margin;
+          } else if (spaceAbove > colorPickerHeight / 2) {
+            // Sufficient space above, position to use available space above
+            y = Math.max(margin, rect.top - colorPickerHeight - margin);
+          } else {
+            // Neither space is sufficient, position at top with margin
+            y = margin;
+          }
+        } else {
+          // Position above the button
+          y = yAbove;
+        }
       }
+
+      // Final safety check to ensure it's within viewport bounds
+      y = Math.max(
+        margin,
+        Math.min(y, viewportHeight - colorPickerHeight - margin)
+      );
 
       openColorPicker(value, onChange, { x, y });
     }

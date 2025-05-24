@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Download,
   Upload,
+  Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,12 +28,14 @@ interface CanvasToolbarProps {
   zoom: number;
   setZoom: (zoom: number | ((prev: number) => number)) => void;
   onZoomToSelection: () => void;
+  onResetView: () => void;
 }
 
 export default function CanvasToolbar({
   zoom,
   setZoom,
   onZoomToSelection,
+  onResetView,
 }: CanvasToolbarProps) {
   const {
     selectedElements,
@@ -99,7 +102,7 @@ export default function CanvasToolbar({
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 w-full grid place-items-center"
+      className="fixed bottom-0 left-0 right-0 z-20 w-full grid place-items-center"
       style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}
     >
       <div className="bg-card/60 w-fit flex items-center gap-2 backdrop-blur-lg p-2 rounded-xl shadow-lg border border-sky-harbor/80">
@@ -201,6 +204,18 @@ export default function CanvasToolbar({
           aria-label="Zoom In"
         >
           <Plus className="h-4 w-4" />
+        </Button>
+
+        {/* Reset View */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onResetView}
+          className="h-8 w-8"
+          aria-label="Reset View to Artboard"
+          title="Reset view to artboard at 100% zoom"
+        >
+          <Home className="h-4 w-4" />
         </Button>
 
         {/* Copy/Paste Controls */}

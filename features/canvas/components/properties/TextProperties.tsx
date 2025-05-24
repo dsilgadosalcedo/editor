@@ -19,6 +19,14 @@ import {
   AlignEndVertical,
   Link,
   Unlink,
+  Expand,
+  ArrowRightLeft,
+  ArrowUpDown,
+  Type,
+  Bold,
+  ArrowLeftRight,
+  Space,
+  AlignVerticalSpaceAround,
 } from "lucide-react";
 
 interface TextPropertiesProps {
@@ -33,6 +41,7 @@ interface TextPropertiesProps {
   letterSpacing: number;
   lineHeight: number;
   lockAspectRatio?: boolean;
+  textResizing?: "auto-width" | "auto-height" | "fixed";
   onNameChange: (name: string) => void;
   onContentChange: (content: string) => void;
   onColorChange: (color: string) => void;
@@ -44,6 +53,9 @@ interface TextPropertiesProps {
   onHorizontalAlignChange: (align: "left" | "center" | "right") => void;
   onVerticalAlignChange: (align: "top" | "middle" | "bottom") => void;
   onToggleAspectRatioLock: () => void;
+  onTextResizingChange: (
+    resizing: "auto-width" | "auto-height" | "fixed"
+  ) => void;
 }
 
 export function TextProperties({
@@ -58,6 +70,7 @@ export function TextProperties({
   letterSpacing,
   lineHeight,
   lockAspectRatio,
+  textResizing,
   onNameChange,
   onContentChange,
   onColorChange,
@@ -69,6 +82,7 @@ export function TextProperties({
   onHorizontalAlignChange,
   onVerticalAlignChange,
   onToggleAspectRatioLock,
+  onTextResizingChange,
 }: TextPropertiesProps) {
   return (
     <>
@@ -116,6 +130,7 @@ export function TextProperties({
               min={1}
               onChange={onFontSizeChange}
               onInstantChange={onFontSizeChange}
+              icon={<Type className="h-3 w-3" />}
               aria-label="Font size"
             />
           </PropertyInput>
@@ -129,6 +144,7 @@ export function TextProperties({
               step={100}
               onChange={onFontWeightChange}
               onInstantChange={onFontWeightChange}
+              icon={<Bold className="h-3 w-3" />}
               aria-label="Font weight"
             />
           </PropertyInput>
@@ -145,6 +161,7 @@ export function TextProperties({
                 value={width}
                 onChange={(val) => onDimensionsChange(val, height)}
                 onInstantChange={(val) => onDimensionsChange(val, height)}
+                icon={<ArrowLeftRight className="h-3 w-3" />}
                 aria-label="Text width"
               />
               <Button
@@ -175,6 +192,7 @@ export function TextProperties({
               value={height}
               onChange={(val) => onDimensionsChange(width, val)}
               onInstantChange={(val) => onDimensionsChange(width, val)}
+              icon={<ArrowUpDown className="h-3 w-3" />}
               aria-label="Text height"
             />
           </PropertyInput>
@@ -188,6 +206,7 @@ export function TextProperties({
             value={letterSpacing || 0}
             onChange={onLetterSpacingChange}
             onInstantChange={onLetterSpacingChange}
+            icon={<Space className="h-3 w-3" />}
             aria-label="Letter spacing"
           />
         </PropertyInput>
@@ -201,6 +220,7 @@ export function TextProperties({
             min={1}
             onChange={onLineHeightChange}
             onInstantChange={onLineHeightChange}
+            icon={<AlignVerticalSpaceAround className="h-3 w-3" />}
             aria-label="Line height"
           />
         </PropertyInput>
@@ -268,6 +288,44 @@ export function TextProperties({
             </Button>
           </div>
         </PropertyStack>
+      </PropertySection>
+
+      <PropertySection>
+        <PropertyTitle>Text Resizing</PropertyTitle>
+        <PropertyInput>
+          <div className="flex gap-1 w-full">
+            <Button
+              variant={textResizing === "auto-width" ? "default" : "outline"}
+              size="sm"
+              onClick={() => onTextResizingChange("auto-width")}
+              className="flex-1 gap-1"
+              title="Auto width - width adapts to text content"
+            >
+              <ArrowRightLeft className="h-3 w-3" />
+              Auto W
+            </Button>
+            <Button
+              variant={textResizing === "auto-height" ? "default" : "outline"}
+              size="sm"
+              onClick={() => onTextResizingChange("auto-height")}
+              className="flex-1 gap-1"
+              title="Auto height - text wraps to fit width"
+            >
+              <ArrowUpDown className="h-3 w-3" />
+              Auto H
+            </Button>
+            <Button
+              variant={textResizing === "fixed" ? "default" : "outline"}
+              size="sm"
+              onClick={() => onTextResizingChange("fixed")}
+              className="flex-1 gap-1"
+              title="Fixed size - fixed width and height"
+            >
+              <Expand className="h-3 w-3" />
+              Fixed
+            </Button>
+          </div>
+        </PropertyInput>
       </PropertySection>
     </>
   );

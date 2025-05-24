@@ -11,6 +11,7 @@ type NumberInputProps = {
   max?: number;
   step?: number;
   tabIndex?: number;
+  icon?: React.ReactNode;
 };
 
 export const NumberInput: React.FC<NumberInputProps> = ({
@@ -23,6 +24,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   max,
   step = 1,
   tabIndex = 0,
+  icon,
   ...rest
 }) => {
   const [internalValue, setInternalValue] = useState<string>(value.toString());
@@ -77,6 +79,31 @@ export const NumberInput: React.FC<NumberInputProps> = ({
       (e.target as HTMLInputElement).blur();
     }
   };
+
+  if (icon) {
+    return (
+      <div className="relative flex items-center">
+        <div className="absolute left-2 z-10 text-properties-text/70 dark:text-foreground/70">
+          {icon}
+        </div>
+        <Input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={internalValue}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          aria-label={ariaLabel}
+          tabIndex={tabIndex}
+          className={`appearance-none outline-none pl-7 ${className}`}
+          // Hide spinners for number input
+          style={{ MozAppearance: "textfield" } as React.CSSProperties}
+          {...rest}
+        />
+      </div>
+    );
+  }
 
   return (
     <Input

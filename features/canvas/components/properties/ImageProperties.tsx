@@ -10,7 +10,15 @@ import {
   PropertyInput,
   PropertyLabel,
 } from "@/components/ui/property";
-import { Link, Unlink } from "lucide-react";
+import {
+  Link,
+  Unlink,
+  ArrowLeftRight,
+  ArrowUpDown,
+  CornerUpLeft,
+  Square,
+  Zap,
+} from "lucide-react";
 
 interface ImagePropertiesProps {
   id: string;
@@ -95,6 +103,7 @@ export function ImageProperties({
                 value={width}
                 onChange={(val) => onDimensionsChange(val, height)}
                 onInstantChange={(val) => onDimensionsChange(val, height)}
+                icon={<ArrowLeftRight className="h-3 w-3" />}
                 aria-label="Image width"
               />
               <Button
@@ -125,6 +134,7 @@ export function ImageProperties({
               value={height}
               onChange={(val) => onDimensionsChange(width, val)}
               onInstantChange={(val) => onDimensionsChange(width, val)}
+              icon={<ArrowUpDown className="h-3 w-3" />}
               aria-label="Image height"
             />
           </PropertyInput>
@@ -155,6 +165,7 @@ export function ImageProperties({
                 )
               )
             }
+            icon={<CornerUpLeft className="h-3 w-3" />}
             aria-label="Corner radius"
           />
         </PropertyInput>
@@ -170,6 +181,7 @@ export function ImageProperties({
               min={0}
               onChange={onBorderWidthChange}
               onInstantChange={onBorderWidthChange}
+              icon={<Square className="h-3 w-3" />}
               aria-label="Border width"
             />
           </PropertyInput>
@@ -194,6 +206,7 @@ export function ImageProperties({
               min={0}
               onChange={onShadowBlurChange}
               onInstantChange={onShadowBlurChange}
+              icon={<Zap className="h-3 w-3" />}
               aria-label="Shadow blur"
             />
           </PropertyInput>

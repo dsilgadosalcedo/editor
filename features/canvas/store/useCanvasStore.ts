@@ -31,6 +31,7 @@ export interface CanvasElementData {
   parentId?: string; // For grouped elements
   children?: string[]; // For frame elements
   rotation?: number; // Rotation in degrees
+  textResizing?: "auto-width" | "auto-height" | "fixed"; // Text resizing mode (only for text elements)
 }
 
 interface CanvasStoreState {
@@ -137,6 +138,17 @@ interface CanvasStoreState {
   // Rotation
   updateRotation: (id: string, rotation: number) => void;
   updateRotationNoHistory: (id: string, rotation: number) => void;
+  updateTextResizing: (
+    id: string,
+    resizing: "auto-width" | "auto-height" | "fixed"
+  ) => void;
+  // Artboard alignment
+  alignToArtboardLeft: (id: string) => void;
+  alignToArtboardRight: (id: string) => void;
+  alignToArtboardTop: (id: string) => void;
+  alignToArtboardBottom: (id: string) => void;
+  alignToArtboardCenterHorizontal: (id: string) => void;
+  alignToArtboardCenterVertical: (id: string) => void;
 }
 
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
@@ -210,6 +222,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         verticalAlign: "top",
         visible: true,
         rotation: 0,
+        textResizing: "auto-width",
       };
     } else if (type === "image") {
       newElement = {
@@ -1182,4 +1195,71 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         el.id === id ? { ...el, rotation } : el
       ),
     })),
+  updateTextResizing: (id, resizing) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id && el.type === "text"
+          ? { ...el, textResizing: resizing }
+          : el
+      ),
+    })),
+  // Artboard alignment
+  alignToArtboardLeft: (id) => {
+    const { artboardDimensions, getHistoryUpdate } = get();
+    set((state) => ({
+      ...getHistoryUpdate(),
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, x: 0 } : el
+      ),
+    }));
+  },
+  alignToArtboardRight: (id) => {
+    const { artboardDimensions, getHistoryUpdate } = get();
+    set((state) => ({
+      ...getHistoryUpdate(),
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, x: artboardDimensions.width - el.width } : el
+      ),
+    }));
+  },
+  alignToArtboardTop: (id) => {
+    const { artboardDimensions, getHistoryUpdate } = get();
+    set((state) => ({
+      ...getHistoryUpdate(),
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, y: 0 } : el
+      ),
+    }));
+  },
+  alignToArtboardBottom: (id) => {
+    const { artboardDimensions, getHistoryUpdate } = get();
+    set((state) => ({
+      ...getHistoryUpdate(),
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, y: artboardDimensions.height - el.height } : el
+      ),
+    }));
+  },
+  alignToArtboardCenterHorizontal: (id) => {
+    const { artboardDimensions, getHistoryUpdate } = get();
+    set((state) => ({
+      ...getHistoryUpdate(),
+      elements: state.elements.map((el) =>
+        el.id === id
+          ? { ...el, x: (artboardDimensions.width - el.width) / 2 }
+          : el
+      ),
+    }));
+  },
+  alignToArtboardCenterVertical: (id) => {
+    const { artboardDimensions, getHistoryUpdate } = get();
+    set((state) => ({
+      ...getHistoryUpdate(),
+      elements: state.elements.map((el) =>
+        el.id === id
+          ? { ...el, y: (artboardDimensions.height - el.height) / 2 }
+          : el
+      ),
+    }));
+  },
 }));

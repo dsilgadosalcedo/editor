@@ -36,6 +36,11 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pickerPosition, setPickerPosition] = useState(position);
+
+  // Update picker position when position prop changes
+  useEffect(() => {
+    setPickerPosition(position);
+  }, [position]);
   const [hue, setHue] = useState(0);
   const [saturation, setSaturation] = useState(100);
   const [value, setValue] = useState(100); // Using HSV instead of HSL
