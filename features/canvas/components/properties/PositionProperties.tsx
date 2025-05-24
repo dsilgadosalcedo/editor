@@ -21,6 +21,10 @@ export function PositionProperties({
   onXChange,
   onYChange,
 }: PositionPropertiesProps) {
+  // Round positions to integers for display
+  const roundedX = Math.round(x);
+  const roundedY = Math.round(y);
+
   return (
     <PropertySection>
       <PropertyTitle>Position</PropertyTitle>
@@ -28,18 +32,18 @@ export function PositionProperties({
         <PropertyInput distribution="row">
           <PropertyLabel distribution="row">X</PropertyLabel>
           <NumberInput
-            value={x}
-            onChange={(val) => onXChange(val - x)}
-            onInstantChange={(val) => onXChange(val - x)}
+            value={roundedX}
+            onChange={(val) => onXChange(val - roundedX)}
+            onInstantChange={(val) => onXChange(val - roundedX)}
             aria-label="Element X position"
           />
         </PropertyInput>
         <PropertyInput distribution="row">
           <PropertyLabel distribution="row">Y</PropertyLabel>
           <NumberInput
-            value={y}
-            onChange={(val) => onYChange(val - y)}
-            onInstantChange={(val) => onYChange(val - y)}
+            value={roundedY}
+            onChange={(val) => onYChange(val - roundedY)}
+            onInstantChange={(val) => onYChange(val - roundedY)}
             aria-label="Element Y position"
           />
         </PropertyInput>

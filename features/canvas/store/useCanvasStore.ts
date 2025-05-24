@@ -172,8 +172,8 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       newElement = {
         id: `${type}-${Date.now()}`,
         type,
-        x: artboardDimensions.width / 2 - 75,
-        y: artboardDimensions.height / 2 - 37.5,
+        x: Math.round(artboardDimensions.width / 2 - 75),
+        y: Math.round(artboardDimensions.height / 2 - 37.5),
         width: 150,
         height: 75,
         color: "#3b82f6",
@@ -185,8 +185,8 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       newElement = {
         id: `${type}-${Date.now()}`,
         type,
-        x: artboardDimensions.width / 2 - 50,
-        y: artboardDimensions.height / 2 - 10,
+        x: Math.round(artboardDimensions.width / 2 - 50),
+        y: Math.round(artboardDimensions.height / 2 - 10),
         width: 100,
         height: 20,
         content: "Text",
@@ -205,8 +205,8 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       newElement = {
         id: `${type}-${Date.now()}`,
         type,
-        x: artboardDimensions.width / 2 - 75,
-        y: artboardDimensions.height / 2 - 56,
+        x: Math.round(artboardDimensions.width / 2 - 75),
+        y: Math.round(artboardDimensions.height / 2 - 56),
         width: 150,
         height: 112,
         src: "https://picsum.photos/150/112?random=" + Date.now(),
@@ -269,14 +269,18 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       return {
         ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
-          el.id === id ? { ...el, x: el.x + dx, y: el.y + dy } : el
+          el.id === id
+            ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
+            : el
         ),
       };
     }),
   moveElementNoHistory: (id, dx, dy) =>
     set((state) => ({
       elements: state.elements.map((el) =>
-        el.id === id ? { ...el, x: el.x + dx, y: el.y + dy } : el
+        el.id === id
+          ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
+          : el
       ),
     })),
   moveSelectedElements: (dx, dy) =>
@@ -286,7 +290,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           state.selectedElements.includes(el.id)
-            ? { ...el, x: el.x + dx, y: el.y + dy }
+            ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
             : el
         ),
       };
@@ -295,7 +299,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     set((state) => ({
       elements: state.elements.map((el) =>
         state.selectedElements.includes(el.id)
-          ? { ...el, x: el.x + dx, y: el.y + dy }
+          ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
           : el
       ),
     })),
