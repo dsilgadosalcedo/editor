@@ -182,7 +182,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
           className="grid place-items-center w-full h-full rounded-sm flex-shrink-0"
           style={{ backgroundColor: value }}
         >
-          <span className="">{value}</span>
+          <span className="text-white">{value}</span>
         </div>
       </Button>
     </div>

@@ -1,5 +1,6 @@
 import React from "react";
 import CanvasElement from "./CanvasElement";
+import ArtboardControlPoints from "./ArtboardControlPoints";
 
 interface ArtboardProps {
   artboardDimensions: { width: number; height: number };
@@ -31,6 +32,7 @@ interface ArtboardProps {
   onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
   onUpdateFontSize?: (id: string, fontSize: number) => void;
   onUpdateLineHeight?: (id: string, lineHeight: number) => void;
+  onResizeArtboard: (width: number, height: number) => void;
 }
 
 const Artboard: React.FC<ArtboardProps> = ({
@@ -53,6 +55,7 @@ const Artboard: React.FC<ArtboardProps> = ({
   onUpdateCornerRadius,
   onUpdateFontSize,
   onUpdateLineHeight,
+  onResizeArtboard,
 }) => {
   return (
     <div
@@ -139,14 +142,12 @@ const Artboard: React.FC<ArtboardProps> = ({
             isMultipleSelected={selectedElements.length > 1}
           />
         ))}
-        {showGuides && (
-          <>
-            <div className="absolute -left-2 -top-2 w-4 h-4 bg-blue-200 rounded-full border-2 border-white" />
-            <div className="absolute -right-2 -top-2 w-4 h-4 bg-blue-200 rounded-full border-2 border-white" />
-            <div className="absolute -left-2 -bottom-2 w-4 h-4 bg-blue-200 rounded-full border-2 border-white" />
-            <div className="absolute -right-2 -bottom-2 w-4 h-4 bg-blue-200 rounded-full border-2 border-white" />
-          </>
-        )}
+        {/* Artboard control points - always visible, never hide */}
+        <ArtboardControlPoints
+          artboardDimensions={artboardDimensions}
+          onResizeArtboard={onResizeArtboard}
+          zoom={zoom}
+        />
       </div>
     </div>
   );

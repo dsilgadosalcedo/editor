@@ -44,6 +44,7 @@ export default function CanvasViewport({
     updateFontSize,
     updateLineHeight,
     clearSelection,
+    setArtboardDimensions,
   } = useCanvasStore();
 
   return (
@@ -102,6 +103,9 @@ export default function CanvasViewport({
           onUpdateCornerRadius={updateCornerRadius}
           onUpdateFontSize={updateFontSize}
           onUpdateLineHeight={updateLineHeight}
+          onResizeArtboard={(width, height) =>
+            setArtboardDimensions({ width, height })
+          }
         />
       </div>
     </div>
