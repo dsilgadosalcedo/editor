@@ -34,29 +34,46 @@ interface CanvasStoreState {
   elements: CanvasElementData[];
   selectedElements: string[];
   artboardDimensions: { width: number; height: number };
+  projectName: string;
   past: CanvasElementData[][];
   future: CanvasElementData[][];
   clipboard: CanvasElementData | null;
   rightSidebarDocked: boolean;
   // Helper
-  addToHistory: () => {
+  addToHistory: () => void;
+  getHistoryUpdate: () => {
     past: CanvasElementData[][];
     future: CanvasElementData[][];
   };
   // Actions
   setArtboardDimensions: (dims: { width: number; height: number }) => void;
+  setProjectName: (name: string) => void;
   addElement: (type: ElementType) => void;
   selectElement: (id: string, addToSelection?: boolean) => void;
   selectMultipleElements: (ids: string[]) => void;
   moveElement: (id: string, dx: number, dy: number) => void;
+  moveElementNoHistory: (id: string, dx: number, dy: number) => void;
   moveSelectedElements: (dx: number, dy: number) => void;
+  moveSelectedElementsNoHistory: (dx: number, dy: number) => void;
   resizeElement: (
     id: string,
     width: number,
     height: number,
     preserveAspectRatio?: boolean
   ) => void;
+  resizeElementNoHistory: (
+    id: string,
+    width: number,
+    height: number,
+    preserveAspectRatio?: boolean
+  ) => void;
   resizeSelectedElements: (
+    baseId: string,
+    newWidth: number,
+    newHeight: number,
+    preserveAspectRatio?: boolean
+  ) => void;
+  resizeSelectedElementsNoHistory: (
     baseId: string,
     newWidth: number,
     newHeight: number,
@@ -70,6 +87,7 @@ interface CanvasStoreState {
   moveElementUp: (id: string) => void;
   moveElementDown: (id: string) => void;
   updateCornerRadius: (id: string, cornerRadius: number) => void;
+  updateCornerRadiusNoHistory: (id: string, cornerRadius: number) => void;
   updateFillColor: (id: string, color: string) => void;
   updateBorderWidth: (id: string, width: number) => void;
   updateBorderColor: (id: string, color: string) => void;
@@ -112,13 +130,14 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   elements: [],
   selectedElements: [],
   artboardDimensions: { width: 800, height: 600 },
+  projectName: "Untitled Project",
   past: [],
   future: [],
   clipboard: null,
   rightSidebarDocked: true,
 
-  // Helper function to add current state to history
-  addToHistory: () => {
+  // Helper function to get history update object
+  getHistoryUpdate: () => {
     const state = get();
     return {
       past: [...state.past, state.elements],
@@ -126,9 +145,18 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     };
   },
 
+  // Action to add current state to history
+  addToHistory: () => {
+    set((state) => ({
+      past: [...state.past, state.elements],
+      future: [], // Clear future when making new changes
+    }));
+  },
+
   setArtboardDimensions: (dims) => set({ artboardDimensions: dims }),
+  setProjectName: (name) => set({ projectName: name }),
   addElement: (type) => {
-    const { artboardDimensions, elements, addToHistory } = get();
+    const { artboardDimensions, elements, getHistoryUpdate } = get();
     let newElement: CanvasElementData;
 
     if (type === "rectangle") {
@@ -180,7 +208,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }
 
     set((state) => ({
-      ...addToHistory(),
+      ...getHistoryUpdate(),
       elements: [
         ...state.elements.map((el) => ({ ...el, selected: false })),
         newElement,
@@ -224,12 +252,34 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       selectedElements: ids,
     })),
   moveElement: (id, dx, dy) =>
+    set((state) => {
+      const { getHistoryUpdate } = get();
+      return {
+        ...getHistoryUpdate(),
+        elements: state.elements.map((el) =>
+          el.id === id ? { ...el, x: el.x + dx, y: el.y + dy } : el
+        ),
+      };
+    }),
+  moveElementNoHistory: (id, dx, dy) =>
     set((state) => ({
       elements: state.elements.map((el) =>
         el.id === id ? { ...el, x: el.x + dx, y: el.y + dy } : el
       ),
     })),
   moveSelectedElements: (dx, dy) =>
+    set((state) => {
+      const { getHistoryUpdate } = get();
+      return {
+        ...getHistoryUpdate(),
+        elements: state.elements.map((el) =>
+          state.selectedElements.includes(el.id)
+            ? { ...el, x: el.x + dx, y: el.y + dy }
+            : el
+        ),
+      };
+    }),
+  moveSelectedElementsNoHistory: (dx, dy) =>
     set((state) => ({
       elements: state.elements.map((el) =>
         state.selectedElements.includes(el.id)
@@ -238,6 +288,22 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       ),
     })),
   resizeElement: (id, width, height, preserveAspectRatio = false) =>
+    set((state) => {
+      const { getHistoryUpdate } = get();
+      return {
+        ...getHistoryUpdate(),
+        elements: state.elements.map((el) =>
+          el.id === id
+            ? {
+                ...el,
+                width: Math.max(20, width),
+                height: Math.max(20, height),
+              }
+            : el
+        ),
+      };
+    }),
+  resizeElementNoHistory: (id, width, height, preserveAspectRatio = false) =>
     set((state) => ({
       elements: state.elements.map((el) =>
         el.id === id
@@ -246,6 +312,80 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       ),
     })),
   resizeSelectedElements: (
+    baseId,
+    newWidth,
+    newHeight,
+    preserveAspectRatio = false
+  ) =>
+    set((state) => {
+      const { getHistoryUpdate } = get();
+      const baseElement = state.elements.find((el) => el.id === baseId);
+      if (!baseElement || !state.selectedElements.includes(baseId)) {
+        return state;
+      }
+
+      let scaleX = newWidth / baseElement.width;
+      let scaleY = newHeight / baseElement.height;
+
+      // If preserving aspect ratio, use the smaller scale to maintain proportions
+      if (preserveAspectRatio) {
+        const scale = Math.min(scaleX, scaleY);
+        scaleX = scale;
+        scaleY = scale;
+      }
+
+      return {
+        ...getHistoryUpdate(),
+        elements: state.elements.map((el) => {
+          if (state.selectedElements.includes(el.id)) {
+            // For text elements, also scale font size
+            if (el.type === "text") {
+              const currentFontSize = el.fontSize || 16;
+              const currentLineHeight = el.lineHeight || 20;
+
+              // Use the average scale for font sizing to match the orange button behavior
+              const fontScale = (scaleX + scaleY) / 2;
+              const newFontSize = Math.max(
+                8,
+                Math.round(currentFontSize * fontScale)
+              );
+              const newLineHeight = Math.max(
+                10,
+                Math.round(currentLineHeight * fontScale)
+              );
+
+              return {
+                ...el,
+                width: Math.max(20, Math.round(el.width * scaleX)),
+                height: Math.max(20, Math.round(el.height * scaleY)),
+                fontSize: newFontSize,
+                lineHeight: newLineHeight,
+              };
+            } else {
+              // For non-text elements in multi-selection, only respect shift key (preserveAspectRatio)
+              // Individual lockAspectRatio settings are ignored during multi-selection
+              let finalScaleX = scaleX;
+              let finalScaleY = scaleY;
+
+              if (preserveAspectRatio) {
+                // When shift is pressed, use the smaller scale to maintain proportions
+                const scale = Math.min(scaleX, scaleY);
+                finalScaleX = scale;
+                finalScaleY = scale;
+              }
+
+              return {
+                ...el,
+                width: Math.max(20, Math.round(el.width * finalScaleX)),
+                height: Math.max(20, Math.round(el.height * finalScaleY)),
+              };
+            }
+          }
+          return el;
+        }),
+      };
+    }),
+  resizeSelectedElementsNoHistory: (
     baseId,
     newWidth,
     newHeight,
@@ -332,38 +472,58 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     set((state) => {
       if (state.past.length === 0) return state;
       const previous = state.past[state.past.length - 1];
+
+      // Preserve selection by finding elements that were selected in the current state
+      const currentlySelectedIds = state.selectedElements;
+      const elementsToKeepSelected = previous
+        .filter((el) => currentlySelectedIds.includes(el.id))
+        .map((el) => el.id);
+
       return {
         past: state.past.slice(0, state.past.length - 1),
         future: [state.elements, ...state.future],
-        elements: previous,
-        selectedElements: [],
+        elements: previous.map((el) => ({
+          ...el,
+          selected: elementsToKeepSelected.includes(el.id),
+        })),
+        selectedElements: elementsToKeepSelected,
       };
     }),
   redo: () =>
     set((state) => {
       if (state.future.length === 0) return state;
       const next = state.future[0];
+
+      // Preserve selection by finding elements that were selected in the current state
+      const currentlySelectedIds = state.selectedElements;
+      const elementsToKeepSelected = next
+        .filter((el) => currentlySelectedIds.includes(el.id))
+        .map((el) => el.id);
+
       return {
         past: [...state.past, state.elements],
         future: state.future.slice(1),
-        elements: next,
-        selectedElements: [],
+        elements: next.map((el) => ({
+          ...el,
+          selected: elementsToKeepSelected.includes(el.id),
+        })),
+        selectedElements: elementsToKeepSelected,
       };
     }),
   reorderElements: (oldIndex, newIndex) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       const updated = [...state.elements];
       const [moved] = updated.splice(oldIndex, 1);
       updated.splice(newIndex, 0, moved);
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: updated,
       };
     }),
   moveElementUp: (id) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       const elements = [...state.elements];
       const index = elements.findIndex((el) => el.id === id);
       // Move up means bring forward (higher z-index) = move to higher index in array
@@ -372,7 +532,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         const [moved] = elements.splice(index, 1);
         elements.splice(index + 1, 0, moved);
         return {
-          ...addToHistory(),
+          ...getHistoryUpdate(),
           elements,
         };
       }
@@ -380,7 +540,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   moveElementDown: (id) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       const elements = [...state.elements];
       const index = elements.findIndex((el) => el.id === id);
       // Move down means send backward (lower z-index) = move to lower index in array
@@ -389,7 +549,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         const [moved] = elements.splice(index, 1);
         elements.splice(index - 1, 0, moved);
         return {
-          ...addToHistory(),
+          ...getHistoryUpdate(),
           elements,
         };
       }
@@ -397,9 +557,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateCornerRadius: (id, cornerRadius) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id && (el.type === "rectangle" || el.type === "image")
             ? {
@@ -413,11 +573,25 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ),
       };
     }),
+  updateCornerRadiusNoHistory: (id, cornerRadius) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id && (el.type === "rectangle" || el.type === "image")
+          ? {
+              ...el,
+              cornerRadius: Math.max(
+                0,
+                Math.min(cornerRadius, el.width / 2, el.height / 2)
+              ),
+            }
+          : el
+      ),
+    })),
   updateFillColor: (id, color) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, color } : el
         ),
@@ -425,9 +599,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateBorderWidth: (id, borderWidth) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, borderWidth } : el
         ),
@@ -435,9 +609,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateBorderColor: (id, borderColor) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, borderColor } : el
         ),
@@ -445,9 +619,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateShadowBlur: (id, shadowBlur) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, shadowBlur } : el
         ),
@@ -455,9 +629,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateShadowColor: (id, shadowColor) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, shadowColor } : el
         ),
@@ -465,18 +639,18 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   deleteElement: (id) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.filter((el) => el.id !== id),
         selectedElements: state.selectedElements.filter((elId) => elId !== id),
       };
     }),
   updateName: (id, name) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, name } : el
         ),
@@ -484,9 +658,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateFontSize: (id, fontSize) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, fontSize } : el
         ),
@@ -494,9 +668,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateFontWeight: (id, fontWeight) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, fontWeight } : el
         ),
@@ -504,9 +678,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateLetterSpacing: (id, letterSpacing) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, letterSpacing } : el
         ),
@@ -514,9 +688,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateLineHeight: (id, lineHeight) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, lineHeight } : el
         ),
@@ -524,9 +698,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateHorizontalAlign: (id, horizontalAlign) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, horizontalAlign } : el
         ),
@@ -534,9 +708,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   updateVerticalAlign: (id, verticalAlign) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, verticalAlign } : el
         ),
@@ -605,9 +779,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     })),
   toggleAspectRatioLock: (id) =>
     set((state) => {
-      const { addToHistory } = get();
+      const { getHistoryUpdate } = get();
       return {
-        ...addToHistory(),
+        ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
           el.id === id ? { ...el, lockAspectRatio: !el.lockAspectRatio } : el
         ),
@@ -615,7 +789,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   // File operations
   exportCanvas: (filename?: string) => {
-    const { elements, artboardDimensions } = get();
+    const { elements, artboardDimensions, projectName } = get();
 
     // Clean elements by removing id and selected properties
     const cleanElements = elements.map(
@@ -625,6 +799,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     const canvasData = {
       elements: cleanElements,
       artboardDimensions,
+      projectName,
       exportedAt: new Date().toISOString(),
       version: "1.0",
     };
@@ -636,7 +811,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     link.href = URL.createObjectURL(dataBlob);
     link.download =
       filename ||
-      `canvas-export-${new Date().toISOString().split("T")[0]}.json`;
+      `${projectName.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
 
     document.body.appendChild(link);
     link.click();
@@ -675,7 +850,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           }
 
           const state = get();
-          const { addToHistory } = get();
+          const { getHistoryUpdate } = get();
 
           // Generate new IDs for imported elements to avoid conflicts
           const importedElements = canvasData.elements.map(
@@ -703,11 +878,21 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           ];
 
           // Keep current artboard dimensions (don't change them)
-          set({
-            ...addToHistory(),
+          // Import project name if it exists in the imported data
+          const updateData: any = {
+            ...getHistoryUpdate(),
             elements: updatedElements,
             selectedElements: importedElementIds, // Auto-select all imported elements
-          });
+          };
+
+          if (
+            canvasData.projectName &&
+            typeof canvasData.projectName === "string"
+          ) {
+            updateData.projectName = canvasData.projectName;
+          }
+
+          set(updateData);
 
           resolve({ success: true, importedCount: importedElements.length });
         } catch (error) {

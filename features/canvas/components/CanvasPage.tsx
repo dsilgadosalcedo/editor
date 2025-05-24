@@ -11,6 +11,7 @@ import CanvasViewport from "./CanvasViewport";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 import DragDropOverlay from "./DragDropOverlay";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
+import { useDragSelection } from "../hooks/useDragSelection";
 import { useCanvasStore } from "../store/useCanvasStore";
 import type { ToolType } from "../store/useCanvasStore";
 import { ColorPickerProvider } from "./ColorPicker";
@@ -40,6 +41,7 @@ export default function CanvasPage() {
     moveElementDown,
     importCanvas,
     rightSidebarDocked,
+    selectMultipleElements,
   } = useCanvasStore();
 
   // Keyboard shortcuts: Full professional shortcuts support
@@ -188,6 +190,7 @@ export default function CanvasPage() {
     clearSelection,
     moveElementUp,
     moveElementDown,
+    elements,
   ]);
 
   // Pan/zoom logic
@@ -198,13 +201,49 @@ export default function CanvasPage() {
     setCanvasPosition,
     transformOrigin,
     setTransformOrigin,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
+    handleMouseDown: handlePanMouseDown,
+    handleMouseMove: handlePanMouseMove,
+    handleMouseUp: handlePanMouseUp,
     isPanning,
     setIsPanning,
     panStartRef,
   } = useCanvasPanZoom(artboardRef, canvasRef, selectedTool);
+
+  // Drag selection logic
+  const {
+    dragSelection,
+    handleSelectionStart,
+    handleSelectionMove,
+    handleSelectionEnd,
+    getSelectionRectangle,
+  } = useDragSelection(
+    selectedTool,
+    canvasPosition,
+    zoom,
+    elements,
+    selectMultipleElements,
+    artboardDimensions
+  );
+
+  // Combined mouse handlers
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Try drag selection first (returns true if it handles the event)
+    if (handleSelectionStart(e)) {
+      return;
+    }
+    // Otherwise handle panning
+    handlePanMouseDown(e);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    handleSelectionMove(e);
+    handlePanMouseMove(e);
+  };
+
+  const handleMouseUp = () => {
+    handleSelectionEnd();
+    handlePanMouseUp();
+  };
 
   // Helper: Zoom to fit selection
   const handleZoomToSelection = () => {
@@ -270,6 +309,7 @@ export default function CanvasPage() {
           handleMouseDown={handleMouseDown}
           handleMouseMove={handleMouseMove}
           handleMouseUp={handleMouseUp}
+          selectionRectangle={getSelectionRectangle()}
         />
 
         {/* Layers Panel */}

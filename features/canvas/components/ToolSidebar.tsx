@@ -1,8 +1,15 @@
 import React from "react";
-import { Hand, Square, Type, Layers, Image as ImageIcon } from "lucide-react";
+import {
+  Hand,
+  Square,
+  Type,
+  Layers,
+  Image as ImageIcon,
+  MousePointer,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ToolType, ElementType } from "../store/useCanvasStore";
+import type { ToolType } from "../store/useCanvasStore";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
 import { useCanvasStore } from "../store/useCanvasStore";
@@ -70,7 +77,7 @@ export default function ToolSidebar({
           }}
         >
           <ToolIcon
-            icon={Hand}
+            icon={selectedTool === "hand" ? Hand : MousePointer}
             className={cn(layersOpen && "text-properties-gold")}
           />
         </ToolButton>

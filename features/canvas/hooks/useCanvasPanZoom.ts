@@ -14,6 +14,9 @@ export const useCanvasPanZoom = (
 
   // Mouse pan handlers
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Don't pan if not using hand tool
+    if (selectedTool !== "hand") return;
+
     setIsPanning(true);
     panStartRef.current = {
       x: e.clientX - canvasPosition.x,
@@ -46,6 +49,12 @@ export const useCanvasPanZoom = (
     if (!canvas) return;
     const handleWheel = (e: WheelEvent) => {
       if (e.deltaMode !== 0) return;
+
+      // Disable zoom when hand tool is selected
+      if (selectedTool === "hand") {
+        return;
+      }
+
       e.preventDefault();
       setTransformOrigin("center center");
       const minZoom = 50;
@@ -72,11 +81,15 @@ export const useCanvasPanZoom = (
     };
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [zoom, artboardRef, canvasRef]);
+  }, [zoom, artboardRef, canvasRef, selectedTool]);
 
   useEffect(() => {
     if (canvasRef.current) {
-      canvasRef.current.style.cursor = isPanning ? "grabbing" : "grab";
+      if (selectedTool === "hand") {
+        canvasRef.current.style.cursor = isPanning ? "grabbing" : "grab";
+      } else {
+        canvasRef.current.style.cursor = "default";
+      }
     }
   }, [selectedTool, isPanning, canvasRef]);
 

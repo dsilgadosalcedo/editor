@@ -11,8 +11,16 @@ interface ArtboardProps {
   selectedElements: string[];
   onSelectElement: (id: string | null, addToSelection?: boolean) => void;
   onMoveElement: (id: string, dx: number, dy: number) => void;
+  onMoveElementNoHistory: (id: string, dx: number, dy: number) => void;
   onMoveSelectedElements: (dx: number, dy: number) => void;
+  onMoveSelectedElementsNoHistory: (dx: number, dy: number) => void;
   onResizeElement: (
+    id: string,
+    w: number,
+    h: number,
+    preserveAspectRatio?: boolean
+  ) => void;
+  onResizeElementNoHistory: (
     id: string,
     w: number,
     h: number,
@@ -24,15 +32,23 @@ interface ArtboardProps {
     h: number,
     preserveAspectRatio?: boolean
   ) => void;
+  onResizeSelectedElementsNoHistory: (
+    baseId: string,
+    w: number,
+    h: number,
+    preserveAspectRatio?: boolean
+  ) => void;
   onTextChange: (id: string, content: string) => void;
   selectedTool: string | null;
   canvasPosition: { x: number; y: number };
   artboardRef: React.RefObject<HTMLDivElement | null>;
   canvasContainerRef: React.RefObject<HTMLDivElement | null>;
   onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
+  onUpdateCornerRadiusNoHistory?: (id: string, cornerRadius: number) => void;
   onUpdateFontSize?: (id: string, fontSize: number) => void;
   onUpdateLineHeight?: (id: string, lineHeight: number) => void;
   onResizeArtboard: (width: number, height: number) => void;
+  onAddToHistory?: () => void;
 }
 
 const Artboard: React.FC<ArtboardProps> = ({
@@ -44,18 +60,24 @@ const Artboard: React.FC<ArtboardProps> = ({
   selectedElements,
   onSelectElement,
   onMoveElement,
+  onMoveElementNoHistory,
   onMoveSelectedElements,
+  onMoveSelectedElementsNoHistory,
   onResizeElement,
+  onResizeElementNoHistory,
   onResizeSelectedElements,
+  onResizeSelectedElementsNoHistory,
   onTextChange,
   selectedTool,
   canvasPosition,
   artboardRef,
   canvasContainerRef,
   onUpdateCornerRadius,
+  onUpdateCornerRadiusNoHistory,
   onUpdateFontSize,
   onUpdateLineHeight,
   onResizeArtboard,
+  onAddToHistory,
 }) => {
   return (
     <div
@@ -121,6 +143,18 @@ const Artboard: React.FC<ArtboardProps> = ({
                 onMoveElement(element.id, dx, dy);
               }
             }}
+            onMoveNoHistory={(dx, dy) => {
+              if (
+                selectedElements.length > 1 &&
+                selectedElements.includes(element.id)
+              ) {
+                // Move all selected elements together when dragging a selected element
+                onMoveSelectedElementsNoHistory(dx, dy);
+              } else {
+                // Move single element
+                onMoveElementNoHistory(element.id, dx, dy);
+              }
+            }}
             onResize={(w, h, preserveAspectRatio) => {
               if (
                 selectedElements.length > 1 &&
@@ -133,12 +167,31 @@ const Artboard: React.FC<ArtboardProps> = ({
                 onResizeElement(element.id, w, h, preserveAspectRatio);
               }
             }}
+            onResizeNoHistory={(w, h, preserveAspectRatio) => {
+              if (
+                selectedElements.length > 1 &&
+                selectedElements.includes(element.id)
+              ) {
+                // Resize all selected elements proportionally
+                onResizeSelectedElementsNoHistory(
+                  element.id,
+                  w,
+                  h,
+                  preserveAspectRatio
+                );
+              } else {
+                // Resize single element
+                onResizeElementNoHistory(element.id, w, h, preserveAspectRatio);
+              }
+            }}
             onTextChange={(content) => onTextChange(element.id, content)}
             isPanMode={selectedTool === "hand"}
             zoom={zoom}
             onUpdateCornerRadius={onUpdateCornerRadius}
+            onUpdateCornerRadiusNoHistory={onUpdateCornerRadiusNoHistory}
             onUpdateFontSize={onUpdateFontSize}
             onUpdateLineHeight={onUpdateLineHeight}
+            onAddToHistory={onAddToHistory}
             isMultipleSelected={selectedElements.length > 1}
           />
         ))}

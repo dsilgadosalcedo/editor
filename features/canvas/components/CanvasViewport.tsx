@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import type { ToolType } from "../store/useCanvasStore";
 import { useCanvasStore } from "../store/useCanvasStore";
 import Artboard from "./Artboard";
@@ -15,6 +15,12 @@ interface CanvasViewportProps {
   handleMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleMouseUp: (e: React.MouseEvent<HTMLDivElement>) => void;
+  selectionRectangle?: {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null;
 }
 
 export default function CanvasViewport({
@@ -29,6 +35,7 @@ export default function CanvasViewport({
   handleMouseDown,
   handleMouseMove,
   handleMouseUp,
+  selectionRectangle,
 }: CanvasViewportProps) {
   const {
     artboardDimensions,
@@ -36,15 +43,21 @@ export default function CanvasViewport({
     selectedElements,
     selectElement,
     moveElement,
+    moveElementNoHistory,
     moveSelectedElements,
+    moveSelectedElementsNoHistory,
     resizeElement,
+    resizeElementNoHistory,
     resizeSelectedElements,
+    resizeSelectedElementsNoHistory,
     updateTextContent,
     updateCornerRadius,
+    updateCornerRadiusNoHistory,
     updateFontSize,
     updateLineHeight,
     clearSelection,
     setArtboardDimensions,
+    addToHistory,
   } = useCanvasStore();
 
   return (
@@ -58,11 +71,11 @@ export default function CanvasViewport({
     >
       {/* Grid Background */}
       <div
-        className="fixed z-10 w-full h-full top-0 left-0"
-        onMouseDown={(e) => {
+        className="fixed z-10 w-full h-full top-0 left-0 canvas-background"
+        onMouseDown={() => {
           clearSelection();
         }}
-        onTouchStart={(e) => {
+        onTouchStart={() => {
           clearSelection();
         }}
       >
@@ -88,12 +101,25 @@ export default function CanvasViewport({
             else selectElement(id, addToSelection);
           }}
           onMoveElement={moveElement}
+          onMoveElementNoHistory={moveElementNoHistory}
           onMoveSelectedElements={moveSelectedElements}
+          onMoveSelectedElementsNoHistory={moveSelectedElementsNoHistory}
           onResizeElement={(id, w, h, preserveAspectRatio) =>
             resizeElement(id, w, h, preserveAspectRatio)
           }
+          onResizeElementNoHistory={(id, w, h, preserveAspectRatio) =>
+            resizeElementNoHistory(id, w, h, preserveAspectRatio)
+          }
           onResizeSelectedElements={(baseId, w, h, preserveAspectRatio) =>
             resizeSelectedElements(baseId, w, h, preserveAspectRatio)
+          }
+          onResizeSelectedElementsNoHistory={(
+            baseId,
+            w,
+            h,
+            preserveAspectRatio
+          ) =>
+            resizeSelectedElementsNoHistory(baseId, w, h, preserveAspectRatio)
           }
           onTextChange={updateTextContent}
           selectedTool={selectedTool}
@@ -101,12 +127,27 @@ export default function CanvasViewport({
           artboardRef={artboardRef}
           canvasContainerRef={canvasContainerRef}
           onUpdateCornerRadius={updateCornerRadius}
+          onUpdateCornerRadiusNoHistory={updateCornerRadiusNoHistory}
           onUpdateFontSize={updateFontSize}
           onUpdateLineHeight={updateLineHeight}
           onResizeArtboard={(width, height) =>
             setArtboardDimensions({ width, height })
           }
+          onAddToHistory={addToHistory}
         />
+
+        {/* Selection Rectangle */}
+        {selectionRectangle && (
+          <div
+            className="absolute pointer-events-none z-50 border border-blue-500 bg-blue-500/10"
+            style={{
+              left: selectionRectangle.left,
+              top: selectionRectangle.top,
+              width: selectionRectangle.width,
+              height: selectionRectangle.height,
+            }}
+          />
+        )}
       </div>
     </div>
   );

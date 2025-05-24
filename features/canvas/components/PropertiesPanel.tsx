@@ -29,6 +29,8 @@ export default function PropertiesPanel() {
   const {
     artboardDimensions,
     setArtboardDimensions,
+    projectName,
+    setProjectName,
     selectedElements,
     getSelectedElementData,
     hasMultipleSelection,
@@ -36,6 +38,7 @@ export default function PropertiesPanel() {
     resizeElement,
     moveElement,
     updateCornerRadius,
+    updateCornerRadiusNoHistory,
     updateFillColor,
     updateBorderWidth,
     updateBorderColor,
@@ -100,11 +103,28 @@ export default function PropertiesPanel() {
         {/* Content */}
         <div className="p-4">
           {selectedElements.length === 0 ? (
-            <ArtboardProperties
-              dimensions={artboardDimensions}
-              onWidthChange={handleUpdateArtboardWidth}
-              onHeightChange={handleUpdateArtboardHeight}
-            />
+            <>
+              <ArtboardProperties
+                dimensions={artboardDimensions}
+                onWidthChange={handleUpdateArtboardWidth}
+                onHeightChange={handleUpdateArtboardHeight}
+              />
+
+              <Separator className="my-4" />
+
+              <PropertySection>
+                <PropertyTitle>Project Name</PropertyTitle>
+                <PropertyInput>
+                  <Input
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
+                    aria-label="Project name"
+                    placeholder="Enter project name"
+                  />
+                </PropertyInput>
+              </PropertySection>
+            </>
           ) : hasMultipleSelection() ? (
             <div className="space-y-4">
               <PropertySection>
@@ -209,6 +229,12 @@ export default function PropertiesPanel() {
                     }
                     onCornerRadiusChange={(radius) =>
                       updateCornerRadius(selectedElementData.id, radius)
+                    }
+                    onCornerRadiusInstantChange={(radius) =>
+                      updateCornerRadiusNoHistory(
+                        selectedElementData.id,
+                        radius
+                      )
                     }
                     onBorderWidthChange={(width) =>
                       updateBorderWidth(selectedElementData.id, width)
@@ -367,7 +393,7 @@ export default function PropertiesPanel() {
                             )
                           }
                           onInstantChange={(val) =>
-                            updateCornerRadius(
+                            updateCornerRadiusNoHistory(
                               selectedElementData.id,
                               Math.max(
                                 0,

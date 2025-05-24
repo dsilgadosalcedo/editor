@@ -35,7 +35,13 @@ interface CanvasElementProps {
   };
   onSelect: (addToSelection?: boolean) => void;
   onMove: (deltaX: number, deltaY: number) => void;
+  onMoveNoHistory: (deltaX: number, deltaY: number) => void;
   onResize: (
+    width: number,
+    height: number,
+    preserveAspectRatio?: boolean
+  ) => void;
+  onResizeNoHistory: (
     width: number,
     height: number,
     preserveAspectRatio?: boolean
@@ -44,23 +50,29 @@ interface CanvasElementProps {
   isPanMode?: boolean;
   zoom: number;
   onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
+  onUpdateCornerRadiusNoHistory?: (id: string, cornerRadius: number) => void;
   onUpdateFontSize?: (id: string, fontSize: number) => void;
   onUpdateLineHeight?: (id: string, lineHeight: number) => void;
   isMultipleSelected?: boolean;
+  onAddToHistory?: () => void;
 }
 
 export default function CanvasElement({
   element,
   onSelect,
   onMove,
+  onMoveNoHistory,
   onResize,
+  onResizeNoHistory,
   onTextChange,
   isPanMode = false,
   zoom,
   onUpdateCornerRadius,
+  onUpdateCornerRadiusNoHistory,
   onUpdateFontSize,
   onUpdateLineHeight,
   isMultipleSelected = false,
+  onAddToHistory,
 }: CanvasElementProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -121,6 +133,11 @@ export default function CanvasElement({
       return;
     }
 
+    // Add to history at the start of drag operation
+    if (typeof onAddToHistory === "function") {
+      onAddToHistory();
+    }
+
     // Reset justDragged state for new interaction
     setJustDragged(false);
     setIsDragging(true);
@@ -142,6 +159,11 @@ export default function CanvasElement({
       return;
     }
 
+    // Add to history at the start of drag operation
+    if (typeof onAddToHistory === "function") {
+      onAddToHistory();
+    }
+
     // Reset justDragged state for new interaction
     setJustDragged(false);
     setIsDragging(true);
@@ -154,6 +176,12 @@ export default function CanvasElement({
 
     e.stopPropagation();
     e.preventDefault();
+
+    // Add to history at the start of resize operation
+    if (typeof onAddToHistory === "function") {
+      onAddToHistory();
+    }
+
     setIsResizing(true);
     setResizeDir(dir);
     setResizeStart({
@@ -169,6 +197,12 @@ export default function CanvasElement({
 
     e.stopPropagation();
     e.preventDefault();
+
+    // Add to history at the start of resize operation
+    if (typeof onAddToHistory === "function") {
+      onAddToHistory();
+    }
+
     setIsResizing(true);
     setResizeDir(dir);
     setResizeStart({
@@ -245,7 +279,7 @@ export default function CanvasElement({
         setJustDragged(true);
 
         // Round to integers for clean positions
-        onMove(Math.round(deltaX), Math.round(deltaY));
+        onMoveNoHistory(Math.round(deltaX), Math.round(deltaY));
         setDragStart({ x: e.clientX, y: e.clientY });
       } else if (isResizing && resizeDir) {
         const dx = (e.clientX - resizeStart.x) / (zoom / 100);
@@ -358,9 +392,9 @@ export default function CanvasElement({
         newWidth = Math.max(20, Math.round(newWidth));
         newHeight = Math.max(20, Math.round(newHeight));
         // Apply size change then position change
-        onResize(newWidth, newHeight, preserveAspectRatio);
+        onResizeNoHistory(newWidth, newHeight, preserveAspectRatio);
         if (moveX || moveY) {
-          onMove(Math.round(moveX), Math.round(moveY));
+          onMoveNoHistory(Math.round(moveX), Math.round(moveY));
         }
         // Update base for next incremental resize
         setResizeStart({
@@ -381,7 +415,7 @@ export default function CanvasElement({
         setJustDragged(true);
 
         // Round to integers for clean positions
-        onMove(Math.round(deltaX), Math.round(deltaY));
+        onMoveNoHistory(Math.round(deltaX), Math.round(deltaY));
         setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
       } else if (isResizing && resizeDir) {
         const dx = (e.touches[0].clientX - resizeStart.x) / (zoom / 100);
@@ -429,9 +463,9 @@ export default function CanvasElement({
         newWidth = Math.max(20, Math.round(newWidth));
         newHeight = Math.max(20, Math.round(newHeight));
         // Apply size change then position change
-        onResize(newWidth, newHeight, false); // Touch doesn't support shift key
+        onResizeNoHistory(newWidth, newHeight, false); // Touch doesn't support shift key
         if (moveX || moveY) {
-          onMove(Math.round(moveX), Math.round(moveY));
+          onMoveNoHistory(Math.round(moveX), Math.round(moveY));
         }
         // Update base for next incremental resize
         setResizeStart({
@@ -483,6 +517,12 @@ export default function CanvasElement({
   const handleCornerRadiusDragStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+
+    // Add to history at the start of corner radius drag
+    if (typeof onAddToHistory === "function") {
+      onAddToHistory();
+    }
+
     setIsCornerRadiusDragging(true);
     setCornerRadiusStart({
       x: e.clientX,
@@ -504,13 +544,14 @@ export default function CanvasElement({
       );
       if (
         element.cornerRadius !== newRadius &&
-        typeof onUpdateCornerRadius === "function"
+        typeof onUpdateCornerRadiusNoHistory === "function"
       ) {
-        onUpdateCornerRadius(element.id, newRadius);
+        onUpdateCornerRadiusNoHistory(element.id, newRadius);
       }
     };
     const handleMouseUp = () => {
       setIsCornerRadiusDragging(false);
+      // No need to add to history when drag ends since we added it at the start
     };
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
@@ -523,6 +564,7 @@ export default function CanvasElement({
     cornerRadiusStart,
     element,
     onUpdateCornerRadius,
+    onUpdateCornerRadiusNoHistory,
     zoom,
   ]);
 

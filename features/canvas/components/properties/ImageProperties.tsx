@@ -28,6 +28,7 @@ interface ImagePropertiesProps {
   onSrcChange: (src: string) => void;
   onDimensionsChange: (width: number, height: number) => void;
   onCornerRadiusChange: (radius: number) => void;
+  onCornerRadiusInstantChange: (radius: number) => void;
   onBorderWidthChange: (width: number) => void;
   onBorderColorChange: (color: string) => void;
   onShadowBlurChange: (blur: number) => void;
@@ -51,6 +52,7 @@ export function ImageProperties({
   onSrcChange,
   onDimensionsChange,
   onCornerRadiusChange,
+  onCornerRadiusInstantChange,
   onBorderWidthChange,
   onBorderColorChange,
   onShadowBlurChange,
@@ -146,7 +148,7 @@ export function ImageProperties({
               )
             }
             onInstantChange={(val) =>
-              onCornerRadiusChange(
+              onCornerRadiusInstantChange(
                 Math.max(
                   0,
                   Math.min(val, Math.floor(Math.min(width, height) / 2))
