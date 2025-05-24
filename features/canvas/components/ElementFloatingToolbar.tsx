@@ -90,7 +90,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
       onTouchStart={(e) => e.stopPropagation()}
     >
       <div
-        className="bg-card rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center gap-1 p-1"
+        className="bg-card/80 backdrop-blur-sm rounded-lg shadow-lg border flex items-center gap-1 p-1"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
