@@ -36,8 +36,8 @@ export const elementToSVG = (element: CanvasElementData): string => {
       return createTextSVG(element);
     case "image":
       return createImageSVG(element);
-    case "frame":
-      return createFrameSVG(element);
+    case "group":
+      return createGroupSVG(element);
     default:
       return "";
   }
@@ -167,9 +167,9 @@ const createTextSVG = (element: CanvasElementData): string => {
 };
 
 /**
- * Create SVG for frame elements
+ * Create SVG for group elements
  */
-const createFrameSVG = (element: CanvasElementData): string => {
+const createGroupSVG = (element: CanvasElementData): string => {
   const {
     x,
     y,

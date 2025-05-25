@@ -6,7 +6,7 @@ import { useColorPicker } from "./ColorPicker";
 
 interface ElementFloatingToolbarProps {
   elementId: string;
-  elementType: "rectangle" | "text" | "image" | "frame";
+  elementType: "rectangle" | "text" | "image" | "group";
   elementColor: string;
   position: { x: number; y: number };
   zoom: number;
@@ -193,13 +193,13 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
         )}
 
         {/* Ungroup Elements */}
-        {elementType === "frame" && !currentlyHasMultipleSelection && (
+        {elementType === "group" && !currentlyHasMultipleSelection && (
           <Button
             variant="ghost"
             size="icon"
             onClick={handleUngroupElements}
-            title="Ungroup frame"
-            aria-label="Ungroup frame elements"
+            title="Ungroup group"
+            aria-label="Ungroup group elements"
             className="h-6 w-6"
           >
             <Ungroup className="w-4 h-4" />

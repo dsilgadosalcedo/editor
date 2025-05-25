@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ElementType = "rectangle" | "text" | "image" | "frame";
+export type ElementType = "rectangle" | "text" | "image" | "group";
 export type ToolType = ElementType | "hand" | null;
 
 export interface SavedCanvasData {
@@ -40,7 +40,7 @@ export interface CanvasElementData {
   visible?: boolean;
   lockAspectRatio?: boolean;
   parentId?: string; // For grouped elements
-  children?: string[]; // For frame elements
+  children?: string[]; // For group elements
   rotation?: number; // Rotation in degrees
   textResizing?: "auto-width" | "auto-height" | "fixed"; // Text resizing mode (only for text elements)
 }
@@ -63,7 +63,7 @@ interface CanvasStoreState {
     past: CanvasElementData[][];
     future: CanvasElementData[][];
   };
-  // Frame helper functions
+  // Group helper functions
   getElementDescendants: (elementId: string) => string[];
   getTopLevelElements: () => CanvasElementData[];
   getElementChildren: (elementId: string) => CanvasElementData[];
@@ -167,7 +167,7 @@ interface CanvasStoreState {
   alignToArtboardBottom: (id: string) => void;
   alignToArtboardCenterHorizontal: (id: string) => void;
   alignToArtboardCenterVertical: (id: string) => void;
-  // Frame management
+  // Group management
   updateElementParenting: () => void;
 }
 
@@ -201,7 +201,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }));
   },
 
-  // Frame helper functions
+  // Group helper functions
   getElementDescendants: (elementId: string) => {
     const state = get();
     const descendants: string[] = [];
@@ -287,7 +287,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         visible: true,
         rotation: 0,
       };
-    } else if (type === "frame") {
+    } else if (type === "group") {
       newElement = {
         id: `${type}-${Date.now()}`,
         type,
@@ -301,7 +301,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         selected: true,
         visible: true,
         children: [],
-        name: "Frame",
+        name: "Group",
         rotation: 0,
       };
     } else {
@@ -442,9 +442,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
       if (!element) return state;
 
-      // If moving a frame, also move all its descendants
+      // If moving a group, also move all its descendants
       const elementsToMove =
-        element.type === "frame" ? [id, ...getElementDescendants(id)] : [id];
+        element.type === "group" ? [id, ...getElementDescendants(id)] : [id];
 
       return {
         ...getHistoryUpdate(),
@@ -462,9 +462,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
       if (!element) return state;
 
-      // If moving a frame, also move all its descendants
+      // If moving a group, also move all its descendants
       const elementsToMove =
-        element.type === "frame" ? [id, ...getElementDescendants(id)] : [id];
+        element.type === "group" ? [id, ...getElementDescendants(id)] : [id];
 
       return {
         elements: state.elements.map((el) =>
@@ -484,7 +484,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       state.selectedElements.forEach((id) => {
         elementsToMove.add(id);
         const element = state.elements.find((el) => el.id === id);
-        if (element?.type === "frame") {
+        if (element?.type === "group") {
           getElementDescendants(id).forEach((descendantId) =>
             elementsToMove.add(descendantId)
           );
@@ -510,7 +510,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       state.selectedElements.forEach((id) => {
         elementsToMove.add(id);
         const element = state.elements.find((el) => el.id === id);
-        if (element?.type === "frame") {
+        if (element?.type === "group") {
           getElementDescendants(id).forEach((descendantId) =>
             elementsToMove.add(descendantId)
           );
@@ -532,8 +532,8 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
       if (!element) return state;
 
-      // If resizing a frame, also resize and reposition its children proportionally
-      if (element.type === "frame") {
+      // If resizing a group, also resize and reposition its children proportionally
+      if (element.type === "group") {
         const scaleX = Math.max(20, width) / element.width;
         const scaleY = Math.max(20, height) / element.height;
         const descendants = getElementDescendants(id);
@@ -542,7 +542,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           ...getHistoryUpdate(),
           elements: state.elements.map((el) => {
             if (el.id === id) {
-              // Resize the frame itself
+              // Resize the group itself
               return {
                 ...el,
                 width: Math.max(20, width),
@@ -1419,7 +1419,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       state.selectedElements.includes(el.id)
     );
 
-    // Calculate bounding box for the frame
+    // Calculate bounding box for the group
     let minX = Infinity,
       minY = Infinity,
       maxX = -Infinity,
@@ -1432,10 +1432,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       maxY = Math.max(maxY, el.y + el.height);
     });
 
-    const frameId = `frame-${Date.now()}`;
-    const frameElement: CanvasElementData = {
-      id: frameId,
-      type: "frame",
+    const groupId = `group-${Date.now()}`;
+    const groupElement: CanvasElementData = {
+      id: groupId,
+      type: "group",
       x: minX,
       y: minY,
       width: maxX - minX,
@@ -1446,22 +1446,22 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       selected: true,
       visible: true,
       children: state.selectedElements,
-      name: "Frame",
+      name: "Group",
       rotation: 0,
     };
 
-    // Update selected elements to have this frame as parent
+    // Update selected elements to have this group as parent
     const updatedElements = state.elements.map((el) => {
       if (state.selectedElements.includes(el.id)) {
-        return { ...el, parentId: frameId, selected: false };
+        return { ...el, parentId: groupId, selected: false };
       }
       return el;
     });
 
     set({
       ...getHistoryUpdate(),
-      elements: [...updatedElements, frameElement],
-      selectedElements: [frameId],
+      elements: [...updatedElements, groupElement],
+      selectedElements: [groupId],
     });
   },
   ungroupElements: () => {
@@ -1474,11 +1474,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       (el) => el.id === state.selectedElements[0]
     );
 
-    if (!selectedElement || selectedElement.type !== "frame") return;
+    if (!selectedElement || selectedElement.type !== "group") return;
 
     const childrenIds = selectedElement.children || [];
 
-    // Remove the frame and update children to remove parentId
+    // Remove the group and update children to remove parentId
     const updatedElements = state.elements
       .filter((el) => el.id !== selectedElement.id)
       .map((el) => {
@@ -1578,7 +1578,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       ),
     }));
   },
-  // Frame management
+  // Group management
   updateElementParenting: () => {
     // This function will be implemented later to automatically manage element parenting
     // For now, it's a placeholder to satisfy the interface

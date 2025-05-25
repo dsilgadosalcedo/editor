@@ -8,7 +8,7 @@ import {
   MousePointer,
   MoreHorizontal,
   Download,
-  Frame,
+  Group,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -91,8 +91,8 @@ export default function ToolSidebar({
           <ToolButton onClick={() => addElement("image")}>
             <ToolIcon icon={ImageIcon} />
           </ToolButton>
-          {/* <ToolButton onClick={() => addElement("frame")}>
-            <ToolIcon icon={Frame} />
+          {/* <ToolButton onClick={() => addElement("group")}>
+            <ToolIcon icon={Group} />
           </ToolButton> */}
 
           <Separator />

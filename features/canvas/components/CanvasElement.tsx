@@ -37,7 +37,7 @@ const measureText = (
 interface CanvasElementProps {
   element: {
     id: string;
-    type: "rectangle" | "text" | "image" | "frame";
+    type: "rectangle" | "text" | "image" | "group";
     x: number;
     y: number;
     width: number;
@@ -965,24 +965,24 @@ export default function CanvasElement({
             element.type === "rectangle" ? element.color : "transparent",
           zIndex: 1,
           borderRadius:
-            element.type === "rectangle" || element.type === "frame"
+            element.type === "rectangle" || element.type === "group"
               ? `${element.cornerRadius || 0}px`
               : undefined,
           borderWidth:
             element.type !== "image"
-              ? element.borderWidth ?? (element.type === "frame" ? 1 : 0)
+              ? element.borderWidth ?? (element.type === "group" ? 1 : 0)
               : 0,
           borderStyle:
             element.type !== "image" &&
-            (element.borderWidth || element.type === "frame")
-              ? element.type === "frame"
+            (element.borderWidth || element.type === "group")
+              ? element.type === "group"
                 ? "dashed"
                 : "solid"
               : undefined,
           borderColor:
             element.type !== "image"
               ? element.borderColor ??
-                (element.type === "frame" ? "#3b82f6" : "transparent")
+                (element.type === "group" ? "#3b82f6" : "transparent")
               : undefined,
           boxShadow: element.shadowBlur
             ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
@@ -1055,14 +1055,14 @@ export default function CanvasElement({
             {!isEditing && element.content}
           </div>
         )}
-        {element.type === "frame" && (
+        {element.type === "group" && (
           <div
             className="absolute -top-5 left-0 text-xs text-blue-600 bg-white/80 px-1 rounded pointer-events-none font-medium"
             style={{
               fontSize: `${Math.max(8, 10 * (zoom / 100))}px`,
             }}
           >
-            {element.name || "Frame"}
+            {element.name || "Group"}
           </div>
         )}
       </div>
@@ -1083,7 +1083,7 @@ export default function CanvasElement({
               zIndex: 49,
             }}
           >
-            {/* Selection frame */}
+            {/* Selection group */}
             <div
               className="absolute pointer-events-none border-blue-500 rounded-none"
               style={{
@@ -1122,7 +1122,7 @@ export default function CanvasElement({
               </>
             ) : !isMultipleSelected ? (
               <>
-                {/* Rectangle, Image, and Frame elements: Only 4 corner handles */}
+                {/* Rectangle, Image, and Group elements: Only 4 corner handles */}
                 {/* top-left */}
                 <div
                   className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"

@@ -42,9 +42,9 @@ const LayerItem: React.FC<LayerItemProps> = ({
   selectElement,
   getElementChildren,
 }) => {
-  const [isFrameExpanded, setIsFrameExpanded] = useState(true);
-  const isFrame = element.type === "frame";
-  const children = isFrame ? getElementChildren(element.id) : [];
+  const [isGroupExpanded, setIsGroupExpanded] = useState(true);
+  const isGroup = element.type === "group";
+  const children = isGroup ? getElementChildren(element.id) : [];
   const hasChildren = children.length > 0;
 
   return (
@@ -74,27 +74,27 @@ const LayerItem: React.FC<LayerItemProps> = ({
         style={{ paddingLeft: `${0.375 + depth * 0.75}rem` }}
       >
         <div className="flex items-center space-x-1 flex-1 min-w-0">
-          {isFrame && hasChildren && (
+          {isGroup && hasChildren && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setIsFrameExpanded(!isFrameExpanded);
+                setIsGroupExpanded(!isGroupExpanded);
               }}
               className="p-0.5 hover:bg-card/50 rounded transition-colors"
-              aria-label={isFrameExpanded ? "Collapse frame" : "Expand frame"}
+              aria-label={isGroupExpanded ? "Collapse group" : "Expand group"}
             >
-              {isFrameExpanded ? (
+              {isGroupExpanded ? (
                 <ChevronDown className="h-3 w-3 text-coffee-bean dark:text-desert-sand" />
               ) : (
                 <ChevronRight className="h-3 w-3 text-coffee-bean dark:text-desert-sand" />
               )}
             </button>
           )}
-          {isFrame && !hasChildren && (
+          {isGroup && !hasChildren && (
             <div className="w-4 h-4" /> // Spacer for alignment
           )}
-          {!isFrame && (
-            <div className="w-4 h-4" /> // Spacer for alignment with frames
+          {!isGroup && (
+            <div className="w-4 h-4" /> // Spacer for alignment with groups
           )}
           <span className="text-sm text-properties-text dark:text-foreground truncate">
             {element.name ||
@@ -121,7 +121,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
           />
         </div>
       </li>
-      {isFrame && hasChildren && isFrameExpanded && (
+      {isGroup && hasChildren && isGroupExpanded && (
         <>
           {children.map((child, childIdx) => (
             <LayerItem
