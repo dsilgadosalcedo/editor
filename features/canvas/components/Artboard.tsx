@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import CanvasElement from "./CanvasElement";
 import ArtboardControlPoints from "./ArtboardControlPoints";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
@@ -84,6 +84,72 @@ const Artboard: React.FC<ArtboardProps> = ({
   onResizeArtboard,
   onAddToHistory,
 }) => {
+  // Viewport virtualization - only render visible elements for better performance
+  const visibleElements = useMemo(() => {
+    // If we have fewer than 50 elements, render all for simplicity
+    if (elements.length < 50) {
+      return elements;
+    }
+
+    // Calculate visible viewport bounds based on canvas position and zoom
+    const zoomFactor = zoom / 100;
+    const viewportWidth =
+      typeof window !== "undefined" ? window.innerWidth : 1920;
+    const viewportHeight =
+      typeof window !== "undefined" ? window.innerHeight : 1080;
+
+    // Calculate the visible area in artboard coordinates
+    const visibleLeft =
+      -canvasPosition.x / zoomFactor - viewportWidth / (2 * zoomFactor);
+    const visibleTop =
+      -canvasPosition.y / zoomFactor - viewportHeight / (2 * zoomFactor);
+    const visibleRight =
+      -canvasPosition.x / zoomFactor + viewportWidth / (2 * zoomFactor);
+    const visibleBottom =
+      -canvasPosition.y / zoomFactor + viewportHeight / (2 * zoomFactor);
+
+    // Add buffer zone around viewport to prevent flickering during panning
+    const buffer = 200; // 200px buffer around visible area
+    const bufferedLeft = visibleLeft - buffer;
+    const bufferedTop = visibleTop - buffer;
+    const bufferedRight = visibleRight + buffer;
+    const bufferedBottom = visibleBottom + buffer;
+
+    // Filter elements that intersect with the visible area (including buffer)
+    return elements.filter((element) => {
+      // Always render selected elements regardless of visibility
+      if (selectedElements.includes(element.id)) {
+        return true;
+      }
+
+      // Check if element intersects with buffered viewport
+      const elementLeft = element.x;
+      const elementTop = element.y;
+      const elementRight = element.x + element.width;
+      const elementBottom = element.y + element.height;
+
+      // Element is visible if it intersects with the viewport
+      return !(
+        elementRight < bufferedLeft ||
+        elementLeft > bufferedRight ||
+        elementBottom < bufferedTop ||
+        elementTop > bufferedBottom
+      );
+    });
+  }, [elements, selectedElements, canvasPosition, zoom]);
+
+  // Development logging for virtualization effectiveness
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === "development" && elements.length > 50) {
+      console.log(
+        `Virtualization: Rendering ${visibleElements.length}/${
+          elements.length
+        } elements (${Math.round(
+          (visibleElements.length / elements.length) * 100
+        )}% visible)`
+      );
+    }
+  }, [visibleElements.length, elements.length]);
   return (
     <div
       ref={canvasContainerRef}
@@ -129,7 +195,7 @@ const Artboard: React.FC<ArtboardProps> = ({
             }}
           />
         )}
-        {elements.map((element) => (
+        {visibleElements.map((element) => (
           <CanvasElement
             key={element.id}
             element={element}
