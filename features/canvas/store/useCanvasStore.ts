@@ -55,7 +55,7 @@ interface CanvasStoreState {
   zoomSensitivity: number;
   past: CanvasElementData[][];
   future: CanvasElementData[][];
-  clipboard: CanvasElementData | null;
+  clipboard: CanvasElementData[] | null;
   rightSidebarDocked: boolean;
   // Helper
   addToHistory: () => void;
@@ -1144,11 +1144,13 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       state.selectedElements.includes(el.id)
     );
 
-    // Update internal clipboard (for backward compatibility)
-    const selected =
-      selectedElements.length > 0 ? { ...selectedElements[0] } : null;
+    // Update internal clipboard to store all selected elements
+    const clipboardElements =
+      selectedElements.length > 0
+        ? selectedElements.map((el) => ({ ...el }))
+        : null;
 
-    set({ clipboard: selected });
+    set({ clipboard: clipboardElements });
 
     // Also copy to system clipboard for Figma compatibility
     if (selectedElements.length > 0) {
@@ -1169,22 +1171,31 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   },
   pasteClipboard: () =>
     set((state) => {
-      if (!state.clipboard) return {};
-      const newId = `${state.clipboard.type}-${Date.now()}`;
-      const newElement = {
-        ...state.clipboard,
-        id: newId,
-        x: state.clipboard.x + 20,
-        y: state.clipboard.y + 20,
-        selected: true,
-        rotation: 0,
-      };
+      if (!state.clipboard || state.clipboard.length === 0) return {};
+
+      const newElements: CanvasElementData[] = [];
+      const newElementIds: string[] = [];
+
+      state.clipboard.forEach((clipboardElement, index) => {
+        const newId = `${clipboardElement.type}-${Date.now()}-${index}`;
+        const newElement: CanvasElementData = {
+          ...clipboardElement,
+          id: newId,
+          x: clipboardElement.x + 20,
+          y: clipboardElement.y + 20,
+          selected: true,
+          rotation: clipboardElement.rotation || 0,
+        };
+        newElements.push(newElement);
+        newElementIds.push(newId);
+      });
+
       return {
         elements: [
           ...state.elements.map((el) => ({ ...el, selected: false })),
-          newElement,
+          ...newElements,
         ],
-        selectedElements: [newId],
+        selectedElements: newElementIds,
       };
     }),
   updateImageSrc: (id, src) =>
