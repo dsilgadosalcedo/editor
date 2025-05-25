@@ -56,97 +56,106 @@ export default function ToolSidebar({
   };
 
   return (
-    <div className="z-30 m-4 p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
-      <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="border border-white/30 hover:bg-transparent dark:hover:bg-transparent"
-        >
-          <Image
-            src="/favicon.ico"
-            alt="text"
-            width={24}
-            height={24}
-            className="h-6 w-6"
-          />
-        </Button>
-        <ThemeToggle />
+    <aside className="grid gap-3 place-content-center m-4 z-30">
+      <section className="p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
+        <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="border border-white/30 hover:bg-transparent dark:hover:bg-transparent"
+          >
+            <Image
+              src="/favicon.ico"
+              alt="text"
+              width={24}
+              height={24}
+              className="h-6 w-6"
+            />
+          </Button>
+          <ThemeToggle />
+        </div>
+      </section>
 
-        <Separator />
+      <section className="p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
+        <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
+          <ToolButton onClick={() => addElement("text")}>
+            <ToolIcon icon={Type} />
+          </ToolButton>
+          <ToolButton
+            onClick={() => {
+              addElement("rectangle");
+            }}
+          >
+            <ToolIcon icon={Square} />
+          </ToolButton>
+          <ToolButton onClick={() => addElement("image")}>
+            <ToolIcon icon={ImageIcon} />
+          </ToolButton>
+          {/* <ToolButton onClick={() => addElement("frame")}>
+            <ToolIcon icon={Frame} />
+          </ToolButton> */}
 
-        <ToolButton onClick={() => addElement("text")}>
-          <ToolIcon icon={Type} />
-        </ToolButton>
-        <ToolButton
-          onClick={() => {
-            addElement("rectangle");
-          }}
-        >
-          <ToolIcon icon={Square} />
-        </ToolButton>
-        <ToolButton onClick={() => addElement("image")}>
-          <ToolIcon icon={ImageIcon} />
-        </ToolButton>
-        <ToolButton onClick={() => addElement("frame")}>
-          <ToolIcon icon={Frame} />
-        </ToolButton>
+          <Separator />
 
-        <Separator />
+          <ToolButton
+            className={cn(
+              selectedTool === "hand" &&
+                "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
+            )}
+            onClick={() => {
+              onSelectTool(selectedTool === "hand" ? null : "hand");
+              clearSelection();
+            }}
+          >
+            <ToolIcon
+              icon={selectedTool === "hand" ? Hand : MousePointer}
+              className={cn(layersOpen && "text-properties-gold")}
+            />
+          </ToolButton>
+          <ToolButton
+            className={cn(
+              layersOpen &&
+                "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
+            )}
+            onClick={() => {
+              onToggleLayers();
+              clearSelection();
+            }}
+          >
+            <ToolIcon
+              icon={Layers}
+              className={cn(layersOpen && "text-properties-gold")}
+            />
+          </ToolButton>
+        </div>
+      </section>
 
-        <ToolButton
-          className={cn(
-            selectedTool === "hand" &&
-              "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
-          )}
-          onClick={() => {
-            onSelectTool(selectedTool === "hand" ? null : "hand");
-            clearSelection();
-          }}
-        >
-          <ToolIcon
-            icon={selectedTool === "hand" ? Hand : MousePointer}
-            className={cn(layersOpen && "text-properties-gold")}
-          />
-        </ToolButton>
-        <ToolButton
-          className={cn(
-            layersOpen &&
-              "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
-          )}
-          onClick={() => {
-            onToggleLayers();
-            clearSelection();
-          }}
-        >
-          <ToolIcon
-            icon={Layers}
-            className={cn(layersOpen && "text-properties-gold")}
-          />
-        </ToolButton>
-
-        <Separator />
-
-        {/* Menu Button */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-md group bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20 dark:active:bg-white/30 active:bg-white/60"
+      <section className="p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
+        <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-md group bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20 dark:active:bg-white/30 active:bg-white/60"
+              >
+                <MoreHorizontal className="h-6 w-6 group-active:text-properties-gold dark:group-active:text-properties-gold group-active:scale-90 transition-all duration-200 text-properties-text dark:text-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="right"
+              align="end"
+              className="w-48 z-[60]"
             >
-              <MoreHorizontal className="h-6 w-6 group-active:text-properties-gold dark:group-active:text-properties-gold group-active:scale-90 transition-all duration-200 text-properties-text dark:text-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="end" className="w-48 z-[60]">
-            <DropdownMenuItem onClick={handleDownloadAsSVG}>
-              <Download className="w-4 h-4 mr-2" />
-              Download as SVG
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </div>
+              <DropdownMenuItem onClick={handleDownloadAsSVG}>
+                <Download className="w-4 h-4 mr-2" />
+                Download as SVG
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </section>
+    </aside>
   );
 }
 
