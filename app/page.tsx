@@ -1,9 +1,5 @@
-import CanvasPage from "@/features/canvas/components/CanvasPage";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return (
-    <main>
-      <CanvasPage />
-    </main>
-  );
+  redirect("/canvas");
 }
