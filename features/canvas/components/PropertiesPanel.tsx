@@ -74,7 +74,7 @@ export default function PropertiesPanel() {
 
   return (
     <div
-      className={`z-30 flex flex-col bg-card/95 shadow-xl backdrop-blur-md border border-white/20 transition-all duration-300 p-1 rounded-[1.25rem] ${
+      className={`z-50 flex flex-col bg-card/95 shadow-xl backdrop-blur-md border border-white/20 transition-all duration-300 p-1 rounded-[1.25rem] ${
         rightSidebarDocked
           ? "m-4 bg-card/80 shadow backdrop-blur-sm"
           : "p-1 rounded-r-none"

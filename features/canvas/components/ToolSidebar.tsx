@@ -56,7 +56,7 @@ export default function ToolSidebar({
   };
 
   return (
-    <aside className="grid gap-3 place-content-center m-4 z-30">
+    <aside className="fixed top-1/2 -translate-y-1/2 left-4 grid gap-3 place-content-center z-50">
       <section className="p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
         <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
           <Button
