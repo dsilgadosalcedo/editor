@@ -1,7 +1,7 @@
 import React from "react";
 import CanvasElement from "./CanvasElement";
 import ArtboardControlPoints from "./ArtboardControlPoints";
-import MultiSelectFloatingToolbar from "./MultiSelectFloatingToolbar";
+import ElementFloatingToolbar from "./ElementFloatingToolbar";
 
 interface ArtboardProps {
   artboardDimensions: { width: number; height: number };
@@ -209,19 +209,14 @@ const Artboard: React.FC<ArtboardProps> = ({
           zoom={zoom}
         />
 
-        {/* Multi-Select Floating Toolbar */}
+        {/* Floating Toolbar for Multiple Selections */}
         {(() => {
           const selectedElementsData = elements.filter((el) =>
             selectedElements.includes(el.id)
           );
 
-          // Check if we have multiple elements selected or a single frame
-          const singleFrame =
-            selectedElementsData.length === 1 &&
-            selectedElementsData[0]?.type === "frame";
-          const multipleElements = selectedElementsData.length > 1;
-
-          if (!singleFrame && !multipleElements) return null;
+          // Show toolbar only for multiple selections
+          if (selectedElementsData.length <= 1) return null;
 
           // Calculate the center position of the selection
           let minX = Infinity,
@@ -240,9 +235,15 @@ const Artboard: React.FC<ArtboardProps> = ({
           const centerY = minY; // Position at the top of the selection
 
           return (
-            <MultiSelectFloatingToolbar
+            <ElementFloatingToolbar
+              elementId={selectedElementsData[0].id} // Use first element's ID
+              elementType="rectangle" // Dummy type for multiple selections
+              elementColor="transparent" // No color picker for multiple selections
               position={{ x: centerX, y: centerY }}
               zoom={zoom}
+              isRotating={false}
+              elementName="Multiple Elements"
+              isMultipleSelection={true}
             />
           );
         })()}

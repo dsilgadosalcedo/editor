@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Group, Ungroup } from "lucide-react";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Button } from "@/components/ui/button";
 import { useColorPicker } from "./ColorPicker";
@@ -12,6 +12,7 @@ interface ElementFloatingToolbarProps {
   zoom: number;
   isRotating?: boolean;
   elementName?: string;
+  isMultipleSelection?: boolean;
 }
 
 const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
@@ -22,9 +23,21 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
   zoom,
   isRotating = false,
   elementName,
+  isMultipleSelection = false,
 }) => {
-  const { moveElementUp, moveElementDown, updateFillColor } = useCanvasStore();
+  const {
+    moveElementUp,
+    moveElementDown,
+    updateFillColor,
+    groupElements,
+    ungroupElements,
+    hasMultipleSelection,
+    selectedElements,
+  } = useCanvasStore();
   const { openColorPicker } = useColorPicker();
+
+  // Check if we currently have multiple elements selected
+  const currentlyHasMultipleSelection = selectedElements.length > 1;
 
   const handleMoveUp = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -79,6 +92,16 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     );
   };
 
+  const handleGroupElements = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    groupElements();
+  };
+
+  const handleUngroupElements = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    ungroupElements();
+  };
+
   // Apply inverse scaling to keep toolbar at consistent size regardless of zoom
   const toolbarScale = 1 / (zoom / 100);
   // Scale the offset distance to maintain consistent visual spacing
@@ -106,47 +129,80 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Move Up Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleMoveUp}
-          title="Move up one layer"
-          aria-label="Move element up one layer"
-          className="h-6 w-6"
-        >
-          <ChevronUp className="w-4 h-4" />
-        </Button>
-
-        {/* Move Down Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleMoveDown}
-          title="Move down one layer"
-          aria-label="Move element down one layer"
-          className="h-6 w-6"
-        >
-          <ChevronDown className="w-4 h-4" />
-        </Button>
-
-        {/* Color Picker */}
-        {(elementType === "rectangle" || elementType === "text") && (
+        {/* Move Up Button - only show for single selections */}
+        {!currentlyHasMultipleSelection && (
           <Button
             variant="ghost"
             size="icon"
-            data-color-picker-trigger
-            onClick={handleColorClick}
-            title={elementType === "text" ? "Text color" : "Background color"}
-            aria-label={`Change ${
-              elementType === "text" ? "text" : "background"
-            } color`}
+            onClick={handleMoveUp}
+            title="Move up one layer"
+            aria-label="Move element up one layer"
             className="h-6 w-6"
           >
-            <div
-              className="w-4 h-4 rounded-full"
-              style={{ backgroundColor: elementColor }}
-            />
+            <ChevronUp className="w-4 h-4" />
+          </Button>
+        )}
+
+        {/* Move Down Button - only show for single selections */}
+        {!currentlyHasMultipleSelection && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleMoveDown}
+            title="Move down one layer"
+            aria-label="Move element down one layer"
+            className="h-6 w-6"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </Button>
+        )}
+
+        {/* Color Picker - only show for single selections */}
+        {!currentlyHasMultipleSelection &&
+          (elementType === "rectangle" || elementType === "text") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              data-color-picker-trigger
+              onClick={handleColorClick}
+              title={elementType === "text" ? "Text color" : "Background color"}
+              aria-label={`Change ${
+                elementType === "text" ? "text" : "background"
+              } color`}
+              className="h-6 w-6"
+            >
+              <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: elementColor }}
+              />
+            </Button>
+          )}
+
+        {/* Group Elements */}
+        {currentlyHasMultipleSelection && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleGroupElements}
+            title="Group elements"
+            aria-label="Group selected elements"
+            className="h-6 w-6"
+          >
+            <Group className="w-4 h-4" />
+          </Button>
+        )}
+
+        {/* Ungroup Elements */}
+        {elementType === "frame" && !currentlyHasMultipleSelection && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleUngroupElements}
+            title="Ungroup frame"
+            aria-label="Ungroup frame elements"
+            className="h-6 w-6"
+          >
+            <Ungroup className="w-4 h-4" />
           </Button>
         )}
       </div>

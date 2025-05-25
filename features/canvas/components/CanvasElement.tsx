@@ -1437,7 +1437,7 @@ export default function CanvasElement({
         </>
       )}
 
-      {/* Floating Toolbar - only show for single selection */}
+      {/* Floating Toolbar - show for single selections only */}
       {element.selected &&
         !isMultipleSelected &&
         !(element.type === "text" && isEditing) &&
@@ -1455,6 +1455,7 @@ export default function CanvasElement({
             zoom={zoom}
             isRotating={isRotating}
             elementName={element.name}
+            isMultipleSelection={isMultipleSelected}
           />
         )}
     </>

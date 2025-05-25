@@ -63,6 +63,10 @@ interface CanvasStoreState {
     past: CanvasElementData[][];
     future: CanvasElementData[][];
   };
+  // Frame helper functions
+  getElementDescendants: (elementId: string) => string[];
+  getTopLevelElements: () => CanvasElementData[];
+  getElementChildren: (elementId: string) => CanvasElementData[];
   // Actions
   setArtboardDimensions: (dims: { width: number; height: number }) => void;
   setArtboardAspectRatio: (ratio: number | null) => void;
@@ -163,6 +167,8 @@ interface CanvasStoreState {
   alignToArtboardBottom: (id: string) => void;
   alignToArtboardCenterHorizontal: (id: string) => void;
   alignToArtboardCenterVertical: (id: string) => void;
+  // Frame management
+  updateElementParenting: () => void;
 }
 
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
@@ -193,6 +199,33 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       past: [...state.past, state.elements],
       future: [], // Clear future when making new changes
     }));
+  },
+
+  // Frame helper functions
+  getElementDescendants: (elementId: string) => {
+    const state = get();
+    const descendants: string[] = [];
+    const directChildren =
+      state.elements.find((el) => el.id === elementId)?.children || [];
+
+    for (const childId of directChildren) {
+      descendants.push(childId);
+      descendants.push(...get().getElementDescendants(childId)); // Recursively get grandchildren
+    }
+
+    return descendants;
+  },
+
+  getTopLevelElements: () => {
+    const state = get();
+    return state.elements.filter((el) => !el.parentId);
+  },
+
+  getElementChildren: (elementId: string) => {
+    const state = get();
+    const element = state.elements.find((el) => el.id === elementId);
+    if (!element?.children) return [];
+    return state.elements.filter((el) => element.children?.includes(el.id));
   },
 
   setArtboardDimensions: (dims) => set({ artboardDimensions: dims }),
@@ -252,6 +285,23 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         color: "transparent",
         selected: true,
         visible: true,
+        rotation: 0,
+      };
+    } else if (type === "frame") {
+      newElement = {
+        id: `${type}-${Date.now()}`,
+        type,
+        x: Math.round(artboardDimensions.width / 2 - 100),
+        y: Math.round(artboardDimensions.height / 2 - 75),
+        width: 200,
+        height: 150,
+        color: "transparent",
+        borderWidth: 1,
+        borderColor: "#3b82f6",
+        selected: true,
+        visible: true,
+        children: [],
+        name: "Frame",
         rotation: 0,
       };
     } else {
@@ -387,56 +437,116 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     })),
   moveElement: (id, dx, dy) =>
     set((state) => {
-      const { getHistoryUpdate } = get();
+      const { getHistoryUpdate, getElementDescendants } = get();
+      const element = state.elements.find((el) => el.id === id);
+
+      if (!element) return state;
+
+      // If moving a frame, also move all its descendants
+      const elementsToMove =
+        element.type === "frame" ? [id, ...getElementDescendants(id)] : [id];
+
       return {
         ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
-          el.id === id
+          elementsToMove.includes(el.id)
             ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
             : el
         ),
       };
     }),
   moveElementNoHistory: (id, dx, dy) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id
-          ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
-          : el
-      ),
-    })),
+    set((state) => {
+      const { getElementDescendants } = get();
+      const element = state.elements.find((el) => el.id === id);
+
+      if (!element) return state;
+
+      // If moving a frame, also move all its descendants
+      const elementsToMove =
+        element.type === "frame" ? [id, ...getElementDescendants(id)] : [id];
+
+      return {
+        elements: state.elements.map((el) =>
+          elementsToMove.includes(el.id)
+            ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
+            : el
+        ),
+      };
+    }),
   moveSelectedElements: (dx, dy) =>
     set((state) => {
-      const { getHistoryUpdate } = get();
+      const { getHistoryUpdate, getElementDescendants } = get();
+
+      // Get all elements that should be moved (selected elements + their descendants)
+      const elementsToMove = new Set<string>();
+
+      state.selectedElements.forEach((id) => {
+        elementsToMove.add(id);
+        const element = state.elements.find((el) => el.id === id);
+        if (element?.type === "frame") {
+          getElementDescendants(id).forEach((descendantId) =>
+            elementsToMove.add(descendantId)
+          );
+        }
+      });
+
       return {
         ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
-          state.selectedElements.includes(el.id)
+          elementsToMove.has(el.id)
             ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
             : el
         ),
       };
     }),
   moveSelectedElementsNoHistory: (dx, dy) =>
-    set((state) => ({
-      elements: state.elements.map((el) =>
-        state.selectedElements.includes(el.id)
-          ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
-          : el
-      ),
-    })),
+    set((state) => {
+      const { getElementDescendants } = get();
+
+      // Get all elements that should be moved (selected elements + their descendants)
+      const elementsToMove = new Set<string>();
+
+      state.selectedElements.forEach((id) => {
+        elementsToMove.add(id);
+        const element = state.elements.find((el) => el.id === id);
+        if (element?.type === "frame") {
+          getElementDescendants(id).forEach((descendantId) =>
+            elementsToMove.add(descendantId)
+          );
+        }
+      });
+
+      return {
+        elements: state.elements.map((el) =>
+          elementsToMove.has(el.id)
+            ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
+            : el
+        ),
+      };
+    }),
   resizeElement: (id, width, height, preserveAspectRatio = false) =>
     set((state) => {
-      const { getHistoryUpdate } = get();
-      return {
-        ...getHistoryUpdate(),
-        elements: state.elements.map((el) =>
-          el.id === id
-            ? {
+      const { getHistoryUpdate, getElementDescendants } = get();
+      const element = state.elements.find((el) => el.id === id);
+
+      if (!element) return state;
+
+      // If resizing a frame, also resize and reposition its children proportionally
+      if (element.type === "frame") {
+        const scaleX = Math.max(20, width) / element.width;
+        const scaleY = Math.max(20, height) / element.height;
+        const descendants = getElementDescendants(id);
+
+        return {
+          ...getHistoryUpdate(),
+          elements: state.elements.map((el) => {
+            if (el.id === id) {
+              // Resize the frame itself
+              return {
                 ...el,
                 width: Math.max(20, width),
                 height: Math.max(20, height),
-                // Clamp corner radius to new dimensions
                 cornerRadius: el.cornerRadius
                   ? Math.max(
                       0,
@@ -447,10 +557,73 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
                       )
                     )
                   : el.cornerRadius,
-              }
-            : el
-        ),
-      };
+              };
+            } else if (descendants.includes(el.id)) {
+              // Resize and reposition children proportionally
+              const relativeX = el.x - element.x;
+              const relativeY = el.y - element.y;
+
+              return {
+                ...el,
+                x: element.x + Math.round(relativeX * scaleX),
+                y: element.y + Math.round(relativeY * scaleY),
+                width: Math.max(20, Math.round(el.width * scaleX)),
+                height: Math.max(20, Math.round(el.height * scaleY)),
+                // Scale font size for text elements
+                fontSize:
+                  el.type === "text" && el.fontSize
+                    ? Math.max(
+                        8,
+                        Math.round(el.fontSize * Math.min(scaleX, scaleY))
+                      )
+                    : el.fontSize,
+                lineHeight:
+                  el.type === "text" && el.lineHeight
+                    ? Math.max(
+                        10,
+                        Math.round(el.lineHeight * Math.min(scaleX, scaleY))
+                      )
+                    : el.lineHeight,
+                cornerRadius: el.cornerRadius
+                  ? Math.max(
+                      0,
+                      Math.min(
+                        el.cornerRadius,
+                        Math.max(20, Math.round(el.width * scaleX)) / 2,
+                        Math.max(20, Math.round(el.height * scaleY)) / 2
+                      )
+                    )
+                  : el.cornerRadius,
+              };
+            }
+            return el;
+          }),
+        };
+      } else {
+        // Regular element resize
+        return {
+          ...getHistoryUpdate(),
+          elements: state.elements.map((el) =>
+            el.id === id
+              ? {
+                  ...el,
+                  width: Math.max(20, width),
+                  height: Math.max(20, height),
+                  cornerRadius: el.cornerRadius
+                    ? Math.max(
+                        0,
+                        Math.min(
+                          el.cornerRadius,
+                          Math.max(20, width) / 2,
+                          Math.max(20, height) / 2
+                        )
+                      )
+                    : el.cornerRadius,
+                }
+              : el
+          ),
+        };
+      }
     }),
   resizeElementNoHistory: (id, width, height, preserveAspectRatio = false) =>
     set((state) => ({
@@ -841,11 +1014,39 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   deleteElement: (id) =>
     set((state) => {
-      const { getHistoryUpdate } = get();
+      const { getHistoryUpdate, getElementDescendants } = get();
+      const elementToDelete = state.elements.find((el) => el.id === id);
+
+      if (!elementToDelete) return state;
+
+      // Get all elements to delete (element + its descendants)
+      const elementsToDelete = [id, ...getElementDescendants(id)];
+
+      // If deleting a child element, remove it from its parent's children array
+      let updatedElements = state.elements.filter(
+        (el) => !elementsToDelete.includes(el.id)
+      );
+
+      if (elementToDelete.parentId) {
+        updatedElements = updatedElements.map((el) => {
+          if (el.id === elementToDelete.parentId && el.children) {
+            return {
+              ...el,
+              children: el.children.filter(
+                (childId) => !elementsToDelete.includes(childId)
+              ),
+            };
+          }
+          return el;
+        });
+      }
+
       return {
         ...getHistoryUpdate(),
-        elements: state.elements.filter((el) => el.id !== id),
-        selectedElements: state.selectedElements.filter((elId) => elId !== id),
+        elements: updatedElements,
+        selectedElements: state.selectedElements.filter(
+          (elId) => !elementsToDelete.includes(elId)
+        ),
       };
     }),
   updateName: (id, name) =>
@@ -1376,5 +1577,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           : el
       ),
     }));
+  },
+  // Frame management
+  updateElementParenting: () => {
+    // This function will be implemented later to automatically manage element parenting
+    // For now, it's a placeholder to satisfy the interface
   },
 }));
