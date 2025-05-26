@@ -6,7 +6,7 @@ export default function ProjectCardSkeleton() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="flex-1 mr-2">
-          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-9 w-3/4" />
         </div>
         <div className="flex items-center gap-1">
           <Skeleton className="h-8 w-8 rounded-md" />

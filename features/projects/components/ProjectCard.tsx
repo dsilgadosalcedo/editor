@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { type Project } from "@/lib/project-storage";
-import { updateProjectName } from "@/lib/project-storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +24,7 @@ interface ProjectCardProps {
   onOpen: () => void;
   onDelete: () => void;
   onProjectUpdate?: (updatedProject: Project) => void;
+  onUpdateProjectName?: (id: string, newName: string) => Promise<void>;
 }
 
 const formatDate = (dateString: string) => {
@@ -42,6 +42,7 @@ export default function ProjectCard({
   onOpen,
   onDelete,
   onProjectUpdate,
+  onUpdateProjectName,
 }: ProjectCardProps) {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [editName, setEditName] = useState(project.name);
@@ -52,11 +53,18 @@ export default function ProjectCard({
     setEditName(project.name);
   }, [project.name]);
 
-  const handleSaveEdit = () => {
-    if (editName.trim() && editName !== project.name) {
-      const updatedProject = updateProjectName(project.id, editName.trim());
-      if (updatedProject && onProjectUpdate) {
-        onProjectUpdate(updatedProject);
+  const handleSaveEdit = async () => {
+    if (editName.trim() && editName !== project.name && onUpdateProjectName) {
+      try {
+        await onUpdateProjectName(project.id, editName.trim());
+        if (onProjectUpdate) {
+          // Trigger a refresh of the projects list
+          onProjectUpdate(project);
+        }
+      } catch (error) {
+        console.error("Failed to update project name:", error);
+        // Reset to original name on error
+        setEditName(project.name);
       }
     }
     setEditName(project.name);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCanvasStore } from "../../store/useCanvasStore";
-import { updateProjectName } from "@/lib/project-storage";
+import { useProjectUpdate } from "@/hooks/useProjectUpdate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -11,7 +11,9 @@ import { ChevronLeft, FolderOpen } from "lucide-react";
 
 export default function ProjectHeader() {
   const router = useRouter();
-  const { projectName, projectId, setProjectName } = useCanvasStore();
+  const { projectName, projectId, setProjectName, setProjectData } =
+    useCanvasStore();
+  const { updateProjectName } = useProjectUpdate();
   const [editName, setEditName] = useState(projectName);
 
   // Sync editName with projectName when it changes
@@ -19,15 +21,34 @@ export default function ProjectHeader() {
     setEditName(projectName);
   }, [projectName]);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editName.trim() && editName !== projectName && projectId) {
-      const updatedProject = updateProjectName(projectId, editName.trim());
-      if (updatedProject) {
-        setProjectName(updatedProject.name);
-        window.history.replaceState(null, "", `/canvas/${updatedProject.slug}`);
+      try {
+        const result = await updateProjectName(projectId, editName.trim());
+        if (result.success && result.updatedProject) {
+          setProjectName(result.updatedProject.name);
+          if (result.newSlug) {
+            // Update the URL to reflect the new slug
+            window.history.replaceState(null, "", `/canvas/${result.newSlug}`);
+            // Update the project data in the store
+            setProjectData(
+              projectId,
+              result.newSlug,
+              result.updatedProject.name
+            );
+          }
+        } else {
+          // Revert the name if update failed
+          setEditName(projectName);
+        }
+      } catch (error) {
+        console.error("Error updating project name:", error);
+        // Revert the name if update failed
+        setEditName(projectName);
       }
+    } else {
+      setEditName(projectName);
     }
-    setEditName(projectName);
   };
 
   const handleCancelEdit = () => {

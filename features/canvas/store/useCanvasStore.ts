@@ -8,6 +8,9 @@ import {
   type Project,
 } from "@/lib/project-storage";
 
+// Add cloud project imports
+import { api } from "@/convex/_generated/api";
+
 export type ElementType = "rectangle" | "text" | "image" | "group";
 export type ToolType = ElementType | "hand" | null;
 
@@ -205,6 +208,14 @@ interface CanvasStoreState {
   exitIsolationMode: () => void;
   isInIsolationMode: () => boolean;
   getIsolatedElements: () => CanvasElementData[];
+  // Add new function to load cloud project
+  loadCloudProject: (project: Project) => void;
+  // Add function to update project name (cloud-aware)
+  updateProjectNameCloudAware: (
+    newName: string
+  ) => Promise<{ success: boolean; updatedProject?: Project }>;
+  // Helper to determine if current project is cloud-based
+  isCloudProject: () => boolean;
 }
 
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
@@ -412,22 +423,38 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     });
   },
   loadProjectBySlug: (slug) => {
-    const project = getProjectBySlug(slug);
-    if (project) {
+    // First try local storage
+    const localProject = getProjectBySlug(slug);
+    if (localProject) {
       set({
-        projectId: project.id,
-        projectSlug: project.slug,
-        projectName: project.name,
-        elements: project.data.elements,
-        artboardDimensions: project.data.artboardDimensions,
+        projectId: localProject.id,
+        projectSlug: localProject.slug,
+        projectName: localProject.name,
+        elements: localProject.data.elements,
+        artboardDimensions: localProject.data.artboardDimensions,
         selectedElements: [],
         past: [],
         future: [],
       });
-
       return true;
     }
+
+    // If not found locally, we'll need to handle cloud projects differently
+    // This will be handled by the canvas page component
     return false;
+  },
+  // Add new function to load cloud project
+  loadCloudProject: (project) => {
+    set({
+      projectId: project.id,
+      projectSlug: project.slug,
+      projectName: project.name,
+      elements: project.data.elements,
+      artboardDimensions: project.data.artboardDimensions,
+      selectedElements: [],
+      past: [],
+      future: [],
+    });
   },
   setPanSensitivity: (sensitivity) =>
     set({ panSensitivity: Math.round(sensitivity * 10) / 10 }),
@@ -2101,5 +2128,42 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   getIsolatedElements: () => {
     const { elements } = get();
     return elements.filter((el) => el.parentId === get().isolatedGroupId);
+  },
+  // Add function to update project name (cloud-aware)
+  updateProjectNameCloudAware: async (newName: string) => {
+    const state = get();
+    if (!state.projectId) {
+      return { success: false };
+    }
+
+    // Check if it's a cloud project (Convex IDs don't start with "project-")
+    const isCloud = !state.projectId.startsWith("project-");
+
+    if (isCloud) {
+      // For cloud projects, we need to use the mutation directly
+      // This will be handled by the ProjectHeader component using the useProjectUpdate hook
+      return { success: false };
+    } else {
+      // Use local storage
+      try {
+        const updatedProject = updateProjectName(state.projectId, newName);
+        if (updatedProject) {
+          set({
+            projectName: updatedProject.name,
+            projectSlug: updatedProject.slug,
+          });
+          return { success: true, updatedProject };
+        }
+        return { success: false };
+      } catch (error) {
+        console.error("Error updating local project name:", error);
+        return { success: false };
+      }
+    }
+  },
+  // Helper to determine if current project is cloud-based
+  isCloudProject: () => {
+    const state = get();
+    return state.projectId !== null && !state.projectId.startsWith("project-");
   },
 }));
