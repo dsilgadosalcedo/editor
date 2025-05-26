@@ -67,6 +67,9 @@ interface CanvasStoreState {
   future: CanvasElementData[][];
   clipboard: CanvasElementData[] | null;
   rightSidebarDocked: boolean;
+  // Isolation mode
+  isolatedGroupId: string | null;
+  isolationBreadcrumb: string[];
   // Helper
   addToHistory: () => void;
   getHistoryUpdate: () => {
@@ -191,6 +194,17 @@ interface CanvasStoreState {
   alignToArtboardCenterVertical: (id: string) => void;
   // Group management
   updateElementParenting: () => void;
+  reorderElementsHierarchical: (
+    draggedElementId: string,
+    targetElementId: string,
+    position: "before" | "after" | "inside"
+  ) => void;
+  moveElementToGroup: (elementId: string, groupId: string | null) => void;
+  // Isolation mode
+  enterIsolationMode: (groupId: string) => void;
+  exitIsolationMode: () => void;
+  isInIsolationMode: () => boolean;
+  getIsolatedElements: () => CanvasElementData[];
 }
 
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
@@ -207,6 +221,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   future: [],
   clipboard: null,
   rightSidebarDocked: true,
+  // Isolation mode
+  isolatedGroupId: null,
+  isolationBreadcrumb: [],
 
   // Helper function to get history update object
   getHistoryUpdate: () => {
@@ -1081,35 +1098,111 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }),
   moveElementUp: (id) =>
     set((state) => {
-      const { getHistoryUpdate } = get();
+      const { getHistoryUpdate, getElementDescendants } = get();
       const elements = [...state.elements];
-      const index = elements.findIndex((el) => el.id === id);
+      const element = elements.find((el) => el.id === id);
+
+      if (!element) return state;
+
+      // Get all elements that need to move (element + descendants if it's a group)
+      const elementsToMove =
+        element.type === "group" ? [id, ...getElementDescendants(id)] : [id];
+
+      // Find the highest index among elements to move
+      const indices = elementsToMove.map((elId) =>
+        elements.findIndex((el) => el.id === elId)
+      );
+      const maxIndex = Math.max(...indices);
+
       // Move up means bring forward (higher z-index) = move to higher index in array
-      // Elements later in the array are rendered on top of earlier elements
-      if (index < elements.length - 1) {
-        const [moved] = elements.splice(index, 1);
-        elements.splice(index + 1, 0, moved);
-        return {
-          ...getHistoryUpdate(),
-          elements,
-        };
+      if (maxIndex < elements.length - 1) {
+        // Find the next element that's not part of the group being moved
+        let targetIndex = maxIndex + 1;
+        while (
+          targetIndex < elements.length &&
+          elementsToMove.includes(elements[targetIndex].id)
+        ) {
+          targetIndex++;
+        }
+
+        if (targetIndex < elements.length) {
+          // Move all elements in the group together
+          const elementsToMoveData = elementsToMove
+            .map((elId) => elements.find((el) => el.id === elId))
+            .filter((el): el is CanvasElementData => el !== undefined);
+
+          // Remove elements to move from their current positions
+          const filteredElements = elements.filter(
+            (el) => !elementsToMove.includes(el.id)
+          );
+
+          // Insert them after the target position
+          const targetPos = filteredElements.findIndex(
+            (el) => el.id === elements[targetIndex].id
+          );
+
+          filteredElements.splice(targetPos + 1, 0, ...elementsToMoveData);
+
+          return {
+            ...getHistoryUpdate(),
+            elements: filteredElements,
+          };
+        }
       }
       return state;
     }),
   moveElementDown: (id) =>
     set((state) => {
-      const { getHistoryUpdate } = get();
+      const { getHistoryUpdate, getElementDescendants } = get();
       const elements = [...state.elements];
-      const index = elements.findIndex((el) => el.id === id);
+      const element = elements.find((el) => el.id === id);
+
+      if (!element) return state;
+
+      // Get all elements that need to move (element + descendants if it's a group)
+      const elementsToMove =
+        element.type === "group" ? [id, ...getElementDescendants(id)] : [id];
+
+      // Find the lowest index among elements to move
+      const indices = elementsToMove.map((elId) =>
+        elements.findIndex((el) => el.id === elId)
+      );
+      const minIndex = Math.min(...indices);
+
       // Move down means send backward (lower z-index) = move to lower index in array
-      // Elements earlier in the array are rendered behind later elements
-      if (index > 0) {
-        const [moved] = elements.splice(index, 1);
-        elements.splice(index - 1, 0, moved);
-        return {
-          ...getHistoryUpdate(),
-          elements,
-        };
+      if (minIndex > 0) {
+        // Find the previous element that's not part of the group being moved
+        let targetIndex = minIndex - 1;
+        while (
+          targetIndex >= 0 &&
+          elementsToMove.includes(elements[targetIndex].id)
+        ) {
+          targetIndex--;
+        }
+
+        if (targetIndex >= 0) {
+          // Move all elements in the group together
+          const elementsToMoveData = elementsToMove
+            .map((elId) => elements.find((el) => el.id === elId))
+            .filter((el): el is CanvasElementData => el !== undefined);
+
+          // Remove elements to move from their current positions
+          const filteredElements = elements.filter(
+            (el) => !elementsToMove.includes(el.id)
+          );
+
+          // Insert them before the target position
+          const targetPos = filteredElements.findIndex(
+            (el) => el.id === elements[targetIndex].id
+          );
+
+          filteredElements.splice(targetPos, 0, ...elementsToMoveData);
+
+          return {
+            ...getHistoryUpdate(),
+            elements: filteredElements,
+          };
+        }
       }
       return state;
     }),
@@ -1282,7 +1375,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       return {
         ...getHistoryUpdate(),
         elements: state.elements.map((el) =>
-          el.id === id ? { ...el, fontSize } : el
+          el.id === id && el.type === "text"
+            ? { ...el, fontSize: Math.max(1, fontSize) }
+            : el
         ),
       };
     });
@@ -1360,11 +1455,27 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   },
   copySelection: () => {
     const state = get();
+    const { getElementDescendants } = get();
+
+    // Get all selected elements and their descendants
+    const elementsToCopy: string[] = [];
+
+    state.selectedElements.forEach((selectedId) => {
+      elementsToCopy.push(selectedId);
+      // If it's a group, also include all its descendants
+      const element = state.elements.find((el) => el.id === selectedId);
+      if (element?.type === "group") {
+        elementsToCopy.push(...getElementDescendants(selectedId));
+      }
+    });
+
+    // Remove duplicates and get the actual elements
+    const uniqueElementIds = [...new Set(elementsToCopy)];
     const selectedElements = state.elements.filter((el) =>
-      state.selectedElements.includes(el.id)
+      uniqueElementIds.includes(el.id)
     );
 
-    // Update internal clipboard to store all selected elements
+    // Update internal clipboard to store all selected elements and their descendants
     const clipboardElements =
       selectedElements.length > 0
         ? selectedElements.map((el) => ({ ...el }))
@@ -1395,9 +1506,13 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
       const newElements: CanvasElementData[] = [];
       const newElementIds: string[] = [];
+      const oldToNewIdMapping: { [oldId: string]: string } = {};
 
+      // First pass: Create all elements with new IDs
       state.clipboard.forEach((clipboardElement, index) => {
         const newId = `${clipboardElement.type}-${Date.now()}-${index}`;
+        oldToNewIdMapping[clipboardElement.id] = newId;
+
         const newElement: CanvasElementData = {
           ...clipboardElement,
           id: newId,
@@ -1406,14 +1521,41 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           selected: true,
           rotation: clipboardElement.rotation || 0,
         };
+
+        // Don't modify parentId yet - will do in second pass
         newElements.push(newElement);
         newElementIds.push(newId);
       });
 
+      // Second pass: Update all parent and children relationships
+      const finalElements = newElements.map((element) => {
+        const updatedElement = { ...element };
+
+        // Update parentId if the parent was also copied
+        if (element.parentId && oldToNewIdMapping[element.parentId]) {
+          updatedElement.parentId = oldToNewIdMapping[element.parentId];
+        } else if (element.parentId) {
+          // If parent wasn't copied, make this a top-level element
+          delete updatedElement.parentId;
+        }
+
+        // Update children array for groups
+        if (element.type === "group" && element.children) {
+          updatedElement.children = element.children
+            .map((childId) => oldToNewIdMapping[childId])
+            .filter(Boolean); // Only keep children that were also copied
+        }
+
+        return updatedElement;
+      });
+
+      const { getHistoryUpdate } = get();
+
       return {
+        ...getHistoryUpdate(),
         elements: [
           ...state.elements.map((el) => ({ ...el, selected: false })),
-          ...newElements,
+          ...finalElements,
         ],
         selectedElements: newElementIds,
       };
@@ -1819,5 +1961,145 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   updateElementParenting: () => {
     // This function will be implemented later to automatically manage element parenting
     // For now, it's a placeholder to satisfy the interface
+  },
+  // New functions for hierarchical element management
+  reorderElementsHierarchical: (
+    draggedElementId: string,
+    targetElementId: string,
+    position: "before" | "after" | "inside"
+  ) =>
+    set((state) => {
+      const { getHistoryUpdate } = get();
+
+      const draggedElement = state.elements.find(
+        (el) => el.id === draggedElementId
+      );
+      const targetElement = state.elements.find(
+        (el) => el.id === targetElementId
+      );
+
+      if (!draggedElement || !targetElement) return state;
+
+      let updatedElements = [...state.elements];
+
+      // Remove dragged element from its current parent's children array
+      if (draggedElement.parentId) {
+        updatedElements = updatedElements.map((el) => {
+          if (el.id === draggedElement.parentId && el.children) {
+            return {
+              ...el,
+              children: el.children.filter(
+                (childId) => childId !== draggedElementId
+              ),
+            };
+          }
+          return el;
+        });
+      }
+
+      // Handle different positioning scenarios
+      if (position === "inside" && targetElement.type === "group") {
+        // Move element inside the target group
+        updatedElements = updatedElements.map((el) => {
+          if (el.id === draggedElementId) {
+            return { ...el, parentId: targetElementId };
+          }
+          if (el.id === targetElementId) {
+            const newChildren = [...(el.children || []), draggedElementId];
+            return { ...el, children: newChildren };
+          }
+          return el;
+        });
+      } else {
+        // Move element to the same level as target (before or after)
+        const targetParentId = targetElement.parentId;
+
+        updatedElements = updatedElements.map((el) => {
+          if (el.id === draggedElementId) {
+            return { ...el, parentId: targetParentId };
+          }
+          return el;
+        });
+
+        // If target has a parent, update the parent's children array
+        if (targetParentId) {
+          updatedElements = updatedElements.map((el) => {
+            if (el.id === targetParentId && el.children) {
+              const targetIndex = el.children.indexOf(targetElementId);
+              const newChildren = [...el.children];
+
+              if (position === "before") {
+                newChildren.splice(targetIndex, 0, draggedElementId);
+              } else {
+                newChildren.splice(targetIndex + 1, 0, draggedElementId);
+              }
+
+              return { ...el, children: newChildren };
+            }
+            return el;
+          });
+        }
+      }
+
+      return {
+        ...getHistoryUpdate(),
+        elements: updatedElements,
+      };
+    }),
+  moveElementToGroup: (elementId: string, groupId: string | null) =>
+    set((state) => {
+      const { getHistoryUpdate } = get();
+
+      let updatedElements = [...state.elements];
+      const element = updatedElements.find((el) => el.id === elementId);
+
+      if (!element) return state;
+
+      // Remove from current parent
+      if (element.parentId) {
+        updatedElements = updatedElements.map((el) => {
+          if (el.id === element.parentId && el.children) {
+            return {
+              ...el,
+              children: el.children.filter((childId) => childId !== elementId),
+            };
+          }
+          return el;
+        });
+      }
+
+      // Add to new parent
+      updatedElements = updatedElements.map((el) => {
+        if (el.id === elementId) {
+          return { ...el, parentId: groupId || undefined };
+        }
+        if (groupId && el.id === groupId && el.type === "group") {
+          return {
+            ...el,
+            children: [...(el.children || []), elementId],
+          };
+        }
+        return el;
+      });
+
+      return {
+        ...getHistoryUpdate(),
+        elements: updatedElements,
+      };
+    }),
+  // Isolation mode
+  enterIsolationMode: (groupId: string) => {
+    set({ isolatedGroupId: groupId });
+  },
+  exitIsolationMode: () => {
+    set({ isolatedGroupId: null });
+  },
+  isInIsolationMode: () => {
+    const { isolatedGroupId } = get();
+    return isolatedGroupId !== null;
+  },
+  getIsolatedElements: () => {
+    const { elements } = get();
+    return elements.filter((el) => el.parentId === get().isolatedGroupId);
   },
 }));

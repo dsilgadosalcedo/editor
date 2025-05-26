@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronUp, ChevronDown, Group, Ungroup } from "lucide-react";
+import { ChevronUp, ChevronDown, Group, Ungroup, Eye } from "lucide-react";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Button } from "@/components/ui/button";
 import { useColorPicker } from "./ColorPicker";
@@ -33,6 +33,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     ungroupElements,
     hasMultipleSelection,
     selectedElements,
+    enterIsolationMode,
   } = useCanvasStore();
   const { openColorPicker } = useColorPicker();
 
@@ -100,6 +101,13 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
   const handleUngroupElements = (e: React.MouseEvent) => {
     e.stopPropagation();
     ungroupElements();
+  };
+
+  const handleEnterIsolation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (elementType === "group") {
+      enterIsolationMode(elementId);
+    }
   };
 
   // Apply inverse scaling to keep toolbar at consistent size regardless of zoom
@@ -189,6 +197,20 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
             className="h-6 w-6"
           >
             <Group className="w-4 h-4" />
+          </Button>
+        )}
+
+        {/* Isolate Group */}
+        {elementType === "group" && !currentlyHasMultipleSelection && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleEnterIsolation}
+            title="Isolate group"
+            aria-label="Enter group isolation mode"
+            className="h-6 w-6"
+          >
+            <Eye className="w-4 h-4" />
           </Button>
         )}
 

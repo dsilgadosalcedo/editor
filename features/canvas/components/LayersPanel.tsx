@@ -1,75 +1,122 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Trash2, Eye, EyeOff } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+} from "lucide-react";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+
+const LAYER_ITEM_TYPE = "LAYER_ITEM";
+
+interface DragItem {
+  id: string;
+  type: string;
+  elementType: "rectangle" | "text" | "image" | "group";
+}
 
 interface LayerItemProps {
   element: any;
-  actualIdx: number;
   depth: number;
-  dragItemIndex: React.MutableRefObject<number | null>;
-  dragOverIndex: number | null;
-  setDragOverIndex: (index: number | null) => void;
-  onDragStart: (e: React.DragEvent<HTMLLIElement>) => void;
-  onDragOver: (e: React.DragEvent<HTMLLIElement>) => void;
-  onDrop: (e: React.DragEvent<HTMLLIElement>) => void;
   onDeleteElement: (e: React.MouseEvent, elementId: string) => void;
   onToggleVisibility: (e: React.MouseEvent, elementId: string) => void;
   selectedElements: string[];
   selectElement: (id: string, addToSelection?: boolean) => void;
   getElementChildren: (elementId: string) => any[];
+  isIsolated?: boolean;
 }
 
 const LayerItem: React.FC<LayerItemProps> = ({
   element,
-  actualIdx,
   depth,
-  dragItemIndex,
-  dragOverIndex,
-  setDragOverIndex,
-  onDragStart,
-  onDragOver,
-  onDrop,
   onDeleteElement,
   onToggleVisibility,
   selectedElements,
   selectElement,
   getElementChildren,
+  isIsolated = false,
 }) => {
   const [isGroupExpanded, setIsGroupExpanded] = useState(true);
+  const { reorderElementsHierarchical, enterIsolationMode } = useCanvasStore();
+
   const isGroup = element.type === "group";
   const children = isGroup ? getElementChildren(element.id) : [];
   const hasChildren = children.length > 0;
 
+  // Drag functionality
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: LAYER_ITEM_TYPE,
+    item: {
+      id: element.id,
+      type: LAYER_ITEM_TYPE,
+      elementType: element.type,
+    } as DragItem,
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
+
+  // Drop functionality
+  const [{ isOver, canDrop }, drop] = useDrop(() => ({
+    accept: LAYER_ITEM_TYPE,
+    drop: (item: DragItem, monitor) => {
+      if (!monitor.didDrop() && item.id !== element.id) {
+        // Simple reordering for now - place after the target
+        reorderElementsHierarchical(item.id, element.id, "after");
+      }
+    },
+    canDrop: (item: DragItem) => {
+      return item.id !== element.id;
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver({ shallow: true }),
+      canDrop: monitor.canDrop(),
+    }),
+  }));
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isGroup) {
+      enterIsolationMode(element.id);
+    }
+  };
+
+  // Combine drag and drop refs
+  const attachRef = (el: HTMLElement | null) => {
+    drag(el);
+    drop(el);
+  };
+
   return (
     <>
-      {dragOverIndex === actualIdx && (
-        <li className="h-0 px-2">
-          <Separator />
-        </li>
-      )}
       <li
-        data-index={actualIdx}
-        draggable
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
+        ref={attachRef}
         onClick={(e) => {
           const isMultiSelectKey = e.ctrlKey || e.metaKey;
           selectElement(element.id, isMultiSelectKey);
         }}
+        onDoubleClick={handleDoubleClick}
         className={cn(
-          "flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-colors",
+          "flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-all duration-200",
           "group",
           selectedElements.includes(element.id)
-            ? "border-storm-slate dark:border-sky-harbor/80"
-            : "border-transparent hover:border-sky-harbor/80 dark:hover:border-storm-slate"
+            ? "border-storm-slate dark:border-sky-harbor/80 bg-sky-harbor/10"
+            : "border-transparent hover:border-sky-harbor/80 dark:hover:border-storm-slate hover:bg-sky-harbor/5",
+          isDragging && "opacity-50 scale-95",
+          isOver &&
+            canDrop &&
+            "bg-blue-100 dark:bg-blue-900/30 border-blue-400",
+          isIsolated && "bg-amber-50 dark:bg-amber-900/20 border-amber-300"
         )}
         style={{ paddingLeft: `${0.375 + depth * 0.75}rem` }}
       >
@@ -90,17 +137,20 @@ const LayerItem: React.FC<LayerItemProps> = ({
               )}
             </button>
           )}
-          {isGroup && !hasChildren && (
-            <div className="w-4 h-4" /> // Spacer for alignment
-          )}
-          {!isGroup && (
-            <div className="w-4 h-4" /> // Spacer for alignment with groups
-          )}
+          {isGroup && !hasChildren && <div className="w-4 h-4" />}
+          {!isGroup && <div className="w-4 h-4" />}
+
           <span className="text-sm text-properties-text dark:text-foreground truncate">
             {element.name ||
               element.type.charAt(0).toUpperCase() + element.type.slice(1)}
+            {isGroup && (
+              <span className="text-xs text-gray-500 ml-1">
+                (Double-click to isolate)
+              </span>
+            )}
           </span>
         </div>
+
         <div className="flex items-center space-x-1.5 mr-1">
           {element.visible !== false ? (
             <Eye
@@ -121,25 +171,21 @@ const LayerItem: React.FC<LayerItemProps> = ({
           />
         </div>
       </li>
+
+      {/* Child elements */}
       {isGroup && hasChildren && isGroupExpanded && (
         <>
-          {children.map((child, childIdx) => (
+          {children.map((child) => (
             <LayerItem
               key={child.id}
               element={child}
-              actualIdx={actualIdx + childIdx + 1} // Adjust index for children
               depth={depth + 1}
-              dragItemIndex={dragItemIndex}
-              dragOverIndex={dragOverIndex}
-              setDragOverIndex={setDragOverIndex}
-              onDragStart={onDragStart}
-              onDragOver={onDragOver}
-              onDrop={onDrop}
               onDeleteElement={onDeleteElement}
               onToggleVisibility={onToggleVisibility}
               selectedElements={selectedElements}
               selectElement={selectElement}
               getElementChildren={getElementChildren}
+              isIsolated={isIsolated}
             />
           ))}
         </>
@@ -153,41 +199,16 @@ const LayersPanel: React.FC = () => {
     elements,
     selectedElements,
     selectElement,
-    reorderElements,
     deleteElement,
     toggleElementVisibility,
     getTopLevelElements,
     getElementChildren,
+    isolatedGroupId,
+    exitIsolationMode,
+    getIsolatedElements,
   } = useCanvasStore();
+
   const [open, setOpen] = useState<boolean>(false);
-  const dragItemIndex = useRef<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
-  // Get only top-level elements (elements without parentId)
-  const topLevelElements = getTopLevelElements();
-
-  const handleDragStart = (e: React.DragEvent<HTMLLIElement>) => {
-    const idx = Number(e.currentTarget.dataset.index);
-    dragItemIndex.current = idx;
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", idx.toString());
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLLIElement>) => {
-    e.preventDefault();
-    const idx = Number(e.currentTarget.dataset.index);
-    setDragOverIndex(idx);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLLIElement>) => {
-    e.preventDefault();
-    const targetIdx = Number(e.currentTarget.dataset.index);
-    if (dragItemIndex.current !== null && dragItemIndex.current !== targetIdx) {
-      reorderElements(dragItemIndex.current, targetIdx);
-    }
-    dragItemIndex.current = null;
-    setDragOverIndex(null);
-  };
 
   const handleDeleteElement = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation();
@@ -199,56 +220,93 @@ const LayersPanel: React.FC = () => {
     toggleElementVisibility(elementId);
   };
 
-  return (
-    <Collapsible
-      open={open}
-      onOpenChange={setOpen}
-      className="bg-card/60 z-50 space-y-1 fixed bottom-1 left-20 w-48 backdrop-blur-lg rounded-xl shadow-lg border border-sky-harbor/80 p-1 ml-6"
-      style={{ marginBottom: "max(20px, env(safe-area-inset-bottom))" }}
-    >
-      <CollapsibleTrigger
-        className="w-full p-3 rounded-lg hover:bg-card/90 duration-300 transition-colors"
-        aria-label={open ? "Collapse Layers" : "Expand Layers"}
-      >
-        <div className="flex items-center justify-between">
-          <span className="font-medium text-sm">Layers</span>
-          <ChevronDown
-            className={`h-4 w-4 transition-transform duration-200 ${
-              open ? "rotate-180" : ""
-            }`}
-          />
-        </div>
-      </CollapsibleTrigger>
+  const handleExitIsolation = () => {
+    exitIsolationMode();
+  };
 
-      {topLevelElements.length > 0 && (
+  // Get elements to display based on isolation mode
+  const elementsToDisplay = isolatedGroupId
+    ? getIsolatedElements()
+    : [...getTopLevelElements()].reverse();
+
+  const isolatedGroup = isolatedGroupId
+    ? elements.find((el) => el.id === isolatedGroupId)
+    : null;
+
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <Collapsible
+        open={open}
+        onOpenChange={setOpen}
+        className="bg-card/60 z-50 space-y-1 fixed bottom-1 left-20 w-48 backdrop-blur-lg rounded-xl shadow-lg border border-sky-harbor/80 p-1 ml-6"
+        style={{ marginBottom: "max(20px, env(safe-area-inset-bottom))" }}
+      >
+        <CollapsibleTrigger
+          className="w-full p-3 rounded-lg hover:bg-card/90 duration-300 transition-colors"
+          aria-label={open ? "Collapse Layers" : "Expand Layers"}
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">
+              Layers ({elementsToDisplay.length})
+              {isolatedGroupId && (
+                <span className="text-xs text-amber-600 dark:text-amber-400 block">
+                  Isolated
+                </span>
+              )}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 transition-transform duration-200 ${
+                open ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+        </CollapsibleTrigger>
+
         <CollapsibleContent>
-          <ul className="space-y-1 max-h-64 overflow-auto">
-            {[...topLevelElements].reverse().map((el, revIdx) => {
-              const actualIdx = topLevelElements.length - 1 - revIdx;
-              return (
+          {/* Isolation mode header */}
+          {isolatedGroupId && (
+            <div className="mb-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ArrowLeft className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    {isolatedGroup?.name || "Group"}
+                  </span>
+                </div>
+                <button
+                  onClick={handleExitIsolation}
+                  className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200"
+                >
+                  Exit
+                </button>
+              </div>
+            </div>
+          )}
+
+          {elementsToDisplay.length === 0 ? (
+            <div className="p-3 text-xs text-gray-500 text-center">
+              {isolatedGroupId ? "No elements in group" : "No elements yet"}
+            </div>
+          ) : (
+            <ul className="space-y-1 max-h-64 overflow-auto">
+              {elementsToDisplay.map((el) => (
                 <LayerItem
                   key={el.id}
                   element={el}
-                  actualIdx={actualIdx}
                   depth={0}
-                  dragItemIndex={dragItemIndex}
-                  dragOverIndex={dragOverIndex}
-                  setDragOverIndex={setDragOverIndex}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
                   onDeleteElement={handleDeleteElement}
                   onToggleVisibility={handleToggleVisibility}
                   selectedElements={selectedElements}
                   selectElement={selectElement}
                   getElementChildren={getElementChildren}
+                  isIsolated={!!isolatedGroupId}
                 />
-              );
-            })}
-          </ul>
+              ))}
+            </ul>
+          )}
         </CollapsibleContent>
-      )}
-    </Collapsible>
+      </Collapsible>
+    </DndProvider>
   );
 };
 

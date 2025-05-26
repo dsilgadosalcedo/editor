@@ -63,6 +63,10 @@ interface CanvasElementProps {
     children?: string[];
     rotation?: number;
     textResizing?: "auto-width" | "auto-height" | "fixed";
+    isolated?: boolean;
+    inIsolatedGroup?: boolean;
+    isInIsolationMode?: boolean;
+    isSelectableInIsolation?: boolean;
   };
   onSelect: (addToSelection?: boolean) => void;
   onMove: (deltaX: number, deltaY: number) => void;
@@ -278,6 +282,11 @@ export default function CanvasElement({
 
     // if (isPanMode) return;
 
+    // In isolation mode, only allow selection of elements within the isolated group
+    if (element.isInIsolationMode && !element.isSelectableInIsolation) {
+      return;
+    }
+
     // Check for Ctrl/Cmd key for multiple selection
     const isMultiSelectKey = e.ctrlKey || e.metaKey;
 
@@ -313,6 +322,11 @@ export default function CanvasElement({
     e.stopPropagation();
 
     // if (isPanMode) return;
+
+    // In isolation mode, only allow selection of elements within the isolated group
+    if (element.isInIsolationMode && !element.isSelectableInIsolation) {
+      return;
+    }
 
     // For touch: if element is already selected and multiple elements are selected, don't change selection
     // Otherwise, select only this element
@@ -439,6 +453,15 @@ export default function CanvasElement({
       e.preventDefault();
       textRef.current?.blur();
       setIsEditing(false);
+    }
+  };
+
+  // Handle group double-click to enter isolation mode
+  const handleGroupDoubleClick = (e: React.MouseEvent) => {
+    if (element.type === "group") {
+      e.stopPropagation();
+      const { enterIsolationMode } = useCanvasStore.getState();
+      enterIsolationMode(element.id);
     }
   };
 
@@ -994,7 +1017,18 @@ export default function CanvasElement({
     <>
       <div
         ref={elementRef}
-        className="absolute cursor-move"
+        className={cn(
+          "absolute transition-opacity duration-300",
+          // Cursor changes based on isolation mode and selection ability
+          element.isInIsolationMode && !element.isSelectableInIsolation
+            ? "cursor-not-allowed"
+            : "cursor-move",
+          // Opacity for isolation mode - show all elements but make non-isolated ones transparent
+          element.isInIsolationMode &&
+            !element.isSelectableInIsolation &&
+            "opacity-30",
+          element.inIsolatedGroup && "opacity-100"
+        )}
         style={{
           left: `${element.x}px`,
           top: `${element.y}px`,
@@ -1002,7 +1036,7 @@ export default function CanvasElement({
           height: `${element.height}px`,
           backgroundColor:
             element.type === "rectangle" ? element.color : "transparent",
-          zIndex: 1,
+          zIndex: element.inIsolatedGroup ? 10 : element.isolated ? 5 : 1,
           borderRadius:
             element.type === "rectangle" || element.type === "group"
               ? `${element.cornerRadius || 0}px`
@@ -1034,7 +1068,11 @@ export default function CanvasElement({
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         onDoubleClick={
-          element.type === "text" ? handleTextDoubleClick : undefined
+          element.type === "text"
+            ? handleTextDoubleClick
+            : element.type === "group"
+            ? handleGroupDoubleClick
+            : undefined
         }
       >
         {element.type === "image" && (

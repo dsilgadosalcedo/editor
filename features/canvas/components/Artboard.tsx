@@ -2,6 +2,9 @@ import React, { useMemo } from "react";
 import CanvasElement from "./CanvasElement";
 import ArtboardControlPoints from "./ArtboardControlPoints";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
+import { useCanvasStore } from "../store/useCanvasStore";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 interface ArtboardProps {
   artboardDimensions: { width: number; height: number };
@@ -84,11 +87,39 @@ const Artboard: React.FC<ArtboardProps> = ({
   onResizeArtboard,
   onAddToHistory,
 }) => {
+  const { isolatedGroupId, getElementDescendants, exitIsolationMode } =
+    useCanvasStore();
   // Viewport virtualization - only render visible elements for better performance
   const visibleElements = useMemo(() => {
+    // Filter elements based on isolation mode first
+    let filteredElements = elements;
+
+    if (isolatedGroupId) {
+      // In isolation mode, show all elements but mark them for different rendering
+      const isolatedDescendants = getElementDescendants(isolatedGroupId);
+      filteredElements = elements.map((el) => ({
+        ...el,
+        isolated: el.id === isolatedGroupId,
+        inIsolatedGroup: isolatedDescendants.includes(el.id),
+        // Elements not in the isolated group become non-selectable
+        isInIsolationMode: true,
+        isSelectableInIsolation:
+          el.id === isolatedGroupId || isolatedDescendants.includes(el.id),
+      }));
+    } else {
+      // When not in isolation mode, show all elements normally
+      filteredElements = elements.map((el) => ({
+        ...el,
+        isolated: false,
+        inIsolatedGroup: false,
+        isInIsolationMode: false,
+        isSelectableInIsolation: true,
+      }));
+    }
+
     // If we have fewer than 50 elements, render all for simplicity
-    if (elements.length < 50) {
-      return elements;
+    if (filteredElements.length < 50) {
+      return filteredElements;
     }
 
     // Calculate visible viewport bounds based on canvas position and zoom
@@ -116,7 +147,7 @@ const Artboard: React.FC<ArtboardProps> = ({
     const bufferedBottom = visibleBottom + buffer;
 
     // Filter elements that intersect with the visible area (including buffer)
-    return elements.filter((element) => {
+    return filteredElements.filter((element) => {
       // Always render selected elements regardless of visibility
       if (selectedElements.includes(element.id)) {
         return true;
@@ -136,7 +167,14 @@ const Artboard: React.FC<ArtboardProps> = ({
         elementTop > bufferedBottom
       );
     });
-  }, [elements, selectedElements, canvasPosition, zoom]);
+  }, [
+    elements,
+    selectedElements,
+    canvasPosition,
+    zoom,
+    isolatedGroupId,
+    getElementDescendants,
+  ]);
 
   // Development logging for virtualization effectiveness
   React.useEffect(() => {
@@ -146,10 +184,10 @@ const Artboard: React.FC<ArtboardProps> = ({
           elements.length
         } elements (${Math.round(
           (visibleElements.length / elements.length) * 100
-        )}% visible)`
+        )}% visible)${isolatedGroupId ? " [ISOLATION MODE]" : ""}`
       );
     }
-  }, [visibleElements.length, elements.length]);
+  }, [visibleElements.length, elements.length, isolatedGroupId]);
   return (
     <div
       ref={canvasContainerRef}
@@ -185,6 +223,26 @@ const Artboard: React.FC<ArtboardProps> = ({
           // if (selectedTool !== "hand") onSelectElement(null);
         }}
       >
+        {/* Exit Isolation Mode Button */}
+        {isolatedGroupId && (
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              exitIsolationMode();
+            }}
+            variant="secondary"
+            size="sm"
+            className="absolute top-4 left-4 z-50 bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 text-amber-800 shadow-md"
+            style={{
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "top left",
+            }}
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Exit Isolation
+          </Button>
+        )}
+
         {showGuides && (
           <div
             className="absolute inset-0 pointer-events-none"
