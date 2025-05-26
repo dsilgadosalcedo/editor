@@ -2009,8 +2009,18 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
       let updatedElements = [...state.elements];
 
-      // Remove dragged element from its current parent's children array
-      if (draggedElement.parentId) {
+      // Only remove from parent if we are actually moving to a new position
+      let willMove = false;
+      if (
+        position === "inside" &&
+        targetElement.type === "group" &&
+        draggedElement.parentId !== targetElementId
+      ) {
+        willMove = true;
+      } else if (targetElement.id !== draggedElement.id) {
+        willMove = true;
+      }
+      if (willMove && draggedElement.parentId) {
         updatedElements = updatedElements.map((el) => {
           if (el.id === draggedElement.parentId && el.children) {
             return {
@@ -2024,47 +2034,58 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         });
       }
 
-      // Handle different positioning scenarios
-      if (position === "inside" && targetElement.type === "group") {
-        // Move element inside the target group
+      // Move element to the same level as target (before or after)
+      const targetParentId = targetElement.parentId;
+
+      updatedElements = updatedElements.map((el) => {
+        if (el.id === draggedElementId) {
+          return { ...el, parentId: targetParentId };
+        }
+        return el;
+      });
+
+      // If target has a parent, update the parent's children array
+      if (targetParentId) {
         updatedElements = updatedElements.map((el) => {
-          if (el.id === draggedElementId) {
-            return { ...el, parentId: targetElementId };
-          }
-          if (el.id === targetElementId) {
-            const newChildren = [...(el.children || []), draggedElementId];
+          if (el.id === targetParentId && el.children) {
+            const targetIndex = el.children.indexOf(targetElementId);
+            const newChildren = [...el.children];
+
+            if (position === "before") {
+              newChildren.splice(targetIndex, 0, draggedElementId);
+            } else {
+              newChildren.splice(targetIndex + 1, 0, draggedElementId);
+            }
+
             return { ...el, children: newChildren };
           }
           return el;
         });
       } else {
-        // Move element to the same level as target (before or after)
-        const targetParentId = targetElement.parentId;
+        // Handle top-level reordering
+        // Remove the dragged element from its current position
+        updatedElements = updatedElements.filter(
+          (el) => el.id !== draggedElementId
+        );
 
-        updatedElements = updatedElements.map((el) => {
-          if (el.id === draggedElementId) {
-            return { ...el, parentId: targetParentId };
+        // Find the target element's index in the filtered array
+        const targetIndex = updatedElements.findIndex(
+          (el) => el.id === targetElementId
+        );
+
+        if (targetIndex !== -1) {
+          // Insert the dragged element at the appropriate position
+          if (position === "before") {
+            updatedElements.splice(targetIndex, 0, {
+              ...draggedElement,
+              parentId: undefined,
+            });
+          } else {
+            updatedElements.splice(targetIndex + 1, 0, {
+              ...draggedElement,
+              parentId: undefined,
+            });
           }
-          return el;
-        });
-
-        // If target has a parent, update the parent's children array
-        if (targetParentId) {
-          updatedElements = updatedElements.map((el) => {
-            if (el.id === targetParentId && el.children) {
-              const targetIndex = el.children.indexOf(targetElementId);
-              const newChildren = [...el.children];
-
-              if (position === "before") {
-                newChildren.splice(targetIndex, 0, draggedElementId);
-              } else {
-                newChildren.splice(targetIndex + 1, 0, draggedElementId);
-              }
-
-              return { ...el, children: newChildren };
-            }
-            return el;
-          });
         }
       }
 

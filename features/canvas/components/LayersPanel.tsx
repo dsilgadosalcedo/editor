@@ -14,15 +14,17 @@ import {
 } from "lucide-react";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { cn } from "@/lib/utils";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { DndProvider, useDrag, useDrop, useDragLayer } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { Button } from "@/components/ui/button";
 
-const LAYER_ITEM_TYPE = "LAYER_ITEM";
+export const LAYER_ITEM_TYPE = "LAYER_ITEM";
 
 interface DragItem {
   id: string;
   type: string;
   elementType: "rectangle" | "text" | "image" | "group";
+  element: any;
 }
 
 interface LayerItemProps {
@@ -34,6 +36,8 @@ interface LayerItemProps {
   selectElement: (id: string, addToSelection?: boolean) => void;
   getElementChildren: (elementId: string) => any[];
   isIsolated?: boolean;
+  index: number;
+  totalElements: number;
 }
 
 const LayerItem: React.FC<LayerItemProps> = ({
@@ -45,6 +49,8 @@ const LayerItem: React.FC<LayerItemProps> = ({
   selectElement,
   getElementChildren,
   isIsolated = false,
+  index,
+  totalElements,
 }) => {
   const [isGroupExpanded, setIsGroupExpanded] = useState(true);
   const { reorderElementsHierarchical, enterIsolationMode } = useCanvasStore();
@@ -60,18 +66,35 @@ const LayerItem: React.FC<LayerItemProps> = ({
       id: element.id,
       type: LAYER_ITEM_TYPE,
       elementType: element.type,
+      element,
     } as DragItem,
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
   }));
 
-  // Drop functionality
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({
+  // Drop functionality for "before" position
+  const [{ isOverBefore, canDropBefore }, dropBefore] = useDrop(() => ({
     accept: LAYER_ITEM_TYPE,
     drop: (item: DragItem, monitor) => {
       if (!monitor.didDrop() && item.id !== element.id) {
-        // Simple reordering for now - place after the target
+        reorderElementsHierarchical(item.id, element.id, "before");
+      }
+    },
+    canDrop: (item: DragItem) => {
+      return item.id !== element.id;
+    },
+    collect: (monitor) => ({
+      isOverBefore: monitor.isOver({ shallow: true }),
+      canDropBefore: monitor.canDrop(),
+    }),
+  }));
+
+  // Drop functionality for "after" position
+  const [{ isOverAfter, canDropAfter }, dropAfter] = useDrop(() => ({
+    accept: LAYER_ITEM_TYPE,
+    drop: (item: DragItem, monitor) => {
+      if (!monitor.didDrop() && item.id !== element.id) {
         reorderElementsHierarchical(item.id, element.id, "after");
       }
     },
@@ -79,8 +102,25 @@ const LayerItem: React.FC<LayerItemProps> = ({
       return item.id !== element.id;
     },
     collect: (monitor) => ({
-      isOver: monitor.isOver({ shallow: true }),
-      canDrop: monitor.canDrop(),
+      isOverAfter: monitor.isOver({ shallow: true }),
+      canDropAfter: monitor.canDrop(),
+    }),
+  }));
+
+  // Drop functionality for "inside" position (groups only)
+  const [{ isOverInside, canDropInside }, dropInside] = useDrop(() => ({
+    accept: LAYER_ITEM_TYPE,
+    drop: (item: DragItem, monitor) => {
+      if (!monitor.didDrop() && item.id !== element.id && isGroup) {
+        reorderElementsHierarchical(item.id, element.id, "inside");
+      }
+    },
+    canDrop: (item: DragItem) => {
+      return item.id !== element.id && isGroup;
+    },
+    collect: (monitor) => ({
+      isOverInside: monitor.isOver({ shallow: true }),
+      canDropInside: monitor.canDrop(),
     }),
   }));
 
@@ -92,29 +132,49 @@ const LayerItem: React.FC<LayerItemProps> = ({
   };
 
   // Combine drag and drop refs
-  const attachRef = (el: HTMLElement | null) => {
+  const attachDragRef = (el: HTMLLIElement | null) => {
     drag(el);
-    drop(el);
+  };
+
+  const attachDropBeforeRef = (el: HTMLDivElement | null) => {
+    dropBefore(el);
+  };
+
+  const attachDropAfterRef = (el: HTMLDivElement | null) => {
+    dropAfter(el);
   };
 
   return (
     <>
+      {/* Drop zone before element */}
+      {index === 0 && (
+        <div
+          ref={attachDropBeforeRef}
+          className={cn(
+            "h-0.5 w-full mx-1 rounded transition-all duration-200",
+            isOverBefore && canDropBefore
+              ? "bg-blue-400 dark:bg-blue-500 h-0.5"
+              : "bg-transparent h-0"
+          )}
+        />
+      )}
+
       <li
-        ref={attachRef}
+        ref={attachDragRef}
         onClick={(e) => {
           const isMultiSelectKey = e.ctrlKey || e.metaKey;
           selectElement(element.id, isMultiSelectKey);
         }}
         onDoubleClick={handleDoubleClick}
         className={cn(
-          "flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-all duration-200",
+          "flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-all duration-200 relative",
           "group",
           selectedElements.includes(element.id)
             ? "border-storm-slate dark:border-sky-harbor/80 bg-sky-harbor/10"
             : "border-transparent hover:border-sky-harbor/80 dark:hover:border-storm-slate hover:bg-sky-harbor/5",
-          isDragging && "opacity-50 scale-95",
-          isOver &&
-            canDrop &&
+          isDragging && "invisible",
+          isOverInside &&
+            canDropInside &&
             "bg-blue-100 dark:bg-blue-900/30 border-blue-400",
           isIsolated && "bg-amber-50 dark:bg-amber-900/20 border-amber-300"
         )}
@@ -122,7 +182,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
       >
         <div className="flex items-center space-x-1 flex-1 min-w-0">
           {isGroup && hasChildren && (
-            <button
+            <Button
               onClick={(e) => {
                 e.stopPropagation();
                 setIsGroupExpanded(!isGroupExpanded);
@@ -135,7 +195,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
               ) : (
                 <ChevronRight className="h-3 w-3 text-coffee-bean dark:text-desert-sand" />
               )}
-            </button>
+            </Button>
           )}
           {isGroup && !hasChildren && <div className="w-4 h-4" />}
           {!isGroup && <div className="w-4 h-4" />}
@@ -172,10 +232,21 @@ const LayerItem: React.FC<LayerItemProps> = ({
         </div>
       </li>
 
+      {/* Drop zone after element */}
+      <div
+        ref={attachDropAfterRef}
+        className={cn(
+          "h-0.5 w-full mx-1 rounded transition-all duration-200",
+          isOverAfter && canDropAfter
+            ? "bg-blue-400 dark:bg-blue-500 h-0.5"
+            : "bg-transparent h-0"
+        )}
+      />
+
       {/* Child elements */}
       {isGroup && hasChildren && isGroupExpanded && (
         <>
-          {children.map((child) => (
+          {children.map((child, childIndex) => (
             <LayerItem
               key={child.id}
               element={child}
@@ -186,11 +257,72 @@ const LayerItem: React.FC<LayerItemProps> = ({
               selectElement={selectElement}
               getElementChildren={getElementChildren}
               isIsolated={isIsolated}
+              index={childIndex}
+              totalElements={children.length}
             />
           ))}
         </>
       )}
     </>
+  );
+};
+
+// Custom drag layer to render a live preview of the dragged layer item
+const layerStyles: React.CSSProperties = {
+  position: "fixed",
+  pointerEvents: "none",
+  zIndex: 1000,
+  left: 0,
+  top: 0,
+};
+
+function getItemStyles(currentOffset: { x: number; y: number } | null) {
+  if (!currentOffset) {
+    return { display: "none" };
+  }
+  const { x, y } = currentOffset;
+  const transform = `translate(${x}px, ${y}px)`;
+  return {
+    transform,
+    WebkitTransform: transform,
+    opacity: 0.8,
+    minWidth: 0,
+    maxWidth: "220px", // match panel width
+    width: "auto",
+  };
+}
+
+const LayersDragLayer: React.FC = () => {
+  const { item, isDragging, currentOffset } = useDragLayer((monitor) => ({
+    item: monitor.getItem(),
+    isDragging:
+      monitor.isDragging() && monitor.getItemType() === LAYER_ITEM_TYPE,
+    currentOffset: monitor.getClientOffset(),
+  }));
+  // Always get elements hook unconditionally
+  const { elements } = useCanvasStore();
+  if (!isDragging) return null;
+  const element = elements.find((el) => el.id === item.id);
+  const name =
+    element?.name ||
+    (element
+      ? element.type.charAt(0).toUpperCase() + element.type.slice(1)
+      : "");
+  return (
+    <div style={layerStyles}>
+      <div style={getItemStyles(currentOffset)}>
+        <div
+          className={cn(
+            "flex items-center justify-between border rounded-md py-1 px-1.5 bg-card cursor-grabbing",
+            "border-sky-harbor/80 dark:border-storm-slate bg-sky-harbor/20 dark:bg-sky-harbor/20"
+          )}
+        >
+          <span className="text-sm text-properties-text dark:text-foreground truncate">
+            {name}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -235,6 +367,7 @@ const LayersPanel: React.FC = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
+      <LayersDragLayer />
       <Collapsible
         open={open}
         onOpenChange={setOpen}
@@ -289,7 +422,7 @@ const LayersPanel: React.FC = () => {
             </div>
           ) : (
             <ul className="space-y-1 max-h-64 overflow-auto">
-              {elementsToDisplay.map((el) => (
+              {elementsToDisplay.map((el, index) => (
                 <LayerItem
                   key={el.id}
                   element={el}
@@ -300,6 +433,8 @@ const LayersPanel: React.FC = () => {
                   selectElement={selectElement}
                   getElementChildren={getElementChildren}
                   isIsolated={!!isolatedGroupId}
+                  index={index}
+                  totalElements={elementsToDisplay.length}
                 />
               ))}
             </ul>
