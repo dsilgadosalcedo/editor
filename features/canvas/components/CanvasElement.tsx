@@ -664,6 +664,18 @@ export default function CanvasElement({
     };
 
     const handleMouseUp = () => {
+      // If we were dragging and actually moved the element, trigger final save
+      if (isDragging && justDragged) {
+        // Call onMove with 0,0 to trigger auto-save without additional movement
+        onMove(0, 0);
+      }
+
+      // If we were resizing, trigger final save
+      if (isResizing) {
+        // Trigger final resize to save the state
+        onResize(element.width, element.height, false);
+      }
+
       setIsDragging(false);
       setIsResizing(false);
       setIsRotating(false);
@@ -672,6 +684,18 @@ export default function CanvasElement({
     };
 
     const handleTouchEnd = () => {
+      // If we were dragging and actually moved the element, trigger final save
+      if (isDragging && justDragged) {
+        // Call onMove with 0,0 to trigger auto-save without additional movement
+        onMove(0, 0);
+      }
+
+      // If we were resizing, trigger final save
+      if (isResizing) {
+        // Trigger final resize to save the state
+        onResize(element.width, element.height, false);
+      }
+
       setIsDragging(false);
       setIsResizing(false);
       setIsRotating(false);
@@ -784,6 +808,10 @@ export default function CanvasElement({
       }
     };
     const handleMouseUp = () => {
+      // Trigger final save for corner radius change
+      if (typeof onUpdateCornerRadius === "function") {
+        onUpdateCornerRadius(element.id, element.cornerRadius || 0);
+      }
       setIsCornerRadiusDragging(false);
     };
     document.addEventListener("mousemove", handleMouseMove);
@@ -835,6 +863,10 @@ export default function CanvasElement({
     };
 
     const handleMouseUp = () => {
+      // Trigger final save for rotation change
+      if (typeof onUpdateRotation === "function") {
+        onUpdateRotation(element.id, element.rotation || 0);
+      }
       setIsRotating(false);
     };
 
@@ -906,6 +938,13 @@ export default function CanvasElement({
     };
 
     const handleMouseUp = () => {
+      // Trigger final save for font scaling changes
+      if (typeof onUpdateFontSize === "function") {
+        onUpdateFontSize(element.id, element.fontSize || 16);
+      }
+      if (typeof onUpdateLineHeight === "function") {
+        onUpdateLineHeight(element.id, element.lineHeight || 20);
+      }
       setIsFontScaling(false);
     };
 

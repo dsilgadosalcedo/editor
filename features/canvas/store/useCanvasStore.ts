@@ -1,4 +1,12 @@
 import { create } from "zustand";
+import {
+  createProject,
+  saveProject,
+  getProjectBySlug,
+  getProjects,
+  updateProjectName,
+  type Project,
+} from "@/lib/project-storage";
 
 export type ElementType = "rectangle" | "text" | "image" | "group";
 export type ToolType = ElementType | "hand" | null;
@@ -51,6 +59,8 @@ interface CanvasStoreState {
   artboardDimensions: { width: number; height: number };
   artboardAspectRatio: number | null; // null means custom/unlocked
   projectName: string;
+  projectId: string | null;
+  projectSlug: string | null;
   panSensitivity: number;
   zoomSensitivity: number;
   past: CanvasElementData[][];
@@ -71,6 +81,18 @@ interface CanvasStoreState {
   setArtboardDimensions: (dims: { width: number; height: number }) => void;
   setArtboardAspectRatio: (ratio: number | null) => void;
   setProjectName: (name: string) => void;
+  setProjectData: (
+    projectId: string,
+    projectSlug: string,
+    projectName: string
+  ) => void;
+  autoSaveProject: () => void;
+  manualSaveProject: () => Promise<boolean>;
+  validateProjectState: () => { isValid: boolean; issues: string[] };
+  reloadCurrentProject: () => boolean;
+  createNewProject: (name?: string) => Project;
+  loadProjectBySlug: (slug: string) => boolean;
+  clearCurrentProject: () => void;
   setPanSensitivity: (sensitivity: number) => void;
   setZoomSensitivity: (sensitivity: number) => void;
   addElement: (type: ElementType) => void;
@@ -177,6 +199,8 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   artboardDimensions: { width: 1024, height: 576 },
   artboardAspectRatio: 16 / 9, // Default to 16:9 ratio
   projectName: "Untitled Project",
+  projectId: null,
+  projectSlug: null,
   panSensitivity: 1.6,
   zoomSensitivity: 0.6,
   past: [],
@@ -199,6 +223,8 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       past: [...state.past, state.elements],
       future: [], // Clear future when making new changes
     }));
+    // Auto-save project after history changes
+    get().autoSaveProject();
   },
 
   // Group helper functions
@@ -231,6 +257,161 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   setArtboardDimensions: (dims) => set({ artboardDimensions: dims }),
   setArtboardAspectRatio: (ratio) => set({ artboardAspectRatio: ratio }),
   setProjectName: (name) => set({ projectName: name }),
+  setProjectData: (projectId, projectSlug, projectName) =>
+    set({ projectId, projectSlug, projectName }),
+  autoSaveProject: (() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    return () => {
+      // Clear any existing timeout to debounce rapid saves
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      // Set a new timeout to save after a short delay
+      timeoutId = setTimeout(() => {
+        const {
+          projectId,
+          projectSlug,
+          projectName,
+          elements,
+          artboardDimensions,
+        } = get();
+
+        if (projectId && projectSlug) {
+          try {
+            const savedProject = saveProject({
+              id: projectId,
+              name: projectName,
+              slug: projectSlug,
+              data: { elements, artboardDimensions },
+              createdAt: new Date().toISOString(), // Will be overwritten for existing projects
+            });
+            return savedProject;
+          } catch (error) {
+            console.error("Failed to auto-save project:", error);
+          }
+        }
+
+        timeoutId = null;
+      }, 300); // 300ms debounce delay
+    };
+  })(),
+  manualSaveProject: async () => {
+    const state = get();
+    if (!state.projectId || !state.projectSlug) {
+      console.error("Cannot save: missing project ID or slug");
+      return false;
+    }
+
+    try {
+      const savedProject = saveProject({
+        id: state.projectId,
+        name: state.projectName,
+        slug: state.projectSlug,
+        data: {
+          elements: state.elements,
+          artboardDimensions: state.artboardDimensions,
+        },
+        createdAt: new Date().toISOString(),
+      });
+      return true;
+    } catch (error) {
+      console.error("Failed to manually save project:", error);
+      return false;
+    }
+  },
+  validateProjectState: () => {
+    const state = get();
+    const issues: string[] = [];
+
+    if (!state.projectId) {
+      issues.push("Missing project ID");
+    }
+    if (!state.projectSlug) {
+      issues.push("Missing project slug");
+    }
+    if (!state.projectName) {
+      issues.push("Missing project name");
+    }
+
+    // Check if project exists in storage
+    if (state.projectSlug) {
+      const project = getProjectBySlug(state.projectSlug);
+      if (!project) {
+        issues.push("Project not found in storage");
+      }
+    }
+
+    return {
+      isValid: issues.length === 0,
+      issues,
+    };
+  },
+  reloadCurrentProject: () => {
+    const state = get();
+    if (state.projectSlug) {
+      console.log(`Reloading current project: ${state.projectSlug}`);
+      return get().loadProjectBySlug(state.projectSlug);
+    }
+    console.warn("No current project to reload");
+    return false;
+  },
+  createNewProject: (name) => {
+    // For new projects, we want to start with empty canvas, not current elements
+    const emptyData = {
+      elements: [],
+      artboardDimensions: { width: 1024, height: 576 },
+    };
+    const project = createProject(name, emptyData);
+    set({
+      projectId: project.id,
+      projectSlug: project.slug,
+      projectName: project.name,
+      elements: project.data.elements,
+      artboardDimensions: project.data.artboardDimensions,
+      selectedElements: [],
+      past: [],
+      future: [],
+    });
+
+    // Ensure the project is saved immediately after creation
+    setTimeout(() => {
+      get().autoSaveProject();
+    }, 100);
+
+    return project;
+  },
+  clearCurrentProject: () => {
+    set({
+      projectId: null,
+      projectSlug: null,
+      projectName: "Untitled Project",
+      elements: [],
+      artboardDimensions: { width: 1024, height: 576 },
+      selectedElements: [],
+      past: [],
+      future: [],
+    });
+  },
+  loadProjectBySlug: (slug) => {
+    const project = getProjectBySlug(slug);
+    if (project) {
+      set({
+        projectId: project.id,
+        projectSlug: project.slug,
+        projectName: project.name,
+        elements: project.data.elements,
+        artboardDimensions: project.data.artboardDimensions,
+        selectedElements: [],
+        past: [],
+        future: [],
+      });
+
+      return true;
+    }
+    return false;
+  },
   setPanSensitivity: (sensitivity) =>
     set({ panSensitivity: Math.round(sensitivity * 10) / 10 }),
   setZoomSensitivity: (sensitivity) =>
@@ -316,6 +497,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       ],
       selectedElements: [newElement.id],
     }));
+
+    // Auto-save immediately after change
+    get().autoSaveProject();
   },
   addImageElement: (src, x, y) => {
     const { artboardDimensions, elements, getHistoryUpdate } = get();
@@ -435,12 +619,14 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       })),
       selectedElements: ids,
     })),
-  moveElement: (id, dx, dy) =>
+  moveElement: (id, dx, dy) => {
+    const beforeState = get();
+    const element = beforeState.elements.find((el) => el.id === id);
+
+    if (!element) return;
+
     set((state) => {
       const { getHistoryUpdate, getElementDescendants } = get();
-      const element = state.elements.find((el) => el.id === id);
-
-      if (!element) return state;
 
       // If moving a group, also move all its descendants
       const elementsToMove =
@@ -454,7 +640,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
             : el
         ),
       };
-    }),
+    });
+
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
   moveElementNoHistory: (id, dx, dy) =>
     set((state) => {
       const { getElementDescendants } = get();
@@ -474,7 +664,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ),
       };
     }),
-  moveSelectedElements: (dx, dy) =>
+  moveSelectedElements: (dx, dy) => {
     set((state) => {
       const { getHistoryUpdate, getElementDescendants } = get();
 
@@ -499,7 +689,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
             : el
         ),
       };
-    }),
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
   moveSelectedElementsNoHistory: (dx, dy) =>
     set((state) => {
       const { getElementDescendants } = get();
@@ -525,7 +718,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ),
       };
     }),
-  resizeElement: (id, width, height, preserveAspectRatio = false) =>
+  resizeElement: (id, width, height, preserveAspectRatio = false) => {
     set((state) => {
       const { getHistoryUpdate, getElementDescendants } = get();
       const element = state.elements.find((el) => el.id === id);
@@ -624,7 +817,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           ),
         };
       }
-    }),
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
   resizeElementNoHistory: (id, width, height, preserveAspectRatio = false) =>
     set((state) => ({
       elements: state.elements.map((el) =>
@@ -816,12 +1012,15 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         }),
       };
     }),
-  updateTextContent: (id, content) =>
+  updateTextContent: (id, content) => {
     set((state) => ({
       elements: state.elements.map((el) =>
         el.id === id ? { ...el, content } : el
       ),
-    })),
+    }));
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
   resetCanvas: () =>
     set(() => ({
       elements: [],
@@ -914,7 +1113,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       }
       return state;
     }),
-  updateCornerRadius: (id, cornerRadius) =>
+  updateCornerRadius: (id, cornerRadius) => {
     set((state) => {
       const { getHistoryUpdate } = get();
       return {
@@ -931,7 +1130,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
             : el
         ),
       };
-    }),
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
   updateCornerRadiusNoHistory: (id, cornerRadius) =>
     set((state) => ({
       elements: state.elements.map((el) =>
@@ -946,7 +1148,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           : el
       ),
     })),
-  updateFillColor: (id, color) =>
+  updateFillColor: (id, color) => {
     set((state) => {
       const { getHistoryUpdate } = get();
       return {
@@ -955,8 +1157,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           el.id === id ? { ...el, color } : el
         ),
       };
-    }),
-  updateBorderWidth: (id, borderWidth) =>
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
+  updateBorderWidth: (id, borderWidth) => {
     set((state) => {
       const { getHistoryUpdate } = get();
       return {
@@ -973,8 +1178,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           return el;
         }),
       };
-    }),
-  updateBorderColor: (id, borderColor) =>
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
+  updateBorderColor: (id, borderColor) => {
     set((state) => {
       const { getHistoryUpdate } = get();
       return {
@@ -983,7 +1191,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           el.id === id ? { ...el, borderColor } : el
         ),
       };
-    }),
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
   updateShadowBlur: (id, shadowBlur) =>
     set((state) => {
       const { getHistoryUpdate } = get();
@@ -1012,7 +1223,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ),
       };
     }),
-  deleteElement: (id) =>
+  deleteElement: (id) => {
     set((state) => {
       const { getHistoryUpdate, getElementDescendants } = get();
       const elementToDelete = state.elements.find((el) => el.id === id);
@@ -1048,8 +1259,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           (elId) => !elementsToDelete.includes(elId)
         ),
       };
-    }),
-  updateName: (id, name) =>
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
+  updateName: (id, name) => {
     set((state) => {
       const { getHistoryUpdate } = get();
       return {
@@ -1058,8 +1272,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           el.id === id ? { ...el, name } : el
         ),
       };
-    }),
-  updateFontSize: (id, fontSize) =>
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
+  updateFontSize: (id, fontSize) => {
     set((state) => {
       const { getHistoryUpdate } = get();
       return {
@@ -1068,7 +1285,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           el.id === id ? { ...el, fontSize } : el
         ),
       };
-    }),
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
   updateFontWeight: (id, fontWeight) =>
     set((state) => {
       const { getHistoryUpdate } = get();
@@ -1212,7 +1432,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           : el
       ),
     })),
-  toggleAspectRatioLock: (id) =>
+  toggleAspectRatioLock: (id) => {
     set((state) => {
       const { getHistoryUpdate } = get();
       return {
@@ -1221,7 +1441,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           el.id === id ? { ...el, lockAspectRatio: !el.lockAspectRatio } : el
         ),
       };
-    }),
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
   // File operations
   exportCanvas: (filename?: string) => {
     const { elements, artboardDimensions, projectName } = get();
@@ -1506,7 +1729,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     });
   },
   // Rotation
-  updateRotation: (id, rotation) =>
+  updateRotation: (id, rotation) => {
     set((state) => {
       const { getHistoryUpdate } = get();
       return {
@@ -1515,7 +1738,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           el.id === id ? { ...el, rotation } : el
         ),
       };
-    }),
+    });
+    // Auto-save immediately after change
+    get().autoSaveProject();
+  },
   updateRotationNoHistory: (id, rotation) =>
     set((state) => ({
       elements: state.elements.map((el) =>

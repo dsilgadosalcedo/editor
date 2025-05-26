@@ -10,6 +10,7 @@ import CanvasToolbar from "./CanvasToolbar";
 import CanvasViewport from "./CanvasViewport";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 import DragDropOverlay from "./DragDropOverlay";
+import ProjectHeader from "./navigation/ProjectHeader";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
 import { useDragSelection } from "../hooks/useDragSelection";
 import { useCanvasStore } from "../store/useCanvasStore";
@@ -64,31 +65,17 @@ export default function CanvasPage() {
       const key = e.key.toLowerCase();
 
       if (modifier) {
-        // Save with Ctrl/Cmd+S (always prevent default to avoid browser save dialog)
+        // Save with Ctrl/Cmd+S (prevent default but do nothing - auto-save is enabled)
         if (key === "s") {
           e.preventDefault();
-          const title = prompt("Enter canvas title (optional):");
-          const canvasId = await saveCanvas(title || undefined);
-          if (canvasId) {
-            alert(`Canvas saved successfully! ID: ${canvasId}`);
-          } else {
-            alert("Failed to save canvas");
-          }
+          // Projects are auto-saved, so we don't need to do anything
           return;
         }
 
-        // Load with Ctrl/Cmd+O (always prevent default to avoid browser open dialog)
+        // Load with Ctrl/Cmd+O (prevent default but do nothing - use projects page)
         if (key === "o") {
           e.preventDefault();
-          const canvasId = prompt("Enter canvas ID to load:");
-          if (canvasId) {
-            const success = await loadCanvas(canvasId);
-            if (success) {
-              alert("Canvas loaded successfully!");
-            } else {
-              alert("Failed to load canvas");
-            }
-          }
+          // Use the projects page to load projects instead
           return;
         }
 
@@ -480,6 +467,9 @@ export default function CanvasPage() {
         {/* Right Sidebar */}
         <PropertiesPanel />
       </div>
+
+      {/* Project Header */}
+      <ProjectHeader />
 
       {/* Keyboard Shortcuts Overlay */}
       <KeyboardShortcuts />

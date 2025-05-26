@@ -102,7 +102,7 @@ export default function CanvasToolbar({
 
   return (
     <div
-      className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 grid place-items-center"
+      className="fixed bottom-1 left-1/2 -translate-x-1/2 z-50 grid place-items-center"
       style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}
     >
       <div className="bg-card/60 flex items-center gap-2 backdrop-blur-lg p-2 rounded-xl shadow-lg border border-sky-harbor/80">
@@ -219,7 +219,7 @@ export default function CanvasToolbar({
         </Button>
 
         {/* Copy/Paste Controls */}
-        <div className="h-6">
+        {/* <div className="h-6">
           <Separator orientation="vertical" />
         </div>
         <Button
@@ -242,7 +242,7 @@ export default function CanvasToolbar({
           aria-label="Paste"
         >
           <Clipboard className="h-4 w-4" />
-        </Button>
+        </Button> */}
 
         {/* Undo/Redo Controls */}
         <div className="h-6">

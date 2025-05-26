@@ -159,7 +159,7 @@ const LayersPanel: React.FC = () => {
     getTopLevelElements,
     getElementChildren,
   } = useCanvasStore();
-  const [open, setOpen] = useState<boolean>(true);
+  const [open, setOpen] = useState<boolean>(false);
   const dragItemIndex = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -203,7 +203,7 @@ const LayersPanel: React.FC = () => {
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="bg-card/60 z-50 space-y-1 fixed bottom-0 left-20 w-48 backdrop-blur-lg rounded-xl shadow-lg border border-sky-harbor/80 p-1 ml-6"
+      className="bg-card/60 z-50 space-y-1 fixed bottom-1 left-20 w-48 backdrop-blur-lg rounded-xl shadow-lg border border-sky-harbor/80 p-1 ml-6"
       style={{ marginBottom: "max(20px, env(safe-area-inset-bottom))" }}
     >
       <CollapsibleTrigger

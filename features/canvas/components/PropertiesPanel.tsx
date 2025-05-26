@@ -68,6 +68,8 @@ export default function PropertiesPanel() {
     alignToArtboardBottom,
     alignToArtboardCenterHorizontal,
     alignToArtboardCenterVertical,
+    manualSaveProject,
+    validateProjectState,
   } = useCanvasStore();
 
   const selectedElementData = getSelectedElementData();
@@ -86,21 +88,48 @@ export default function PropertiesPanel() {
           <h3 className="text-sm font-medium text-properties-text dark:text-foreground">
             Properties
           </h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleRightSidebarDock}
-            onMouseDown={(e) => e.stopPropagation()}
-            className="hover:bg-transparent transition-all duration-200 hover:scale-110 active:scale-95"
-            aria-label={rightSidebarDocked ? "Undock sidebar" : "Dock sidebar"}
-            title={rightSidebarDocked ? "Undock sidebar" : "Dock sidebar"}
-          >
-            {rightSidebarDocked ? (
-              <PanelLeftOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
-            ) : (
-              <PanelRightOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
-            )}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                const validation = validateProjectState();
+                console.log("Project validation:", validation);
+
+                if (validation.isValid) {
+                  const success = await manualSaveProject();
+                  if (success) {
+                    console.log("Project saved successfully!");
+                  } else {
+                    console.error("Failed to save project");
+                  }
+                } else {
+                  console.error("Project state is invalid:", validation.issues);
+                }
+              }}
+              className="h-8 px-2 text-xs hover:bg-card/90 transition-colors"
+              title="Save project"
+            >
+              Save
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleRightSidebarDock}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="hover:bg-transparent transition-all duration-200 hover:scale-110 active:scale-95"
+              aria-label={
+                rightSidebarDocked ? "Undock sidebar" : "Dock sidebar"
+              }
+              title={rightSidebarDocked ? "Undock sidebar" : "Dock sidebar"}
+            >
+              {rightSidebarDocked ? (
+                <PanelLeftOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
+              ) : (
+                <PanelRightOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
+              )}
+            </Button>
+          </div>
         </header>
 
         <Separator />

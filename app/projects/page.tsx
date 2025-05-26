@@ -1,3 +1,5 @@
-export default function Home() {
-  return <main>My projects</main>;
+import { ProjectsPage } from "@/features/projects";
+
+export default function ProjectsPageRoute() {
+  return <ProjectsPage />;
 }

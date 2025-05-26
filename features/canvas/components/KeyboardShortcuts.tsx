@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 const shortcuts = [
   { keys: ["Backspace"], description: "Delete selected element" },
   { keys: ["Escape"], description: "Clear selection" },
-  { keys: ["Ctrl", "S"], description: "Save canvas" },
-  { keys: ["Ctrl", "O"], description: "Load canvas" },
   { keys: ["Ctrl", "A"], description: "Select all / Clear selection" },
   { keys: ["Ctrl", "Z"], description: "Undo" },
   { keys: ["Ctrl", "Shift", "Z"], description: "Redo" },
