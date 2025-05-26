@@ -113,7 +113,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
 
   return (
     <div
-      className="absolute pointer-events-auto z-50 transition-all duration-200 ease-out"
+      className="absolute pointer-events-auto z-50 transition-all duration-200 ease-out animate-[var(--animate-fade-up)]"
       style={{
         left: position.x,
         top: position.y - scaledYOffset,
