@@ -47,6 +47,7 @@ export default function CanvasPage() {
     addImageElement,
     rightSidebarDocked,
     selectMultipleElements,
+    addElement,
   } = useCanvasStore();
 
   // Keyboard shortcuts: Full professional shortcuts support
@@ -210,6 +211,25 @@ export default function CanvasPage() {
 
         return;
       }
+
+      // Add element shortcuts: 1=text, 2=rectangle, 3=image (when not typing)
+      if (!isTyping && !modifier && !e.altKey && !e.shiftKey) {
+        if (e.key === "1") {
+          e.preventDefault();
+          addElement("text");
+          return;
+        }
+        if (e.key === "2") {
+          e.preventDefault();
+          addElement("rectangle");
+          return;
+        }
+        if (e.key === "3") {
+          e.preventDefault();
+          addElement("image");
+          return;
+        }
+      }
     };
 
     document.addEventListener("keydown", onKeyDown);
@@ -228,6 +248,7 @@ export default function CanvasPage() {
     moveElementDown,
     moveElement,
     elements,
+    addElement,
   ]);
 
   // Pan/zoom logic

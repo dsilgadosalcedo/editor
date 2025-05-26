@@ -3,6 +3,9 @@ import { X, Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const shortcuts = [
+  { keys: ["1"], description: "Add text element" },
+  { keys: ["2"], description: "Add rectangle element" },
+  { keys: ["3"], description: "Add image element" },
   { keys: ["Backspace"], description: "Delete selected element" },
   { keys: ["Escape"], description: "Clear selection" },
   { keys: ["Ctrl", "A"], description: "Select all / Clear selection" },

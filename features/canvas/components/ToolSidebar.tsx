@@ -78,17 +78,30 @@ export default function ToolSidebar({
 
       <section className="p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
         <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
-          <ToolButton onClick={() => addElement("text")}>
+          <ToolButton
+            onClick={() => addElement("text")}
+            aria-label="Add text (Shortcut: 1)"
+            tabIndex={0}
+            shortcut="1"
+          >
             <ToolIcon icon={Type} />
           </ToolButton>
           <ToolButton
             onClick={() => {
               addElement("rectangle");
             }}
+            aria-label="Add rectangle (Shortcut: 2)"
+            tabIndex={0}
+            shortcut="2"
           >
             <ToolIcon icon={Square} />
           </ToolButton>
-          <ToolButton onClick={() => addElement("image")}>
+          <ToolButton
+            onClick={() => addElement("image")}
+            aria-label="Add image (Shortcut: 3)"
+            tabIndex={0}
+            shortcut="3"
+          >
             <ToolIcon icon={ImageIcon} />
           </ToolButton>
           {/* <ToolButton onClick={() => addElement("group")}>
@@ -159,26 +172,41 @@ export default function ToolSidebar({
   );
 }
 
-const ToolButton = ({
-  onClick,
-  className,
-  children,
-}: {
+type ToolButtonProps = {
   onClick: () => void;
   children: React.ReactNode;
   className?: string;
-}) => {
+  tabIndex?: number;
+  "aria-label"?: string;
+  shortcut?: string;
+};
+
+const ToolButton = ({
+  onClick,
+  className,
+  shortcut,
+  children,
+  tabIndex,
+  "aria-label": ariaLabel,
+}: ToolButtonProps) => {
   return (
     <Button
       variant="ghost"
       size="icon"
       className={cn(
-        "rounded-md group bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20 dark:active:bg-white/30 active:bg-white/60",
+        "relative rounded-md group bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20 dark:active:bg-white/30 active:bg-white/60",
         className
       )}
       onClick={onClick}
+      tabIndex={tabIndex}
+      aria-label={ariaLabel}
     >
       {children}
+      {shortcut && (
+        <span className="absolute bottom-1 right-1 text-[8px] text-gray-400 select-none pointer-events-none">
+          {shortcut}
+        </span>
+      )}
     </Button>
   );
 };
