@@ -1,13 +1,13 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { NumberInput } from "../NumberInput";
+import { PropertyInput } from "../PropertyInput";
 import { ColorPicker } from "../ColorPicker";
 import {
   PropertySection,
   PropertyStack,
   PropertyTitle,
-  PropertyInput,
+  PropertyField,
   PropertyLabel,
 } from "@/components/ui/property";
 import {
@@ -71,7 +71,7 @@ export function ImageProperties({
     <>
       <PropertySection>
         <PropertyTitle>Name</PropertyTitle>
-        <PropertyInput>
+        <PropertyField>
           <Input
             value={name || ""}
             onChange={(e) => onNameChange(e.target.value)}
@@ -79,28 +79,28 @@ export function ImageProperties({
             className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
             aria-label="Element name"
           />
-        </PropertyInput>
+        </PropertyField>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Image Source</PropertyTitle>
-        <PropertyInput>
+        <PropertyField>
           <Input
             value={src || ""}
             onChange={(e) => onSrcChange(e.target.value)}
             placeholder="Enter image URL"
             aria-label="Image source URL"
           />
-        </PropertyInput>
+        </PropertyField>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Dimensions</PropertyTitle>
         <PropertyStack distribution="column">
-          <PropertyInput>
+          <PropertyField>
             <PropertyLabel>Width</PropertyLabel>
-            <div className="flex items-center gap-2">
-              <NumberInput
+            <div className="flex items-center max-w-37 gap-1">
+              <PropertyInput
                 value={width}
                 onChange={(val) => onDimensionsChange(val, height)}
                 onInstantChange={(val) => onDimensionsChange(val, height)}
@@ -111,7 +111,7 @@ export function ImageProperties({
                 variant="ghost"
                 size="icon"
                 onClick={onToggleAspectRatioLock}
-                className={`h-6 w-6 ${
+                className={` ${
                   lockAspectRatio ? "text-blue-600" : "text-gray-400"
                 }`}
                 title={
@@ -128,25 +128,25 @@ export function ImageProperties({
                 )}
               </Button>
             </div>
-          </PropertyInput>
-          <PropertyInput>
+          </PropertyField>
+          <PropertyField>
             <PropertyLabel>Height</PropertyLabel>
-            <NumberInput
+            <PropertyInput
               value={height}
               onChange={(val) => onDimensionsChange(width, val)}
               onInstantChange={(val) => onDimensionsChange(width, val)}
               icon={<ArrowUpDown className="h-3 w-3" />}
               aria-label="Image height"
             />
-          </PropertyInput>
+          </PropertyField>
         </PropertyStack>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Appearance</PropertyTitle>
-        <PropertyInput>
+        <PropertyField>
           <PropertyLabel>Radius</PropertyLabel>
-          <NumberInput
+          <PropertyInput
             value={cornerRadius || 0}
             min={0}
             max={Math.floor(Math.min(width, height) / 2)}
@@ -169,15 +169,15 @@ export function ImageProperties({
             icon={<CornerUpLeft className="h-3 w-3" />}
             aria-label="Corner radius"
           />
-        </PropertyInput>
+        </PropertyField>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Border</PropertyTitle>
         <PropertyStack distribution="column">
-          <PropertyInput>
+          <PropertyField>
             <PropertyLabel>Width</PropertyLabel>
-            <NumberInput
+            <PropertyInput
               value={borderWidth || 0}
               min={0}
               onChange={onBorderWidthChange}
@@ -185,8 +185,8 @@ export function ImageProperties({
               icon={<Square className="h-3 w-3" />}
               aria-label="Border width"
             />
-          </PropertyInput>
-          <PropertyInput>
+          </PropertyField>
+          <PropertyField>
             <PropertyLabel>Color</PropertyLabel>
             <ColorPicker
               value={borderColor || "#000000"}
@@ -195,16 +195,16 @@ export function ImageProperties({
               layerName={name || "Image"}
               propertyName="Border"
             />
-          </PropertyInput>
+          </PropertyField>
         </PropertyStack>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Shadow</PropertyTitle>
         <PropertyStack distribution="column">
-          <PropertyInput>
+          <PropertyField>
             <PropertyLabel>Blur</PropertyLabel>
-            <NumberInput
+            <PropertyInput
               value={shadowBlur || 0}
               min={0}
               onChange={onShadowBlurChange}
@@ -212,8 +212,8 @@ export function ImageProperties({
               icon={<Zap className="h-3 w-3" />}
               aria-label="Shadow blur"
             />
-          </PropertyInput>
-          <PropertyInput>
+          </PropertyField>
+          <PropertyField>
             <PropertyLabel>Color</PropertyLabel>
             <ColorPicker
               value={shadowColor || "#000000"}
@@ -222,7 +222,7 @@ export function ImageProperties({
               layerName={name || "Image"}
               propertyName="Shadow"
             />
-          </PropertyInput>
+          </PropertyField>
         </PropertyStack>
       </PropertySection>
     </>

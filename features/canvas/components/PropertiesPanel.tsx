@@ -7,22 +7,18 @@ import {
   Unlink,
   ArrowLeftRight,
   ArrowUpDown,
-  CornerUpLeft,
-  Circle,
   Square,
   Zap,
-  Move,
-  MoveVertical,
   Scan,
 } from "lucide-react";
-import { NumberInput } from "./NumberInput";
+import { PropertyInput } from "./PropertyInput";
 import { ColorPicker } from "./ColorPicker";
 import { useCanvasStore } from "../store/useCanvasStore";
 import {
   PropertySection,
   PropertyStack,
   PropertyTitle,
-  PropertyInput,
+  PropertyField,
   PropertyLabel,
 } from "@/components/ui/property";
 import {
@@ -251,7 +247,7 @@ export default function PropertiesPanel() {
                 <>
                   <PropertySection>
                     <PropertyTitle>Name</PropertyTitle>
-                    <PropertyInput>
+                    <PropertyField>
                       <Input
                         value={selectedElementData.name || ""}
                         onChange={(e) =>
@@ -264,16 +260,16 @@ export default function PropertiesPanel() {
                         className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
                         aria-label="Element name"
                       />
-                    </PropertyInput>
+                    </PropertyField>
                   </PropertySection>
 
                   <PropertySection>
                     <PropertyTitle>Dimensions</PropertyTitle>
                     <PropertyStack distribution="column">
-                      <PropertyInput>
+                      <PropertyField>
                         <PropertyLabel>Width</PropertyLabel>
-                        <div className="flex items-center gap-2">
-                          <NumberInput
+                        <div className="flex items-center max-w-37 gap-1">
+                          <PropertyInput
                             value={selectedElementData.width}
                             onChange={(val) =>
                               resizeElement(
@@ -300,11 +296,6 @@ export default function PropertiesPanel() {
                             onClick={() =>
                               toggleAspectRatioLock(selectedElementData.id)
                             }
-                            className={`h-6 w-6 ${
-                              selectedElementData.lockAspectRatio
-                                ? "text-sky-harbor"
-                                : "text-gray-400"
-                            }`}
                             title={
                               selectedElementData.lockAspectRatio
                                 ? "Unlock aspect ratio"
@@ -323,10 +314,10 @@ export default function PropertiesPanel() {
                             )}
                           </Button>
                         </div>
-                      </PropertyInput>
-                      <PropertyInput>
+                      </PropertyField>
+                      <PropertyField>
                         <PropertyLabel>Height</PropertyLabel>
-                        <NumberInput
+                        <PropertyInput
                           value={selectedElementData.height}
                           onChange={(val) =>
                             resizeElement(
@@ -347,14 +338,14 @@ export default function PropertiesPanel() {
                           icon={<ArrowUpDown className="h-3 w-3" />}
                           aria-label="Rectangle height"
                         />
-                      </PropertyInput>
+                      </PropertyField>
                     </PropertyStack>
                   </PropertySection>
 
                   <PropertySection>
                     <PropertyTitle>Appearance</PropertyTitle>
                     <PropertyStack>
-                      <PropertyInput>
+                      <PropertyField>
                         <PropertyLabel>Background</PropertyLabel>
                         <ColorPicker
                           value={selectedElementData.color}
@@ -369,10 +360,10 @@ export default function PropertiesPanel() {
                           }
                           propertyName="Background"
                         />
-                      </PropertyInput>
-                      <PropertyInput>
+                      </PropertyField>
+                      <PropertyField>
                         <PropertyLabel>Radius</PropertyLabel>
-                        <NumberInput
+                        <PropertyInput
                           value={selectedElementData.cornerRadius || 0}
                           min={0}
                           max={Math.floor(
@@ -418,16 +409,16 @@ export default function PropertiesPanel() {
                           icon={<Scan className="h-3 w-3" />}
                           aria-label="Corner radius"
                         />
-                      </PropertyInput>
+                      </PropertyField>
                     </PropertyStack>
                   </PropertySection>
 
                   <PropertySection>
                     <PropertyTitle>Border</PropertyTitle>
                     <PropertyStack distribution="column">
-                      <PropertyInput>
+                      <PropertyField>
                         <PropertyLabel>Width</PropertyLabel>
-                        <NumberInput
+                        <PropertyInput
                           value={selectedElementData.borderWidth || 0}
                           min={0}
                           onChange={(val) =>
@@ -439,8 +430,8 @@ export default function PropertiesPanel() {
                           icon={<Square className="h-3 w-3" />}
                           aria-label="Border width"
                         />
-                      </PropertyInput>
-                      <PropertyInput>
+                      </PropertyField>
+                      <PropertyField>
                         <PropertyLabel>Color</PropertyLabel>
                         <ColorPicker
                           value={selectedElementData.borderColor || "#000000"}
@@ -455,16 +446,16 @@ export default function PropertiesPanel() {
                           }
                           propertyName="Border"
                         />
-                      </PropertyInput>
+                      </PropertyField>
                     </PropertyStack>
                   </PropertySection>
 
                   <PropertySection>
                     <PropertyTitle>Shadow</PropertyTitle>
                     <PropertyStack distribution="column">
-                      <PropertyInput>
+                      <PropertyField>
                         <PropertyLabel>Blur</PropertyLabel>
-                        <NumberInput
+                        <PropertyInput
                           value={selectedElementData.shadowBlur || 0}
                           min={0}
                           onChange={(val) =>
@@ -476,8 +467,8 @@ export default function PropertiesPanel() {
                           icon={<Zap className="h-3 w-3" />}
                           aria-label="Shadow blur"
                         />
-                      </PropertyInput>
-                      <PropertyInput>
+                      </PropertyField>
+                      <PropertyField>
                         <PropertyLabel>Color</PropertyLabel>
                         <ColorPicker
                           value={selectedElementData.shadowColor || "#000000"}
@@ -492,7 +483,7 @@ export default function PropertiesPanel() {
                           }
                           propertyName="Shadow"
                         />
-                      </PropertyInput>
+                      </PropertyField>
                     </PropertyStack>
                   </PropertySection>
                 </>

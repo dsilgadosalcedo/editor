@@ -1,13 +1,13 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { NumberInput } from "../NumberInput";
+import { PropertyInput } from "../PropertyInput";
 import { ColorPicker } from "../ColorPicker";
 import {
   PropertySection,
   PropertyStack,
   PropertyTitle,
-  PropertyInput,
+  PropertyField,
   PropertyLabel,
 } from "@/components/ui/property";
 import {
@@ -88,7 +88,7 @@ export function TextProperties({
     <>
       <PropertySection>
         <PropertyTitle>Name</PropertyTitle>
-        <PropertyInput>
+        <PropertyField>
           <Input
             value={name || ""}
             onChange={(e) => onNameChange(e.target.value)}
@@ -96,22 +96,22 @@ export function TextProperties({
             className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
             aria-label="Element name"
           />
-        </PropertyInput>
+        </PropertyField>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Content</PropertyTitle>
-        <PropertyInput>
+        <PropertyField>
           <Input
             value={content || ""}
             onChange={(e) => onContentChange(e.target.value)}
           />
-        </PropertyInput>
+        </PropertyField>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Appearance</PropertyTitle>
-        <PropertyInput>
+        <PropertyField>
           <PropertyLabel>Color</PropertyLabel>
           <ColorPicker
             value={color}
@@ -120,15 +120,15 @@ export function TextProperties({
             layerName={name || "Text"}
             propertyName="Text Color"
           />
-        </PropertyInput>
+        </PropertyField>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Font</PropertyTitle>
         <PropertyStack distribution="column">
-          <PropertyInput>
+          <PropertyField>
             <PropertyLabel>Size</PropertyLabel>
-            <NumberInput
+            <PropertyInput
               value={fontSize || 16}
               min={1}
               onChange={onFontSizeChange}
@@ -136,11 +136,11 @@ export function TextProperties({
               icon={<Type className="h-3 w-3" />}
               aria-label="Font size"
             />
-          </PropertyInput>
+          </PropertyField>
 
-          <PropertyInput>
+          <PropertyField>
             <PropertyLabel>Weight</PropertyLabel>
-            <NumberInput
+            <PropertyInput
               value={fontWeight || 400}
               min={100}
               max={900}
@@ -150,17 +150,17 @@ export function TextProperties({
               icon={<Bold className="h-3 w-3" />}
               aria-label="Font weight"
             />
-          </PropertyInput>
+          </PropertyField>
         </PropertyStack>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Dimensions</PropertyTitle>
         <PropertyStack distribution="column">
-          <PropertyInput>
+          <PropertyField>
             <PropertyLabel>Width</PropertyLabel>
-            <div className="flex items-center gap-2">
-              <NumberInput
+            <div className="flex items-center max-w-37 gap-1">
+              <PropertyInput
                 value={width}
                 onChange={(val) => onDimensionsChange(val, height)}
                 onInstantChange={(val) => onDimensionsChange(val, height)}
@@ -171,7 +171,7 @@ export function TextProperties({
                 variant="ghost"
                 size="icon"
                 onClick={onToggleAspectRatioLock}
-                className={`h-6 w-6 ${
+                className={`${
                   lockAspectRatio ? "text-blue-600" : "text-gray-400"
                 }`}
                 title={
@@ -188,37 +188,37 @@ export function TextProperties({
                 )}
               </Button>
             </div>
-          </PropertyInput>
-          <PropertyInput>
+          </PropertyField>
+          <PropertyField distribution="row">
             <PropertyLabel>Height</PropertyLabel>
-            <NumberInput
+            <PropertyInput
               value={height}
               onChange={(val) => onDimensionsChange(width, val)}
               onInstantChange={(val) => onDimensionsChange(width, val)}
               icon={<ArrowUpDown className="h-3 w-3" />}
               aria-label="Text height"
             />
-          </PropertyInput>
+          </PropertyField>
         </PropertyStack>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Letter Spacing</PropertyTitle>
-        <PropertyInput>
-          <NumberInput
+        <PropertyField>
+          <PropertyInput
             value={letterSpacing || 0}
             onChange={onLetterSpacingChange}
             onInstantChange={onLetterSpacingChange}
             icon={<Space className="h-3 w-3" />}
             aria-label="Letter spacing"
           />
-        </PropertyInput>
+        </PropertyField>
       </PropertySection>
 
       <PropertySection>
         <PropertyTitle>Line Height</PropertyTitle>
-        <PropertyInput>
-          <NumberInput
+        <PropertyField>
+          <PropertyInput
             value={lineHeight || 20}
             min={1}
             onChange={onLineHeightChange}
@@ -226,7 +226,7 @@ export function TextProperties({
             icon={<AlignVerticalSpaceAround className="h-3 w-3" />}
             aria-label="Line height"
           />
-        </PropertyInput>
+        </PropertyField>
       </PropertySection>
 
       <PropertySection>
@@ -295,7 +295,7 @@ export function TextProperties({
 
       <PropertySection>
         <PropertyTitle>Text Resizing</PropertyTitle>
-        <PropertyInput>
+        <PropertyField>
           <div className="flex gap-1 w-full">
             <Button
               variant={textResizing === "auto-width" ? "default" : "outline"}
@@ -328,7 +328,7 @@ export function TextProperties({
               Fixed
             </Button>
           </div>
-        </PropertyInput>
+        </PropertyField>
       </PropertySection>
     </>
   );

@@ -1,5 +1,5 @@
 import React from "react";
-import { NumberInput } from "../NumberInput";
+import { PropertyInput } from "../PropertyInput";
 import { Button } from "@/components/ui/button";
 import {
   AlignHorizontalJustifyCenter,
@@ -17,7 +17,7 @@ import {
   PropertySection,
   PropertyStack,
   PropertyTitle,
-  PropertyInput,
+  PropertyField,
   PropertyLabel,
 } from "@/components/ui/property";
 
@@ -60,32 +60,32 @@ export function PositionProperties({
       <PropertyTitle>Position</PropertyTitle>
       <PropertyStack distribution="column">
         <PropertyStack distribution="row">
-          <PropertyInput distribution="row">
+          <PropertyField distribution="row">
             <PropertyLabel distribution="row">X</PropertyLabel>
-            <NumberInput
+            <PropertyInput
               value={roundedX}
               onChange={(val) => onXChange(val - roundedX)}
               onInstantChange={(val) => onXChange(val - roundedX)}
               icon={<MoveHorizontal className="h-3 w-3" />}
               aria-label="Element X position"
             />
-          </PropertyInput>
-          <PropertyInput distribution="row">
+          </PropertyField>
+          <PropertyField distribution="row">
             <PropertyLabel distribution="row">Y</PropertyLabel>
-            <NumberInput
+            <PropertyInput
               value={roundedY}
               onChange={(val) => onYChange(val - roundedY)}
               onInstantChange={(val) => onYChange(val - roundedY)}
               icon={<MoveVertical className="h-3 w-3" />}
               aria-label="Element Y position"
             />
-          </PropertyInput>
+          </PropertyField>
         </PropertyStack>
 
         {onRotationChange && (
-          <PropertyInput distribution="row">
+          <PropertyField distribution="row">
             <PropertyLabel distribution="column">Rotation</PropertyLabel>
-            <NumberInput
+            <PropertyInput
               value={roundedRotation}
               onChange={(val) => onRotationChange(val)}
               onInstantChange={(val) => onRotationChange(val)}
@@ -94,7 +94,7 @@ export function PositionProperties({
               max={360}
               aria-label="Element rotation in degrees"
             />
-          </PropertyInput>
+          </PropertyField>
         )}
 
         {/* Alignment Grid */}
@@ -104,7 +104,7 @@ export function PositionProperties({
           onAlignBottom ||
           onAlignCenterHorizontal ||
           onAlignCenterVertical) && (
-          <PropertyInput distribution="column">
+          <PropertyField distribution="column">
             <PropertyLabel distribution="row">Align to Artboard</PropertyLabel>
             <section>
               <div className="flex items-center space-x-0.5">
@@ -170,7 +170,7 @@ export function PositionProperties({
                 </Button>
               </div>
             </section>
-          </PropertyInput>
+          </PropertyField>
         )}
       </PropertyStack>
     </PropertySection>

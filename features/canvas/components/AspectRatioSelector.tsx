@@ -167,14 +167,6 @@ export const AspectRatioSelector: React.FC<AspectRatioSelectorProps> = ({
           </SelectItem>
         </SelectContent>
       </Select>
-
-      <div className="text-xs text-muted-foreground">
-        {/* Current: {currentDimensions.width} × {currentDimensions.height} */}
-        Ratio:{" "}
-        {getCurrentSelection() === "custom"
-          ? (currentDimensions.width / currentDimensions.height).toFixed(2)
-          : getCurrentSelection()}
-      </div>
     </div>
   );
 };

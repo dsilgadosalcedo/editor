@@ -349,7 +349,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   };
 
   return (
-    <div className="flex gap-1 w-full">
+    <div className="flex gap-1 max-w-37 w-full">
       <Button
         ref={colorButtonRef}
         data-color-picker-trigger

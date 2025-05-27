@@ -2,6 +2,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import { Label } from "./label";
 
 function PropertySection({ ...props }: React.ComponentProps<"section">) {
   return <section {...props}>{props.children}</section>;
@@ -18,7 +19,7 @@ function PropertyStack({
       className={cn(
         "flex",
         distribution === "row"
-          ? "items-center justify-between gap-4"
+          ? "items-center justify-between gap-2"
           : "flex-col gap-2"
       )}
       {...props}
@@ -34,7 +35,7 @@ function PropertyTitle({ ...props }: React.ComponentProps<"h4">) {
   );
 }
 
-function PropertyInput({
+function PropertyField({
   distribution = "row",
   ...props
 }: React.ComponentProps<"div"> & {
@@ -60,8 +61,11 @@ function PropertyLabel({
   distribution?: "row" | "column";
 }) {
   return (
-    <label
-      className={cn("text-xs text-foreground text-ellipsis overflow-hidden")}
+    <Label
+      className={cn(
+        "text-xs text-foreground text-ellipsis overflow-hidden min-w-2",
+        distribution === "column" && "w-20"
+      )}
       {...props}
     />
   );
@@ -71,6 +75,6 @@ export {
   PropertySection,
   PropertyStack,
   PropertyTitle,
-  PropertyInput,
+  PropertyField,
   PropertyLabel,
 };

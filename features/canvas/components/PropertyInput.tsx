@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 
-type NumberInputProps = {
+type PropertyInputProps = {
   value: number;
   onChange: (value: number) => void; // Called on blur
   onInstantChange: (value: number) => void; // Called on left/right arrow
@@ -14,7 +14,7 @@ type NumberInputProps = {
   icon?: React.ReactNode;
 };
 
-export const NumberInput: React.FC<NumberInputProps> = ({
+export const PropertyInput: React.FC<PropertyInputProps> = ({
   value,
   onChange,
   onInstantChange,
@@ -135,7 +135,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
 
   if (icon) {
     return (
-      <div className="relative w-full flex items-center">
+      <div className="relative flex items-center max-w-37">
         <div
           className={`absolute left-2 z-10 text-properties-text/70 dark:text-foreground/70 cursor-ew-resize select-none ${
             isDragging

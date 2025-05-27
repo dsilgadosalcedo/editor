@@ -1,9 +1,9 @@
-import { NumberInput } from "../NumberInput";
+import { PropertyInput } from "../PropertyInput";
 import {
   PropertySection,
   PropertyStack,
   PropertyTitle,
-  PropertyInput,
+  PropertyField,
   PropertyLabel,
 } from "@/components/ui/property";
 import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
@@ -53,14 +53,14 @@ export function ArtboardProperties() {
       <div className="grid gap-5">
         <PropertySection>
           <PropertyTitle>Project Name</PropertyTitle>
-          <PropertyInput>
+          <PropertyField>
             <Input
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
               aria-label="Project name"
               placeholder="Enter project name"
             />
-          </PropertyInput>
+          </PropertyField>
         </PropertySection>
 
         <Separator />
@@ -69,14 +69,14 @@ export function ArtboardProperties() {
 
         <PropertySection>
           <PropertyTitle>Aspect Ratio</PropertyTitle>
-          <PropertyInput distribution="column">
+          <PropertyField distribution="column">
             <AspectRatioSelector
               currentDimensions={artboardDimensions}
               onDimensionsChange={setArtboardDimensions}
               onAspectRatioChange={setArtboardAspectRatio}
               variant="default"
             />
-          </PropertyInput>
+          </PropertyField>
         </PropertySection>
 
         <PropertySection>
@@ -97,24 +97,24 @@ export function ArtboardProperties() {
             </div>
           </PropertyTitle>
           <PropertyStack distribution="row">
-            <PropertyInput distribution="row">
+            <PropertyField distribution="row">
               <PropertyLabel distribution="row">X</PropertyLabel>
-              <NumberInput
+              <PropertyInput
                 value={artboardDimensions.width}
                 onChange={handleUpdateArtboardWidth}
                 onInstantChange={handleUpdateArtboardWidth}
                 aria-label="Artboard width"
               />
-            </PropertyInput>
-            <PropertyInput distribution="row">
+            </PropertyField>
+            <PropertyField distribution="row">
               <PropertyLabel distribution="row">Y</PropertyLabel>
-              <NumberInput
+              <PropertyInput
                 value={artboardDimensions.height}
                 onChange={handleUpdateArtboardHeight}
                 onInstantChange={handleUpdateArtboardHeight}
                 aria-label="Artboard height"
               />
-            </PropertyInput>
+            </PropertyField>
           </PropertyStack>
           {/* {artboardAspectRatio !== null && (
             <div className="text-xs text-muted-foreground mt-2">
@@ -127,9 +127,9 @@ export function ArtboardProperties() {
         <PropertySection>
           <PropertyTitle>Sensitivity</PropertyTitle>
           <PropertyStack>
-            <PropertyInput>
+            <PropertyField>
               <PropertyLabel>Pan</PropertyLabel>
-              <NumberInput
+              <PropertyInput
                 value={panSensitivity}
                 min={0.1}
                 max={5.0}
@@ -138,11 +138,11 @@ export function ArtboardProperties() {
                 onInstantChange={(val) => setPanSensitivity(val)}
                 aria-label="Pan sensitivity"
               />
-            </PropertyInput>
+            </PropertyField>
 
-            <PropertyInput>
+            <PropertyField>
               <PropertyLabel>Zoom</PropertyLabel>
-              <NumberInput
+              <PropertyInput
                 value={zoomSensitivity}
                 min={0.1}
                 max={3.0}
@@ -151,7 +151,7 @@ export function ArtboardProperties() {
                 onInstantChange={(val) => setZoomSensitivity(val)}
                 aria-label="Zoom sensitivity"
               />
-            </PropertyInput>
+            </PropertyField>
           </PropertyStack>
           <div className="text-xs text-muted-foreground mt-2">
             Controls how fast the canvas pans and zoom. Higher values = faster.
