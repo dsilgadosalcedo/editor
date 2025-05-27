@@ -12,6 +12,9 @@ import {
   getProjectByIdFromLocal,
   cleanupDuplicateProjects,
   getDuplicateProjectStats,
+  createProjectWithLimitCheck,
+  getProjectLimitInfo,
+  isProjectLimitReached,
   type Project,
 } from "@/lib/project-storage";
 import { useProjectUpdate } from "@/hooks/useProjectUpdate";
@@ -157,6 +160,15 @@ export const useHybridProjects = () => {
   }, [isSignedIn, isAuthenticated, convexAuthLoading, cloudProjects]);
 
   const handleCreateNew = async () => {
+    // Check project limit for EVERYONE (authenticated and unauthenticated)
+    const currentProjectCount = projects.length;
+    if (currentProjectCount >= 10) {
+      toast.error(
+        "Project limit reached! You can have a maximum of 10 projects. Please delete some projects before creating new ones."
+      );
+      return;
+    }
+
     const now = new Date().toISOString();
     const initialProjectData = {
       elements: [],
@@ -186,7 +198,6 @@ export const useHybridProjects = () => {
       } catch (error) {
         console.error("Error creating cloud project:", error);
         toast.error("Failed to create project in the cloud. Please try again.");
-        // DO NOT create locally if cloud fails for authenticated user
         return;
       }
     } else {
@@ -381,14 +392,14 @@ export const useHybridProjects = () => {
   const handleCleanupDuplicates = async () => {
     try {
       const stats = getDuplicateProjectStats();
-      if (stats.untitled <= 1) {
+      if (stats.duplicates === 0) {
         toast.info("No duplicate projects found to clean up.");
         return;
       }
 
       const result = cleanupDuplicateProjects();
       toast.success(
-        `Cleaned up ${result.cleaned} duplicate projects. ${result.remaining} project remaining.`
+        `Cleaned up ${result.cleaned} duplicate projects. ${result.remaining} projects remaining.`
       );
 
       // Refresh the projects list
@@ -401,6 +412,14 @@ export const useHybridProjects = () => {
 
   const getDuplicateStats = () => {
     return getDuplicateProjectStats();
+  };
+
+  const getProjectLimitStats = () => {
+    return getProjectLimitInfo();
+  };
+
+  const checkProjectLimit = () => {
+    return isProjectLimitReached();
   };
 
   return {
@@ -420,5 +439,7 @@ export const useHybridProjects = () => {
     refreshProjects,
     handleCleanupDuplicates,
     getDuplicateStats,
+    getProjectLimitStats,
+    checkProjectLimit,
   };
 };

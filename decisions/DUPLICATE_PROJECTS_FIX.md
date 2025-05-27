@@ -70,13 +70,45 @@ Added a "Clean Duplicates" button to the projects page that:
 1. **Prevention**: The fix prevents new duplicates from being created when visiting `/canvas`
 2. **Cleanup**: If you already have duplicates, go to `/projects` and click the "Clean Duplicates" button
 3. **Automatic**: The cleanup button only appears when needed and automatically disappears after cleaning
+4. **Project Limit**: Local projects are limited to 10 maximum - oldest projects are automatically removed when limit is reached
+
+## Project Limit Features
+
+### For All Users (Both Authenticated and Unauthenticated):
+
+- **Maximum 10 projects** for everyone to ensure optimal performance
+- **No automatic deletion** - users must manually delete projects to create new ones
+- **Interactive badge** showing current project count with hover details
+- **Hover card** explaining the limit and remaining space
+- **Clear error message** when trying to create projects at the limit
+- **Visual warning** in hover card when limit is reached
+
+### Storage Differences:
+
+- **Unauthenticated users**: Projects stored locally only
+- **Authenticated users**: Projects stored in cloud AND locally for offline access
+- **Same limit applies to both**: 10 projects maximum
 
 ## Files Modified
 
 - `app/canvas/page.tsx` - Fixed multiple creation issue
-- `lib/project-storage.ts` - Added cleanup utilities
-- `features/projects/hooks/useHybridProjects.ts` - Added cleanup functionality
-- `features/projects/components/ProjectsPage.tsx` - Added cleanup UI
+- `lib/project-storage.ts` - Added cleanup utilities and project limit functions
+- `features/projects/hooks/useHybridProjects.ts` - Added cleanup and limit functionality
+- `features/projects/components/ProjectsPage.tsx` - Added cleanup UI and interactive project counter with hover cards
+- `components/ui/badge.tsx` - Added ShadCN Badge component
+- `components/ui/hover-card.tsx` - Added ShadCN HoverCard component
+
+## New Functions Added
+
+### In `lib/project-storage.ts`:
+
+- `isProjectLimitReached()` - Check if 10-project limit is reached
+- `getProjectLimitInfo()` - Get detailed limit information
+
+### In `useHybridProjects.ts`:
+
+- `getProjectLimitStats()` - Get project limit statistics for UI
+- `checkProjectLimit()` - Check if limit is reached
 
 ## Testing
 
@@ -86,3 +118,6 @@ The fix has been tested with:
 - ✅ TypeScript compilation passes
 - ✅ No multiple project creation when auth state changes
 - ✅ Cleanup functionality works as expected
+- ✅ Project limit enforcement works correctly
+- ✅ Oldest projects are removed when limit is reached
+- ✅ UI shows project counter and appropriate warnings

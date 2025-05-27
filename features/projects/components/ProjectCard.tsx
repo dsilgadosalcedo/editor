@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
   CardAction,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Collapsible,
@@ -83,59 +84,65 @@ export default function ProjectCard({
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <div className="flex-1 mr-2">
-          <CardTitle>
-            <Input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onBlur={handleSaveEdit}
-              onKeyDown={handleKeyDown}
-              maxLength={50}
-            />
-          </CardTitle>
-        </div>
-        <div className="flex items-center gap-1">
-          <Collapsible open={isInfoOpen} onOpenChange={setIsInfoOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="icon" title="Project info">
-                <Info />
-              </Button>
-            </CollapsibleTrigger>
-          </Collapsible>
-          <Button
-            variant="destructive"
-            size="icon"
-            onClick={() => setIsDeleteDialogOpen(true)}
-            title="Delete project"
-          >
-            <Trash2 />
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-0">
-        <Collapsible open={isInfoOpen} onOpenChange={setIsInfoOpen}>
-          <CollapsibleContent>
-            <div className="text-sm text-muted-foreground mb-4 space-y-1 p-3 bg-muted/30 rounded-md">
-              <div>Created: {formatDate(project.createdAt)}</div>
-              <div>Updated: {formatDate(project.updatedAt)}</div>
-              <div>{project.data.elements.length} elements</div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-
-        <Button
-          onClick={onOpen}
-          variant="secondary"
-          className="w-full"
-          aria-label={`Open ${project.name} project`}
-        >
-          Open Project
-        </Button>
-      </CardContent>
+    <>
+      <Card className="h-fit">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div className="flex-1 mr-2">
+            <CardTitle>
+              <Input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={handleSaveEdit}
+                onKeyDown={handleKeyDown}
+                maxLength={50}
+              />
+            </CardTitle>
+          </div>
+          <div className="flex items-center gap-1">
+            <Collapsible open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" title="Project info">
+                  <Info />
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              title="Delete project"
+            >
+              <Trash2 />
+            </Button>
+          </div>
+        </CardHeader>
+        {isInfoOpen && (
+          <CardContent>
+            <Collapsible open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+              <CollapsibleContent>
+                <div className="text-sm text-muted-foreground space-y-1 p-3 bg-muted/30 rounded-md">
+                  <div>Created: {formatDate(project.createdAt)}</div>
+                  <div>Updated: {formatDate(project.updatedAt)}</div>
+                  <div>{project.data.elements.length} elements</div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </CardContent>
+        )}
+        <CardFooter>
+          <CardAction className="w-full">
+            <Button
+              onClick={onOpen}
+              variant="secondary"
+              className="w-full"
+              aria-label={`Open ${project.name} project`}
+            >
+              Open Project
+            </Button>
+          </CardAction>
+        </CardFooter>
+      </Card>
 
       <DeleteConfirmDialog
         open={isDeleteDialogOpen}
@@ -143,6 +150,6 @@ export default function ProjectCard({
         projectName={project.name}
         onConfirm={onDelete}
       />
-    </Card>
+    </>
   );
 }

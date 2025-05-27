@@ -12,6 +12,7 @@ export interface Project {
 }
 
 const PROJECTS_STORAGE_KEY = "canvas-projects";
+const MAX_PROJECTS = 10;
 
 // Generate a unique project name
 export const generateProjectName = (): string => {
@@ -186,52 +187,185 @@ export const updateProjectName = (
   return updatedProject;
 };
 
-// Clean up duplicate "Untitled Project" entries, keeping only the most recent
+// Clean up duplicate projects by ID, keeping only the most recent
 export const cleanupDuplicateProjects = (): {
   cleaned: number;
   remaining: number;
 } => {
   const projects = getProjects();
-  const untitledProjects = projects.filter(
-    (p) =>
-      p.name === "Untitled Project" || p.name.match(/^Untitled Project \d+$/)
-  );
+  const seenIds = new Set<string>();
+  const duplicateProjects: Project[] = [];
+  const uniqueProjects: Project[] = [];
 
-  if (untitledProjects.length <= 1) {
-    return { cleaned: 0, remaining: untitledProjects.length };
-  }
-
-  // Sort by updatedAt (most recent first)
-  untitledProjects.sort(
+  // Sort by updatedAt (most recent first) to keep the latest version of duplicates
+  const sortedProjects = [...projects].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 
-  // Keep the most recent one, delete the rest
-  const toDelete = untitledProjects.slice(1);
+  // Find duplicates by ID
+  for (const project of sortedProjects) {
+    if (seenIds.has(project.id)) {
+      duplicateProjects.push(project);
+    } else {
+      seenIds.add(project.id);
+      uniqueProjects.push(project);
+    }
+  }
 
-  // Filter out the duplicates
-  const cleanedProjects = projects.filter(
-    (p) => !toDelete.some((duplicate) => duplicate.id === p.id)
-  );
+  if (duplicateProjects.length === 0) {
+    return { cleaned: 0, remaining: projects.length };
+  }
 
-  saveProjects(cleanedProjects);
+  // Save only unique projects (most recent versions)
+  saveProjects(uniqueProjects);
 
-  return { cleaned: toDelete.length, remaining: 1 };
+  return {
+    cleaned: duplicateProjects.length,
+    remaining: uniqueProjects.length,
+  };
 };
 
 // Get duplicate project stats without cleaning
 export const getDuplicateProjectStats = (): {
   total: number;
-  untitled: number;
+  duplicates: number;
+  unique: number;
 } => {
   const projects = getProjects();
-  const untitledProjects = projects.filter(
-    (p) =>
-      p.name === "Untitled Project" || p.name.match(/^Untitled Project \d+$/)
-  );
+  const seenIds = new Set<string>();
+  let duplicateCount = 0;
+
+  // Count duplicates by ID
+  for (const project of projects) {
+    if (seenIds.has(project.id)) {
+      duplicateCount++;
+    } else {
+      seenIds.add(project.id);
+    }
+  }
 
   return {
     total: projects.length,
-    untitled: untitledProjects.length,
+    duplicates: duplicateCount,
+    unique: seenIds.size,
+  };
+};
+
+// Find duplicate projects by ID (returns groups of duplicates)
+export const findDuplicateProjects = (): {
+  [id: string]: Project[];
+} => {
+  const projects = getProjects();
+  const projectGroups: { [id: string]: Project[] } = {};
+
+  // Group projects by ID
+  for (const project of projects) {
+    if (!projectGroups[project.id]) {
+      projectGroups[project.id] = [];
+    }
+    projectGroups[project.id].push(project);
+  }
+
+  // Filter to only include groups with duplicates
+  const duplicateGroups: { [id: string]: Project[] } = {};
+  for (const [id, group] of Object.entries(projectGroups)) {
+    if (group.length > 1) {
+      // Sort by updatedAt (most recent first)
+      group.sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+      duplicateGroups[id] = group;
+    }
+  }
+
+  return duplicateGroups;
+};
+
+// Check if project limit is reached
+export const isProjectLimitReached = (): boolean => {
+  const projects = getProjects();
+  return projects.length >= MAX_PROJECTS;
+};
+
+// Get project limit info
+export const getProjectLimitInfo = (): {
+  current: number;
+  max: number;
+  isAtLimit: boolean;
+  remaining: number;
+} => {
+  const projects = getProjects();
+  const current = projects.length;
+  return {
+    current,
+    max: MAX_PROJECTS,
+    isAtLimit: current >= MAX_PROJECTS,
+    remaining: Math.max(0, MAX_PROJECTS - current),
+  };
+};
+
+// Remove oldest projects to make room for new ones
+export const removeOldestProjects = (
+  countToRemove: number = 1
+): {
+  removed: Project[];
+  remaining: number;
+} => {
+  const projects = getProjects();
+
+  // Sort by createdAt (oldest first)
+  const sortedProjects = [...projects].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+
+  const toRemove = sortedProjects.slice(0, countToRemove);
+  const toKeep = projects.filter(
+    (p) => !toRemove.some((removed) => removed.id === p.id)
+  );
+
+  saveProjects(toKeep);
+
+  return {
+    removed: toRemove,
+    remaining: toKeep.length,
+  };
+};
+
+// Create project with limit enforcement
+export const createProjectWithLimitCheck = (
+  id?: string,
+  name?: string,
+  data?: {
+    elements: CanvasElementData[];
+    artboardDimensions: { width: number; height: number };
+  },
+  createdAt?: string,
+  updatedAt?: string
+): {
+  project: Project | null;
+  limitReached: boolean;
+  removedProjects?: Project[];
+  autoRemoved?: boolean;
+} => {
+  const limitInfo = getProjectLimitInfo();
+
+  if (limitInfo.isAtLimit) {
+    // Automatically remove the oldest project to make room
+    const removeResult = removeOldestProjects(1);
+    const project = createProjectInLocal(id, name, data, createdAt, updatedAt);
+
+    return {
+      project,
+      limitReached: true,
+      removedProjects: removeResult.removed,
+      autoRemoved: true,
+    };
+  }
+
+  const project = createProjectInLocal(id, name, data, createdAt, updatedAt);
+  return {
+    project,
+    limitReached: false,
   };
 };
