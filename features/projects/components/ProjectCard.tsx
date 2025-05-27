@@ -108,10 +108,11 @@ export default function ProjectCard({
               </CollapsibleTrigger>
             </Collapsible>
             <Button
-              variant="destructive"
+              variant="outline"
               size="icon"
               onClick={() => setIsDeleteDialogOpen(true)}
               title="Delete project"
+              className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400"
             >
               <Trash2 />
             </Button>
