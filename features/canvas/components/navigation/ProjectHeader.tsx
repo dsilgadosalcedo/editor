@@ -26,20 +26,19 @@ export default function ProjectHeader() {
       try {
         const result = await updateProjectName(projectId, editName.trim());
         if (result.success && result.updatedProject) {
+          // Only update the project name in the store
           setProjectName(result.updatedProject.name);
-          if (result.newSlug) {
-            // Update the URL to reflect the new slug
-            window.history.replaceState(null, "", `/canvas/${result.newSlug}`);
-            // Update the project data in the store
-            setProjectData(
-              projectId,
-              result.newSlug,
-              result.updatedProject.name
-            );
-          }
+          // The project data (elements, dimensions) remains unchanged, so no need to call setProjectData here.
+          // If updateProjectName also returned full data, and we wanted to refresh it, then call setProjectData.
         } else {
-          // Revert the name if update failed
-          setEditName(projectName);
+          // If success is false but there's an error type like 'cloud_update_failed',
+          // the local name is already updated by useProjectUpdate's call to updateLocalProjectNameOnly.
+          // The store's projectName would reflect the new name from local storage if we set it here too.
+          if (result.error === "cloud_update_failed" && result.updatedProject) {
+            setProjectName(result.updatedProject.name); // Reflect successful local update
+          } else {
+            setEditName(projectName); // Revert UI editName if local save also failed or other error
+          }
         }
       } catch (error) {
         console.error("Error updating project name:", error);

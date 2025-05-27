@@ -4,14 +4,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   getProjects,
-  deleteProject,
+  deleteProjectFromLocal,
+  createProjectInLocal,
   type Project,
 } from "@/lib/project-storage";
 import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
 
 export const useProjects = () => {
   const router = useRouter();
-  const { createNewProject, clearCurrentProject, projectId } = useCanvasStore();
+  const { clearCurrentProject, projectId } = useCanvasStore();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -27,12 +28,19 @@ export const useProjects = () => {
   }, []);
 
   const handleCreateNew = () => {
-    const project = createNewProject();
-    router.push(`/canvas/${project.slug}`);
+    const now = new Date().toISOString();
+    const project = createProjectInLocal(
+      undefined,
+      undefined,
+      undefined,
+      now,
+      now
+    );
+    router.push(`/canvas/${project.id}`);
   };
 
-  const handleOpenProject = (slug: string) => {
-    router.push(`/canvas/${slug}`);
+  const handleOpenProject = (id: string) => {
+    router.push(`/canvas/${id}`);
   };
 
   const handleDeleteProject = (id: string) => {
@@ -40,7 +48,7 @@ export const useProjects = () => {
     if (projectId === id) {
       clearCurrentProject();
     }
-    deleteProject(id);
+    deleteProjectFromLocal(id);
     setProjects(getProjects());
   };
 

@@ -6,7 +6,6 @@ import { Id } from "@/convex/_generated/dataModel";
 export interface CloudProject {
   id: string;
   name: string;
-  slug: string;
   data: {
     elements: CanvasElementData[];
     artboardDimensions: { width: number; height: number };
@@ -28,14 +27,13 @@ export class CloudProjectStorage {
     }
   }
 
-  // Get a project by slug
-  async getProjectBySlug(slug: string): Promise<CloudProject | null> {
+  async getProjectById(id: string): Promise<CloudProject | null> {
     try {
-      return await this.convexClient.query(api.projects.getProjectBySlug, {
-        slug,
+      return await this.convexClient.query(api.projects.getProjectById, {
+        id: id as Id<"projects">,
       });
     } catch (error) {
-      console.error("Error fetching project by slug from cloud:", error);
+      console.error("Error fetching project from cloud:", error);
       return null;
     }
   }
@@ -49,11 +47,8 @@ export class CloudProjectStorage {
     }
   ): Promise<CloudProject> {
     const projectName = name || (await this.generateProjectName());
-    const slug = await this.generateSlug(projectName);
-
     return await this.convexClient.mutation(api.projects.createProject, {
       name: projectName,
-      slug,
       data: data || {
         elements: [],
         artboardDimensions: { width: 1024, height: 576 },
@@ -73,28 +68,17 @@ export class CloudProjectStorage {
     }
   ): Promise<CloudProject | null> {
     try {
-      const updateData: {
+      const args: {
+        id: Id<"projects">;
         name?: string;
-        slug?: string;
         data?: {
           elements: CanvasElementData[];
           artboardDimensions: { width: number; height: number };
         };
-      } = {};
-
-      if (updates.name !== undefined) {
-        updateData.name = updates.name;
-        updateData.slug = await this.generateSlug(updates.name);
-      }
-
-      if (updates.data !== undefined) {
-        updateData.data = updates.data;
-      }
-
-      return await this.convexClient.mutation(api.projects.updateProject, {
-        id: id as Id<"projects">,
-        ...updateData,
-      });
+      } = { id: id as Id<"projects"> };
+      if (updates.name !== undefined) args.name = updates.name;
+      if (updates.data !== undefined) args.data = updates.data;
+      return await this.convexClient.mutation(api.projects.updateProject, args);
     } catch (error) {
       console.error("Error updating project in cloud:", error);
       return null;
@@ -114,32 +98,12 @@ export class CloudProjectStorage {
     }
   }
 
-  // Update project name and regenerate slug
+  // Update project name
   async updateProjectName(
     id: string,
     newName: string
   ): Promise<CloudProject | null> {
     return this.updateProject(id, { name: newName });
-  }
-
-  // Generate unique slug
-  private async generateSlug(name: string): Promise<string> {
-    try {
-      return await this.convexClient.query(api.projects.generateUniqueSlug, {
-        baseName: name,
-      });
-    } catch (error) {
-      console.error("Error generating slug:", error);
-      // Fallback to local generation
-      return (
-        name
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, "")
-          .replace(/\s+/g, "-")
-          .replace(/-+/g, "-")
-          .replace(/^-|-$/g, "") || "untitled"
-      );
-    }
   }
 
   // Generate unique project name

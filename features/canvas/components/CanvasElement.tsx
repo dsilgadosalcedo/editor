@@ -460,8 +460,38 @@ export default function CanvasElement({
   const handleGroupDoubleClick = (e: React.MouseEvent) => {
     if (element.type === "group") {
       e.stopPropagation();
-      const { enterIsolationMode } = useCanvasStore.getState();
-      enterIsolationMode(element.id);
+      e.preventDefault();
+      const { enterIsolationMode, getElementChildren } =
+        useCanvasStore.getState();
+
+      // Find the element at the click position within the group
+      const rect = elementRef.current?.getBoundingClientRect();
+      if (rect) {
+        const relativeX = (e.clientX - rect.left) / (zoom / 100) + element.x;
+        const relativeY = (e.clientY - rect.top) / (zoom / 100) + element.y;
+
+        // Get children of the group
+        const children = getElementChildren(element.id);
+
+        // Find the topmost child element at the click position
+        let elementToSelect: string | undefined;
+        for (let i = children.length - 1; i >= 0; i--) {
+          const child = children[i];
+          if (
+            relativeX >= child.x &&
+            relativeX <= child.x + child.width &&
+            relativeY >= child.y &&
+            relativeY <= child.y + child.height
+          ) {
+            elementToSelect = child.id;
+            break;
+          }
+        }
+
+        enterIsolationMode(element.id, elementToSelect);
+      } else {
+        enterIsolationMode(element.id);
+      }
     }
   };
 
@@ -1043,11 +1073,13 @@ export default function CanvasElement({
               : undefined,
           borderWidth:
             element.type !== "image"
-              ? element.borderWidth ?? (element.type === "group" ? 1 : 0)
+              ? element.borderWidth ??
+                (element.type === "group" && element.selected ? 1 : 0)
               : 0,
           borderStyle:
             element.type !== "image" &&
-            (element.borderWidth || element.type === "group")
+            (element.borderWidth ||
+              (element.type === "group" && element.selected))
               ? element.type === "group"
                 ? "dashed"
                 : "solid"
@@ -1055,7 +1087,9 @@ export default function CanvasElement({
           borderColor:
             element.type !== "image"
               ? element.borderColor ??
-                (element.type === "group" ? "#3b82f6" : "transparent")
+                (element.type === "group" && element.selected
+                  ? "#3b82f6"
+                  : "transparent")
               : undefined,
           boxShadow: element.shadowBlur
             ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
@@ -1132,11 +1166,13 @@ export default function CanvasElement({
             {!isEditing && element.content}
           </div>
         )}
-        {element.type === "group" && (
+        {element.type === "group" && element.selected && (
           <div
             className="absolute -top-5 left-0 text-xs text-blue-600 bg-white/80 px-1 rounded pointer-events-none font-medium"
             style={{
-              fontSize: `${Math.max(8, 10 * (zoom / 100))}px`,
+              fontSize: "10px",
+              transform: `scale(${100 / zoom})`,
+              transformOrigin: "left bottom",
             }}
           >
             {element.name || "Group"}
@@ -1219,23 +1255,6 @@ export default function CanvasElement({
                   onTouchStart={(e) => handleResizeTouchStart("nw", e)}
                   onDoubleClick={handleResizeDoubleClick}
                 />
-                {/* COMMENTED OUT: top-center - middle handles removed as requested */}
-                {/* <div
-                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
-                  style={{
-                    left: `${-(4.25 - 1 / 2) * (100 / zoom)}px`,
-                    top: `${
-                      -element.height / 2 - (4.25 + 1 / 2) * (100 / zoom)
-                    }px`,
-                    transform: `scale(${100 / zoom})`,
-                    transformOrigin: "top left",
-                    pointerEvents: "auto",
-                    zIndex: 9998,
-                  }}
-                  onMouseDown={(e) => handleResizeStart("n", e)}
-                  onTouchStart={(e) => handleResizeTouchStart("n", e)}
-                  onDoubleClick={handleResizeDoubleClick}
-                /> */}
                 {/* top-right */}
                 <div
                   className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
@@ -1255,40 +1274,6 @@ export default function CanvasElement({
                   onTouchStart={(e) => handleResizeTouchStart("ne", e)}
                   onDoubleClick={handleResizeDoubleClick}
                 />
-                {/* COMMENTED OUT: middle-left - middle handles removed as requested */}
-                {/* <div
-                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
-                  style={{
-                    left: `${
-                      -element.width / 2 - (4.25 + 1 / 2) * (100 / zoom)
-                    }px`,
-                    top: `${-(4.25 - 1 / 2) * (100 / zoom)}px`,
-                    transform: `scale(${100 / zoom})`,
-                    transformOrigin: "top left",
-                    pointerEvents: "auto",
-                    zIndex: 9998,
-                  }}
-                  onMouseDown={(e) => handleResizeStart("w", e)}
-                  onTouchStart={(e) => handleResizeTouchStart("w", e)}
-                  onDoubleClick={handleResizeDoubleClick}
-                /> */}
-                {/* COMMENTED OUT: middle-right - middle handles removed as requested */}
-                {/* <div
-                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ew-resize"
-                  style={{
-                    left: `${
-                      element.width / 2 - (4.25 - 1 / 2) * (100 / zoom)
-                    }px`,
-                    top: `${-(4.25 - 1 / 2) * (100 / zoom)}px`,
-                    transform: `scale(${100 / zoom})`,
-                    transformOrigin: "top left",
-                    pointerEvents: "auto",
-                    zIndex: 9998,
-                  }}
-                  onMouseDown={(e) => handleResizeStart("e", e)}
-                  onTouchStart={(e) => handleResizeTouchStart("e", e)}
-                  onDoubleClick={handleResizeDoubleClick}
-                /> */}
                 {/* bottom-left */}
                 <div
                   className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
@@ -1308,23 +1293,6 @@ export default function CanvasElement({
                   onTouchStart={(e) => handleResizeTouchStart("sw", e)}
                   onDoubleClick={handleResizeDoubleClick}
                 />
-                {/* COMMENTED OUT: bottom-center - middle handles removed as requested */}
-                {/* <div
-                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-ns-resize"
-                  style={{
-                    left: `${-(4.25 - 1 / 2) * (100 / zoom)}px`,
-                    top: `${
-                      element.height / 2 - (4.25 - 1 / 2) * (100 / zoom)
-                    }px`,
-                    transform: `scale(${100 / zoom})`,
-                    transformOrigin: "top left",
-                    pointerEvents: "auto",
-                    zIndex: 9998,
-                  }}
-                  onMouseDown={(e) => handleResizeStart("s", e)}
-                  onTouchStart={(e) => handleResizeTouchStart("s", e)}
-                  onDoubleClick={handleResizeDoubleClick}
-                /> */}
                 {/* bottom-right */}
                 <div
                   className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
@@ -1366,7 +1334,6 @@ export default function CanvasElement({
                   title="Drag to rotate"
                 />
 
-                {/* 16 is the size/2, 4 is for move away the element */}
                 {/* Rotation handle - top-right */}
                 <div
                   className="absolute w-8 h-8 rounded-full cursor-crosshair"

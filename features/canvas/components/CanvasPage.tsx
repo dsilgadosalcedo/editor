@@ -11,6 +11,7 @@ import CanvasViewport from "./CanvasViewport";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 import DragDropOverlay from "./DragDropOverlay";
 import ProjectHeader from "./navigation/ProjectHeader";
+import { AutoSave } from "./AutoSave";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
 import { useDragSelection } from "../hooks/useDragSelection";
 import { useCanvasStore } from "../store/useCanvasStore";
@@ -497,6 +498,9 @@ export default function CanvasPage() {
 
       {/* Drag and Drop Overlay */}
       <DragDropOverlay onFileDrop={handleFileDrop} />
+
+      {/* Auto Save */}
+      <AutoSave />
     </ColorPickerProvider>
   );
 }

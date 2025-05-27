@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { DndProvider, useDrag, useDrop, useDragLayer } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export const LAYER_ITEM_TYPE = "LAYER_ITEM";
 
@@ -73,56 +74,60 @@ const LayerItem: React.FC<LayerItemProps> = ({
     }),
   }));
 
-  // Drop functionality for "before" position
-  const [{ isOverBefore, canDropBefore }, dropBefore] = useDrop(() => ({
-    accept: LAYER_ITEM_TYPE,
-    drop: (item: DragItem, monitor) => {
-      if (!monitor.didDrop() && item.id !== element.id) {
-        reorderElementsHierarchical(item.id, element.id, "before");
-      }
-    },
-    canDrop: (item: DragItem) => {
-      return item.id !== element.id;
-    },
-    collect: (monitor) => ({
-      isOverBefore: monitor.isOver({ shallow: true }),
-      canDropBefore: monitor.canDrop(),
-    }),
-  }));
+  // Function to determine drop position based on mouse position
+  const getDropPosition = (monitor: any): "before" | "after" | "inside" => {
+    const clientOffset = monitor.getClientOffset();
+    if (!clientOffset) return "after";
 
-  // Drop functionality for "after" position
-  const [{ isOverAfter, canDropAfter }, dropAfter] = useDrop(() => ({
-    accept: LAYER_ITEM_TYPE,
-    drop: (item: DragItem, monitor) => {
-      if (!monitor.didDrop() && item.id !== element.id) {
-        reorderElementsHierarchical(item.id, element.id, "after");
-      }
-    },
-    canDrop: (item: DragItem) => {
-      return item.id !== element.id;
-    },
-    collect: (monitor) => ({
-      isOverAfter: monitor.isOver({ shallow: true }),
-      canDropAfter: monitor.canDrop(),
-    }),
-  }));
+    const hoverBoundingRect = elementRef.current?.getBoundingClientRect();
+    if (!hoverBoundingRect) return "after";
 
-  // Drop functionality for "inside" position (groups only)
-  const [{ isOverInside, canDropInside }, dropInside] = useDrop(() => ({
-    accept: LAYER_ITEM_TYPE,
-    drop: (item: DragItem, monitor) => {
-      if (!monitor.didDrop() && item.id !== element.id && isGroup) {
-        reorderElementsHierarchical(item.id, element.id, "inside");
+    const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+    const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+    // For groups, check if we're hovering over the center area for "inside" drop
+    if (isGroup) {
+      const threshold = 8; // pixels from top/bottom edge
+      if (hoverClientY < threshold) {
+        return "before";
+      } else if (hoverClientY > hoverBoundingRect.height - threshold) {
+        return "after";
+      } else {
+        return "inside";
       }
-    },
-    canDrop: (item: DragItem) => {
-      return item.id !== element.id && isGroup;
-    },
-    collect: (monitor) => ({
-      isOverInside: monitor.isOver({ shallow: true }),
-      canDropInside: monitor.canDrop(),
+    }
+
+    // For non-groups, just before/after based on middle
+    return hoverClientY < hoverMiddleY ? "before" : "after";
+  };
+
+  // Single drop functionality with position detection
+  const [{ isOver, canDrop, dropPosition }, drop] = useDrop(
+    () => ({
+      accept: LAYER_ITEM_TYPE,
+      drop: (item: DragItem, monitor) => {
+        if (!monitor.didDrop() && item.id !== element.id) {
+          const position = getDropPosition(monitor);
+          reorderElementsHierarchical(item.id, element.id, position);
+        }
+      },
+      canDrop: (item: DragItem) => {
+        return item.id !== element.id;
+      },
+      collect: (monitor) => {
+        const position = getDropPosition(monitor);
+        return {
+          isOver: monitor.isOver({ shallow: true }),
+          canDrop: monitor.canDrop(),
+          dropPosition: position,
+        };
+      },
     }),
-  }));
+    [getDropPosition]
+  );
+
+  // Ref for the element to get bounding rect
+  const elementRef = useRef<HTMLLIElement>(null);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -134,36 +139,35 @@ const LayerItem: React.FC<LayerItemProps> = ({
   // Combine drag and drop refs
   const attachDragRef = (el: HTMLLIElement | null) => {
     drag(el);
+    elementRef.current = el;
   };
 
-  const attachDropBeforeRef = (el: HTMLDivElement | null) => {
-    dropBefore(el);
-  };
-
-  const attachDropAfterRef = (el: HTMLDivElement | null) => {
-    dropAfter(el);
+  const attachDropRef = (el: HTMLLIElement | null) => {
+    drop(el);
+    elementRef.current = el;
   };
 
   return (
     <>
       {/* Drop zone before element */}
-      {index === 0 && (
-        <div
-          ref={attachDropBeforeRef}
-          className={cn(
-            "h-0.5 w-full mx-1 rounded transition-all duration-200",
-            isOverBefore && canDropBefore
-              ? "bg-blue-400 dark:bg-blue-500 h-0.5"
-              : "bg-transparent h-0"
-          )}
-        />
+      {/* Drop indicator before */}
+      {isOver && canDrop && dropPosition === "before" && (
+        <div className="h-0.5 w-full mx-1 rounded bg-blue-400 dark:bg-blue-500 transition-all duration-200" />
       )}
 
       <li
-        ref={attachDragRef}
+        ref={(el) => {
+          attachDragRef(el);
+          attachDropRef(el);
+        }}
         onClick={(e) => {
           const isMultiSelectKey = e.ctrlKey || e.metaKey;
           selectElement(element.id, isMultiSelectKey);
+
+          if (isGroup && hasChildren) {
+            e.stopPropagation();
+            setIsGroupExpanded(!isGroupExpanded);
+          }
         }}
         onDoubleClick={handleDoubleClick}
         className={cn(
@@ -173,41 +177,37 @@ const LayerItem: React.FC<LayerItemProps> = ({
             ? "border-storm-slate dark:border-sky-harbor/80 bg-sky-harbor/10"
             : "border-transparent hover:border-sky-harbor/80 dark:hover:border-storm-slate hover:bg-sky-harbor/5",
           isDragging && "invisible",
-          isOverInside &&
-            canDropInside &&
+          isOver &&
+            canDrop &&
+            dropPosition === "inside" &&
             "bg-blue-100 dark:bg-blue-900/30 border-blue-400",
           isIsolated && "bg-amber-50 dark:bg-amber-900/20 border-amber-300"
         )}
         style={{ paddingLeft: `${0.375 + depth * 0.75}rem` }}
       >
+        {depth > 0 && (
+          <Separator orientation="vertical" className="absolute left-2 top-0" />
+        )}
+
         <div className="flex items-center space-x-1 flex-1 min-w-0">
           {isGroup && hasChildren && (
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsGroupExpanded(!isGroupExpanded);
-              }}
-              className="p-0.5 hover:bg-card/50 rounded transition-colors"
-              aria-label={isGroupExpanded ? "Collapse group" : "Expand group"}
-            >
+            <>
               {isGroupExpanded ? (
                 <ChevronDown className="h-3 w-3 text-coffee-bean dark:text-desert-sand" />
               ) : (
                 <ChevronRight className="h-3 w-3 text-coffee-bean dark:text-desert-sand" />
               )}
-            </Button>
+            </>
           )}
-          {isGroup && !hasChildren && <div className="w-4 h-4" />}
-          {!isGroup && <div className="w-4 h-4" />}
 
           <span className="text-sm text-properties-text dark:text-foreground truncate">
             {element.name ||
               element.type.charAt(0).toUpperCase() + element.type.slice(1)}
-            {isGroup && (
+            {/* {isGroup && (
               <span className="text-xs text-gray-500 ml-1">
                 (Double-click to isolate)
               </span>
-            )}
+            )} */}
           </span>
         </div>
 
@@ -232,16 +232,10 @@ const LayerItem: React.FC<LayerItemProps> = ({
         </div>
       </li>
 
-      {/* Drop zone after element */}
-      <div
-        ref={attachDropAfterRef}
-        className={cn(
-          "h-0.5 w-full mx-1 rounded transition-all duration-200",
-          isOverAfter && canDropAfter
-            ? "bg-blue-400 dark:bg-blue-500 h-0.5"
-            : "bg-transparent h-0"
-        )}
-      />
+      {/* Drop indicator after */}
+      {isOver && canDrop && dropPosition === "after" && (
+        <div className="h-0.5 w-full mx-1 rounded bg-blue-400 dark:bg-blue-500 transition-all duration-200" />
+      )}
 
       {/* Child elements */}
       {isGroup && hasChildren && isGroupExpanded && (

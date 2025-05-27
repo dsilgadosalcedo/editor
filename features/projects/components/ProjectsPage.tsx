@@ -78,7 +78,7 @@ function AuthenticatedContent() {
               <ProjectCard
                 key={project.id}
                 project={project}
-                onOpen={() => handleOpenProject(project.slug)}
+                onOpen={() => handleOpenProject(project.id)}
                 onDelete={() => handleDeleteProject(project.id)}
                 onProjectUpdate={() => refreshProjects()}
                 onUpdateProjectName={handleUpdateProjectName}
@@ -146,7 +146,7 @@ function UnauthenticatedContent() {
               <ProjectCard
                 key={project.id}
                 project={project}
-                onOpen={() => handleOpenProject(project.slug)}
+                onOpen={() => handleOpenProject(project.id)}
                 onDelete={() => handleDeleteProject(project.id)}
                 onProjectUpdate={() => refreshProjects()}
                 onUpdateProjectName={handleUpdateProjectName}

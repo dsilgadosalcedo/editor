@@ -200,20 +200,6 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
           </Button>
         )}
 
-        {/* Isolate Group */}
-        {elementType === "group" && !currentlyHasMultipleSelection && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleEnterIsolation}
-            title="Isolate group"
-            aria-label="Enter group isolation mode"
-            className="h-6 w-6"
-          >
-            <Eye className="w-4 h-4" />
-          </Button>
-        )}
-
         {/* Ungroup Elements */}
         {elementType === "group" && !currentlyHasMultipleSelection && (
           <Button

@@ -68,8 +68,6 @@ export default function PropertiesPanel() {
     alignToArtboardBottom,
     alignToArtboardCenterHorizontal,
     alignToArtboardCenterVertical,
-    manualSaveProject,
-    validateProjectState,
   } = useCanvasStore();
 
   const selectedElementData = getSelectedElementData();
@@ -89,29 +87,6 @@ export default function PropertiesPanel() {
             Properties
           </h3>
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={async () => {
-                const validation = validateProjectState();
-                console.log("Project validation:", validation);
-
-                if (validation.isValid) {
-                  const success = await manualSaveProject();
-                  if (success) {
-                    console.log("Project saved successfully!");
-                  } else {
-                    console.error("Failed to save project");
-                  }
-                } else {
-                  console.error("Project state is invalid:", validation.issues);
-                }
-              }}
-              className="h-8 px-2 text-xs hover:bg-card/90 transition-colors"
-              title="Save project"
-            >
-              Save
-            </Button>
             <Button
               variant="ghost"
               size="icon"

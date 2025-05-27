@@ -18,7 +18,6 @@ export const getProjects = query({
     return projects.map((project) => ({
       id: project._id,
       name: project.name,
-      slug: project.slug,
       data: project.data,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
@@ -26,30 +25,23 @@ export const getProjects = query({
   },
 });
 
-// Get a project by slug for the authenticated user
-export const getProjectBySlug = query({
-  args: { slug: v.string() },
+// Get a project by id for the authenticated user
+export const getProjectById = query({
+  args: { id: v.id("projects") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Not authenticated");
     }
 
-    const project = await ctx.db
-      .query("projects")
-      .withIndex("by_slug", (q) =>
-        q.eq("userId", identity.subject).eq("slug", args.slug)
-      )
-      .first();
-
-    if (!project) {
+    const project = await ctx.db.get(args.id);
+    if (!project || project.userId !== identity.subject) {
       return null;
     }
 
     return {
       id: project._id,
       name: project.name,
-      slug: project.slug,
       data: project.data,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
@@ -61,14 +53,15 @@ export const getProjectBySlug = query({
 export const createProject = mutation({
   args: {
     name: v.string(),
-    slug: v.string(),
     data: v.object({
       elements: v.array(v.any()),
       artboardDimensions: v.object({
-        width: v.number(),
-        height: v.number(),
+        width: v.float64(),
+        height: v.float64(),
       }),
     }),
+    createdAt: v.optional(v.string()),
+    updatedAt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -76,36 +69,24 @@ export const createProject = mutation({
       throw new Error("Not authenticated");
     }
 
-    const now = new Date().toISOString();
-
-    // Check if slug already exists for this user
-    const existingProject = await ctx.db
-      .query("projects")
-      .withIndex("by_slug", (q) =>
-        q.eq("userId", identity.subject).eq("slug", args.slug)
-      )
-      .first();
-
-    if (existingProject) {
-      throw new Error("A project with this slug already exists");
-    }
+    const serverNow = new Date().toISOString();
+    const finalCreatedAt = args.createdAt || serverNow;
+    const finalUpdatedAt = args.updatedAt || serverNow;
 
     const projectId = await ctx.db.insert("projects", {
       name: args.name,
-      slug: args.slug,
       data: args.data,
       userId: identity.subject,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: finalCreatedAt,
+      updatedAt: finalUpdatedAt,
     });
 
     return {
       id: projectId,
       name: args.name,
-      slug: args.slug,
       data: args.data,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: finalCreatedAt,
+      updatedAt: finalUpdatedAt,
     };
   },
 });
@@ -115,16 +96,16 @@ export const updateProject = mutation({
   args: {
     id: v.id("projects"),
     name: v.optional(v.string()),
-    slug: v.optional(v.string()),
     data: v.optional(
       v.object({
         elements: v.array(v.any()),
         artboardDimensions: v.object({
-          width: v.number(),
-          height: v.number(),
+          width: v.float64(),
+          height: v.float64(),
         }),
       })
     ),
+    updatedAt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -141,57 +122,14 @@ export const updateProject = mutation({
       throw new Error("Not authorized to update this project");
     }
 
-    // If updating slug, check for conflicts
-    if (args.slug && args.slug !== project.slug) {
-      const existingProject = await ctx.db
-        .query("projects")
-        .withIndex("by_slug", (q) =>
-          q.eq("userId", identity.subject).eq("slug", args.slug!)
-        )
-        .first();
+    const serverNow = new Date().toISOString();
+    const finalUpdatedAt = args.updatedAt || serverNow;
 
-      if (existingProject) {
-        throw new Error("A project with this slug already exists");
-      }
-    }
-
-    const now = new Date().toISOString();
-    const updateData: any = { updatedAt: now };
+    const updateData: any = { updatedAt: finalUpdatedAt };
 
     if (args.name !== undefined) {
       updateData.name = args.name;
-      // If name is being updated and no explicit slug is provided, generate a new slug
-      if (args.slug === undefined) {
-        const baseSlug = args.name
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, "")
-          .replace(/\s+/g, "-")
-          .replace(/-+/g, "-")
-          .replace(/^-|-$/g, "");
-
-        let uniqueSlug = baseSlug || "untitled";
-        let counter = 1;
-
-        while (true) {
-          const existingProject = await ctx.db
-            .query("projects")
-            .withIndex("by_slug", (q) =>
-              q.eq("userId", identity.subject).eq("slug", uniqueSlug)
-            )
-            .first();
-
-          if (!existingProject || existingProject._id === args.id) {
-            break;
-          }
-
-          uniqueSlug = `${baseSlug || "untitled"}-${counter}`;
-          counter++;
-        }
-
-        updateData.slug = uniqueSlug;
-      }
     }
-    if (args.slug !== undefined) updateData.slug = args.slug;
     if (args.data !== undefined) updateData.data = args.data;
 
     await ctx.db.patch(args.id, updateData);
@@ -200,7 +138,6 @@ export const updateProject = mutation({
     return {
       id: updatedProject!._id,
       name: updatedProject!.name,
-      slug: updatedProject!.slug,
       data: updatedProject!.data,
       createdAt: updatedProject!.createdAt,
       updatedAt: updatedProject!.updatedAt,
@@ -228,45 +165,6 @@ export const deleteProject = mutation({
 
     await ctx.db.delete(args.id);
     return { success: true };
-  },
-});
-
-// Generate unique slug helper
-export const generateUniqueSlug = query({
-  args: { baseName: v.string() },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const baseSlug = args.baseName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-
-    let uniqueSlug = baseSlug || "untitled";
-    let counter = 1;
-
-    while (true) {
-      const existingProject = await ctx.db
-        .query("projects")
-        .withIndex("by_slug", (q) =>
-          q.eq("userId", identity.subject).eq("slug", uniqueSlug)
-        )
-        .first();
-
-      if (!existingProject) {
-        break;
-      }
-
-      uniqueSlug = `${baseSlug || "untitled"}-${counter}`;
-      counter++;
-    }
-
-    return uniqueSlug;
   },
 });
 

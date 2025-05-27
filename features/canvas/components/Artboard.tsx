@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import CanvasElement from "./CanvasElement";
 import ArtboardControlPoints from "./ArtboardControlPoints";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
+import MultiSelectionUI from "./MultiSelectionUI";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -222,6 +223,12 @@ const Artboard: React.FC<ArtboardProps> = ({
           onSelectElement(null);
           // if (selectedTool !== "hand") onSelectElement(null);
         }}
+        onDoubleClick={(e) => {
+          if (isolatedGroupId) {
+            e.stopPropagation();
+            exitIsolationMode();
+          }
+        }}
       >
         {/* Exit Isolation Mode Button */}
         {isolatedGroupId && (
@@ -326,6 +333,28 @@ const Artboard: React.FC<ArtboardProps> = ({
             isMultipleSelected={selectedElements.length > 1}
           />
         ))}
+        {/* Multi-selection UI */}
+        <MultiSelectionUI
+          selectedElements={elements.filter((el) =>
+            selectedElements.includes(el.id)
+          )}
+          zoom={zoom}
+          onResizeStart={(dir, e) => {
+            // Handle multi-selection resize start
+            e.stopPropagation();
+            e.preventDefault();
+            // For now, we'll just prevent the action since multi-resize is complex
+            // In the future, this could be implemented to resize all selected elements proportionally
+          }}
+          onResizeTouchStart={(dir, e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onResizeDoubleClick={(e) => {
+            e.stopPropagation();
+          }}
+        />
+
         {/* Artboard control points - always visible, never hide */}
         <ArtboardControlPoints
           artboardDimensions={artboardDimensions}

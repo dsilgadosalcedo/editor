@@ -1,10 +1,10 @@
 import { create } from "zustand";
 import {
-  createProject,
-  saveProject,
-  getProjectBySlug,
-  getProjects,
-  updateProjectName,
+  // createProject, // createProjectInLocal is now used in useHybridProjects
+  saveProjectToLocal, // Renamed from saveProject
+  // getProjects, // getLocalProjects is used in useHybridProjects
+  // updateProjectName, // updateLocalProjectNameOnly is used in useProjectUpdate
+  getProjectByIdFromLocal, // For loading logic
   type Project,
 } from "@/lib/project-storage";
 
@@ -63,7 +63,6 @@ interface CanvasStoreState {
   artboardAspectRatio: number | null; // null means custom/unlocked
   projectName: string;
   projectId: string | null;
-  projectSlug: string | null;
   panSensitivity: number;
   zoomSensitivity: number;
   past: CanvasElementData[][];
@@ -89,15 +88,15 @@ interface CanvasStoreState {
   setProjectName: (name: string) => void;
   setProjectData: (
     projectId: string,
-    projectSlug: string,
-    projectName: string
+    projectName: string,
+    projectData: {
+      elements: CanvasElementData[];
+      artboardDimensions: { width: number; height: number };
+    }
   ) => void;
-  autoSaveProject: () => void;
-  manualSaveProject: () => Promise<boolean>;
   validateProjectState: () => { isValid: boolean; issues: string[] };
   reloadCurrentProject: () => boolean;
-  createNewProject: (name?: string) => Project;
-  loadProjectBySlug: (slug: string) => boolean;
+  loadProjectById: (id: string) => boolean;
   clearCurrentProject: () => void;
   setPanSensitivity: (sensitivity: number) => void;
   setZoomSensitivity: (sensitivity: number) => void;
@@ -204,16 +203,12 @@ interface CanvasStoreState {
   ) => void;
   moveElementToGroup: (elementId: string, groupId: string | null) => void;
   // Isolation mode
-  enterIsolationMode: (groupId: string) => void;
+  enterIsolationMode: (groupId: string, elementToSelect?: string) => void;
   exitIsolationMode: () => void;
   isInIsolationMode: () => boolean;
   getIsolatedElements: () => CanvasElementData[];
   // Add new function to load cloud project
   loadCloudProject: (project: Project) => void;
-  // Add function to update project name (cloud-aware)
-  updateProjectNameCloudAware: (
-    newName: string
-  ) => Promise<{ success: boolean; updatedProject?: Project }>;
   // Helper to determine if current project is cloud-based
   isCloudProject: () => boolean;
 }
@@ -225,7 +220,6 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   artboardAspectRatio: 16 / 9, // Default to 16:9 ratio
   projectName: "Untitled Project",
   projectId: null,
-  projectSlug: null,
   panSensitivity: 1.6,
   zoomSensitivity: 0.6,
   past: [],
@@ -251,8 +245,8 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       past: [...state.past, state.elements],
       future: [], // Clear future when making new changes
     }));
-    // Auto-save project after history changes
-    get().autoSaveProject();
+    // Auto-save project after history changes - This will need to trigger save via a component/hook
+    // get().autoSaveProject(); // Commenting out direct call
   },
 
   // Group helper functions
@@ -282,73 +276,39 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     return state.elements.filter((el) => element.children?.includes(el.id));
   },
 
-  setArtboardDimensions: (dims) => set({ artboardDimensions: dims }),
-  setArtboardAspectRatio: (ratio) => set({ artboardAspectRatio: ratio }),
-  setProjectName: (name) => set({ projectName: name }),
-  setProjectData: (projectId, projectSlug, projectName) =>
-    set({ projectId, projectSlug, projectName }),
-  autoSaveProject: (() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-
-    return () => {
-      // Clear any existing timeout to debounce rapid saves
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-
-      // Set a new timeout to save after a short delay
-      timeoutId = setTimeout(() => {
-        const {
-          projectId,
-          projectSlug,
-          projectName,
-          elements,
-          artboardDimensions,
-        } = get();
-
-        if (projectId && projectSlug) {
-          try {
-            const savedProject = saveProject({
-              id: projectId,
-              name: projectName,
-              slug: projectSlug,
-              data: { elements, artboardDimensions },
-              createdAt: new Date().toISOString(), // Will be overwritten for existing projects
-            });
-            return savedProject;
-          } catch (error) {
-            console.error("Failed to auto-save project:", error);
-          }
-        }
-
-        timeoutId = null;
-      }, 300); // 300ms debounce delay
-    };
-  })(),
-  manualSaveProject: async () => {
-    const state = get();
-    if (!state.projectId || !state.projectSlug) {
-      console.error("Cannot save: missing project ID or slug");
-      return false;
-    }
-
-    try {
-      const savedProject = saveProject({
-        id: state.projectId,
-        name: state.projectName,
-        slug: state.projectSlug,
-        data: {
-          elements: state.elements,
-          artboardDimensions: state.artboardDimensions,
-        },
-        createdAt: new Date().toISOString(),
-      });
-      return true;
-    } catch (error) {
-      console.error("Failed to manually save project:", error);
-      return false;
-    }
+  setArtboardDimensions: (dims) => {
+    set((state) => ({
+      artboardDimensions: dims,
+      // past: [...state.past, state.elements], // History added by dedicated actions
+      // future: [],
+    }));
+    // get().autoSaveProject(); // Commenting out direct call
   },
+
+  setArtboardAspectRatio: (ratio) => {
+    set({ artboardAspectRatio: ratio });
+    // get().autoSaveProject(); // Commenting out direct call
+  },
+
+  setProjectName: (name) => {
+    set({ projectName: name });
+    // This should likely call the updateProjectName from useProjectUpdate via a component
+    // get().autoSaveProject(); // Commenting out direct call
+  },
+
+  setProjectData: (projectId, projectName, projectData) => {
+    set({
+      projectId,
+      projectName,
+      elements: projectData.elements,
+      artboardDimensions: projectData.artboardDimensions,
+      past: [],
+      future: [],
+      isolatedGroupId: null,
+      isolationBreadcrumb: [],
+    });
+  },
+
   validateProjectState: () => {
     const state = get();
     const issues: string[] = [];
@@ -356,16 +316,13 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     if (!state.projectId) {
       issues.push("Missing project ID");
     }
-    if (!state.projectSlug) {
-      issues.push("Missing project slug");
-    }
     if (!state.projectName) {
       issues.push("Missing project name");
     }
 
     // Check if project exists in storage
-    if (state.projectSlug) {
-      const project = getProjectBySlug(state.projectSlug);
+    if (state.projectId) {
+      const project = getProjectByIdFromLocal(state.projectId);
       if (!project) {
         issues.push("Project not found in storage");
       }
@@ -378,82 +335,47 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   },
   reloadCurrentProject: () => {
     const state = get();
-    if (state.projectSlug) {
-      console.log(`Reloading current project: ${state.projectSlug}`);
-      return get().loadProjectBySlug(state.projectSlug);
+    if (state.projectId) {
+      console.log(`Reloading current project: ${state.projectId}`);
+      return get().loadProjectById(state.projectId);
     }
     console.warn("No current project to reload");
     return false;
   },
-  createNewProject: (name) => {
-    // For new projects, we want to start with empty canvas, not current elements
-    const emptyData = {
-      elements: [],
-      artboardDimensions: { width: 1024, height: 576 },
-    };
-    const project = createProject(name, emptyData);
-    set({
-      projectId: project.id,
-      projectSlug: project.slug,
-      projectName: project.name,
-      elements: project.data.elements,
-      artboardDimensions: project.data.artboardDimensions,
-      selectedElements: [],
-      past: [],
-      future: [],
-    });
-
-    // Ensure the project is saved immediately after creation
-    setTimeout(() => {
-      get().autoSaveProject();
-    }, 100);
-
-    return project;
+  loadProjectById: (id) => {
+    const project = getProjectByIdFromLocal(id);
+    if (project) {
+      get().setProjectData(project.id, project.name, project.data); // Use setProjectData to load
+      return true;
+    }
+    return false;
+  },
+  loadCloudProject: (project: Project) => {
+    get().setProjectData(project.id, project.name, project.data); // Use setProjectData to load
+    // Save a copy to local storage after loading from cloud
+    saveProjectToLocal(
+      {
+        id: project.id,
+        name: project.name,
+        data: project.data,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+      },
+      true
+    ); // Preserve the cloud timestamp
   },
   clearCurrentProject: () => {
     set({
-      projectId: null,
-      projectSlug: null,
-      projectName: "Untitled Project",
       elements: [],
-      artboardDimensions: { width: 1024, height: 576 },
       selectedElements: [],
+      projectName: "Untitled Project", // Reset to default name
+      projectId: null,
       past: [],
       future: [],
-    });
-  },
-  loadProjectBySlug: (slug) => {
-    // First try local storage
-    const localProject = getProjectBySlug(slug);
-    if (localProject) {
-      set({
-        projectId: localProject.id,
-        projectSlug: localProject.slug,
-        projectName: localProject.name,
-        elements: localProject.data.elements,
-        artboardDimensions: localProject.data.artboardDimensions,
-        selectedElements: [],
-        past: [],
-        future: [],
-      });
-      return true;
-    }
-
-    // If not found locally, we'll need to handle cloud projects differently
-    // This will be handled by the canvas page component
-    return false;
-  },
-  // Add new function to load cloud project
-  loadCloudProject: (project) => {
-    set({
-      projectId: project.id,
-      projectSlug: project.slug,
-      projectName: project.name,
-      elements: project.data.elements,
-      artboardDimensions: project.data.artboardDimensions,
-      selectedElements: [],
-      past: [],
-      future: [],
+      artboardDimensions: { width: 1024, height: 576 }, // Reset dimensions
+      artboardAspectRatio: 16 / 9, // Reset aspect ratio
+      isolatedGroupId: null,
+      isolationBreadcrumb: [],
     });
   },
   setPanSensitivity: (sensitivity) =>
@@ -543,7 +465,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     }));
 
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   addImageElement: (src, x, y) => {
     const { artboardDimensions, elements, getHistoryUpdate } = get();
@@ -687,7 +609,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     });
 
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   moveElementNoHistory: (id, dx, dy) =>
     set((state) => {
@@ -735,7 +657,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   moveSelectedElementsNoHistory: (dx, dy) =>
     set((state) => {
@@ -863,7 +785,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       }
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   resizeElementNoHistory: (id, width, height, preserveAspectRatio = false) =>
     set((state) => ({
@@ -1063,7 +985,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       ),
     }));
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   resetCanvas: () =>
     set(() => ({
@@ -1252,7 +1174,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   updateCornerRadiusNoHistory: (id, cornerRadius) =>
     set((state) => ({
@@ -1279,7 +1201,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   updateBorderWidth: (id, borderWidth) => {
     set((state) => {
@@ -1300,7 +1222,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   updateBorderColor: (id, borderColor) => {
     set((state) => {
@@ -1313,7 +1235,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   updateShadowBlur: (id, shadowBlur) =>
     set((state) => {
@@ -1361,15 +1283,46 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       if (elementToDelete.parentId) {
         updatedElements = updatedElements.map((el) => {
           if (el.id === elementToDelete.parentId && el.children) {
+            const newChildren = el.children.filter(
+              (childId) => !elementsToDelete.includes(childId)
+            );
             return {
               ...el,
-              children: el.children.filter(
-                (childId) => !elementsToDelete.includes(childId)
-              ),
+              children: newChildren,
             };
           }
           return el;
         });
+
+        // Check if parent group is now empty and delete it
+        const parentGroup = updatedElements.find(
+          (el) => el.id === elementToDelete.parentId
+        );
+        if (
+          parentGroup &&
+          parentGroup.type === "group" &&
+          parentGroup.children &&
+          parentGroup.children.length === 0
+        ) {
+          // Remove the empty parent group immediately instead of using setTimeout
+          updatedElements = updatedElements.filter(
+            (el) => el.id !== parentGroup.id
+          );
+
+          // Also remove from selected elements if it was selected
+          const newSelectedElements = state.selectedElements.filter(
+            (elId) => elId !== parentGroup.id
+          );
+
+          // Update the return object to include the new selectedElements
+          return {
+            ...getHistoryUpdate(),
+            elements: updatedElements,
+            selectedElements: newSelectedElements.filter(
+              (elId) => !elementsToDelete.includes(elId)
+            ),
+          };
+        }
       }
 
       return {
@@ -1381,7 +1334,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   updateName: (id, name) => {
     set((state) => {
@@ -1394,7 +1347,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   updateFontSize: (id, fontSize) => {
     set((state) => {
@@ -1409,7 +1362,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   updateFontWeight: (id, fontWeight) =>
     set((state) => {
@@ -1612,7 +1565,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   // File operations
   exportCanvas: (filename?: string) => {
@@ -1909,7 +1862,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     });
     // Auto-save immediately after change
-    get().autoSaveProject();
+    // get().autoSaveProject(); // Commenting out direct call
   },
   updateRotationNoHistory: (id, rotation) =>
     set((state) => ({
@@ -2136,11 +2089,22 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     }),
   // Isolation mode
-  enterIsolationMode: (groupId: string) => {
-    set({ isolatedGroupId: groupId });
+  enterIsolationMode: (groupId: string, elementToSelect?: string) => {
+    set((state) => ({
+      isolatedGroupId: groupId,
+      selectedElements: elementToSelect ? [elementToSelect] : [],
+      elements: state.elements.map((el) => ({
+        ...el,
+        selected: elementToSelect ? el.id === elementToSelect : false,
+      })),
+    }));
   },
   exitIsolationMode: () => {
-    set({ isolatedGroupId: null });
+    set((state) => ({
+      isolatedGroupId: null,
+      selectedElements: [],
+      elements: state.elements.map((el) => ({ ...el, selected: false })),
+    }));
   },
   isInIsolationMode: () => {
     const { isolatedGroupId } = get();
@@ -2150,41 +2114,12 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     const { elements } = get();
     return elements.filter((el) => el.parentId === get().isolatedGroupId);
   },
-  // Add function to update project name (cloud-aware)
-  updateProjectNameCloudAware: async (newName: string) => {
-    const state = get();
-    if (!state.projectId) {
-      return { success: false };
-    }
-
-    // Check if it's a cloud project (Convex IDs don't start with "project-")
-    const isCloud = !state.projectId.startsWith("project-");
-
-    if (isCloud) {
-      // For cloud projects, we need to use the mutation directly
-      // This will be handled by the ProjectHeader component using the useProjectUpdate hook
-      return { success: false };
-    } else {
-      // Use local storage
-      try {
-        const updatedProject = updateProjectName(state.projectId, newName);
-        if (updatedProject) {
-          set({
-            projectName: updatedProject.name,
-            projectSlug: updatedProject.slug,
-          });
-          return { success: true, updatedProject };
-        }
-        return { success: false };
-      } catch (error) {
-        console.error("Error updating local project name:", error);
-        return { success: false };
-      }
-    }
-  },
-  // Helper to determine if current project is cloud-based
   isCloudProject: () => {
     const state = get();
-    return state.projectId !== null && !state.projectId.startsWith("project-");
+    // Cloud projects will have IDs not starting with "project-ulid-"
+    // Local-only projects will have "project-ulid-" prefix
+    return (
+      state.projectId !== null && !state.projectId.startsWith("project-ulid-")
+    );
   },
 }));

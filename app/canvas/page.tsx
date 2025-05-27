@@ -2,17 +2,22 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
+// import { useCanvasStore } from "@/features/canvas/store/useCanvasStore"; // No longer needed for createNewProject
+import { useHybridProjects } from "@/features/projects/hooks/useHybridProjects"; // Import useHybridProjects
 
 export default function CanvasHome() {
-  const router = useRouter();
-  const { createNewProject } = useCanvasStore();
+  const router = useRouter(); // Keep router if handleCreateNew doesn't always redirect or if needed for fallback
+  const { handleCreateNew, isLoading: isLoadingProjects } = useHybridProjects(); // Get handleCreateNew and loading state
 
   useEffect(() => {
-    // Create a new project and redirect to its canvas
-    const project = createNewProject();
-    router.push(`/canvas/${project.slug}`);
-  }, [createNewProject, router]);
+    // If projects are still loading (which includes auth checks), don't try to create yet.
+    if (isLoadingProjects) {
+      return;
+    }
+    // handleCreateNew is async and will handle routing internally
+    handleCreateNew();
+    // The original router.push(`/canvas/${project.id}`); is now handled by handleCreateNew.
+  }, [handleCreateNew, isLoadingProjects, router]); // Add isLoadingProjects to dependencies
 
   return (
     <main className="flex items-center justify-center min-h-screen">
