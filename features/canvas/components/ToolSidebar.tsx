@@ -9,6 +9,9 @@ import {
   MoreHorizontal,
   Download,
   Group,
+  Keyboard,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,7 +26,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { downloadCanvasAsSVG } from "@/lib/figma-clipboard";
+import { toast } from "sonner";
+import { useTheme } from "next-themes";
+import KeyboardShortcuts from "./KeyboardShortcuts";
 
 interface ToolSidebarProps {
   selectedTool: ToolType;
@@ -38,31 +43,80 @@ export default function ToolSidebar({
   onToggleLayers,
   layersOpen,
 }: ToolSidebarProps) {
-  const { addElement, clearSelection, elements, projectName } =
-    useCanvasStore();
+  const {
+    elements,
+    selectedElements,
+    addElement,
+    projectName,
+    artboardDimensions,
+    clearSelection,
+  } = useCanvasStore();
+  const { theme, setTheme } = useTheme();
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const handleDownloadAsSVG = () => {
     try {
-      downloadCanvasAsSVG(elements, projectName || "canvas", {
-        includeBackground: true,
-        backgroundColor: "#ffffff",
-        padding: 20,
-        scale: 1,
-      });
+      // Get the artboard element
+      const artboard = document.querySelector('[data-artboard="true"]');
+      if (!artboard) {
+        toast.error("Artboard not found");
+        return;
+      }
+
+      // Create SVG content
+      const svgContent = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${
+          artboardDimensions.width
+        }" height="${artboardDimensions.height}" viewBox="0 0 ${
+        artboardDimensions.width
+      } ${artboardDimensions.height}">
+          ${elements
+            .map((element) => {
+              if (element.type === "rectangle") {
+                return `<rect x="${element.x}" y="${element.y}" width="${
+                  element.width
+                }" height="${element.height}" fill="${element.color}" rx="${
+                  element.cornerRadius || 0
+                }" />`;
+              } else if (element.type === "text") {
+                return `<text x="${element.x}" y="${
+                  element.y + (element.fontSize || 16)
+                }" font-size="${element.fontSize || 16}" fill="${
+                  element.color
+                }">${element.content || ""}</text>`;
+              }
+              return "";
+            })
+            .join("")}
+        </svg>
+      `;
+
+      // Create and download the file
+      const blob = new Blob([svgContent], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "canvas.svg";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("SVG downloaded successfully!");
     } catch (error) {
-      console.error("Failed to download SVG:", error);
-      alert("Failed to download SVG. Please try again.");
+      console.error("Error downloading SVG:", error);
+      toast.error("Failed to download SVG. Please try again.");
     }
   };
 
   return (
     <aside className="fixed top-1/2 -translate-y-1/2 left-4 grid gap-3 place-content-center z-50">
-      <section className="p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
-        <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
+      <section className="p-1 bg-sidebar/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
+        <div className="flex-1 bg-card/50 dark:bg-card/50 border rounded-xl flex flex-col p-4 w-16 items-center gap-2 shadow-sm">
           <Button
             variant="ghost"
             size="icon"
-            className="border border-white/30 hover:bg-transparent dark:hover:bg-transparent"
+            className="bg-background hover:bg-background"
           >
             <Image
               src="/favicon.ico"
@@ -72,12 +126,21 @@ export default function ToolSidebar({
               className="h-6 w-6"
             />
           </Button>
-          <ThemeToggle />
+
+          <div
+            aria-label="Toggle Theme"
+            className="relative flex flex-col items-center"
+          >
+            <ThemeToggle />
+            <span className="absolute -bottom-2.5 w-full text-[8px] text-gray-400 select-none pointer-events-none text-center">
+              ⌘ ⇧ L
+            </span>
+          </div>
         </div>
       </section>
 
-      <section className="p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
-        <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
+      <section className="p-1 bg-sidebar/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
+        <div className="flex-1 bg-card/50 dark:bg-card/50 border rounded-xl flex flex-col p-4 w-16 items-center gap-2 shadow-sm">
           <ToolButton
             onClick={() => addElement("text")}
             aria-label="Add text (Shortcut: 1)"
@@ -104,9 +167,6 @@ export default function ToolSidebar({
           >
             <ToolIcon icon={ImageIcon} />
           </ToolButton>
-          {/* <ToolButton onClick={() => addElement("group")}>
-            <ToolIcon icon={Group} />
-          </ToolButton> */}
 
           <Separator />
 
@@ -126,10 +186,7 @@ export default function ToolSidebar({
             />
           </ToolButton>
           <ToolButton
-            className={cn(
-              layersOpen &&
-                "bg-white/60 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/40"
-            )}
+            className={cn(layersOpen && "bg-accent")}
             onClick={() => {
               onToggleLayers();
               clearSelection();
@@ -143,15 +200,19 @@ export default function ToolSidebar({
         </div>
       </section>
 
-      <section className="p-1 bg-card/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
-        <div className="flex-1 bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl flex flex-col p-4 w-16 items-center gap-2">
+      <section className="p-1 bg-sidebar/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
+        <div className="flex-1 bg-card/50 dark:bg-card/50 border rounded-xl flex flex-col p-4 w-16 items-center gap-2 shadow-sm">
+          <ToolButton
+            onClick={() => setShowShortcuts(true)}
+            aria-label="Keyboard Shortcuts"
+            shortcut="?"
+          >
+            <ToolIcon icon={Keyboard} />
+          </ToolButton>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-md group bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20 dark:active:bg-white/30 active:bg-white/60"
-              >
+              <Button variant="ghost" size="icon">
                 <MoreHorizontal className="h-6 w-6 group-active:text-properties-gold dark:group-active:text-properties-gold group-active:scale-90 transition-all duration-200 text-properties-text dark:text-foreground" />
               </Button>
             </DropdownMenuTrigger>
@@ -168,6 +229,12 @@ export default function ToolSidebar({
           </DropdownMenu>
         </div>
       </section>
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcuts
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
+      />
     </aside>
   );
 }
@@ -193,10 +260,7 @@ const ToolButton = ({
     <Button
       variant="ghost"
       size="icon"
-      className={cn(
-        "relative rounded-md group bg-white/30 hover:bg-white/40 dark:bg-white/10 dark:hover:bg-white/20 dark:active:bg-white/30 active:bg-white/60",
-        className
-      )}
+      className={cn("relative group", className)}
       onClick={onClick}
       tabIndex={tabIndex}
       aria-label={ariaLabel}

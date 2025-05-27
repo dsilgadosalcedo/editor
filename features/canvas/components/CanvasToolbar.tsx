@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Separator } from "@/components/ui/separator";
+import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
 
 interface CanvasToolbarProps {
   zoom: number;
@@ -60,9 +62,9 @@ export default function CanvasToolbar({
     const title = prompt("Enter canvas title (optional):");
     const canvasId = await saveCanvas(title || undefined);
     if (canvasId) {
-      alert(`Canvas saved successfully! ID: ${canvasId}`);
+      toast.success(`Canvas saved successfully! ID: ${canvasId}`);
     } else {
-      alert("Failed to save canvas");
+      toast.error("Failed to save canvas");
     }
   };
 
@@ -71,9 +73,9 @@ export default function CanvasToolbar({
     if (canvasId) {
       const success = await loadCanvas(canvasId);
       if (success) {
-        alert("Canvas loaded successfully!");
+        toast.success("Canvas loaded successfully!");
       } else {
-        alert("Failed to load canvas");
+        toast.error("Failed to load canvas");
       }
     }
   };
@@ -91,7 +93,7 @@ export default function CanvasToolbar({
       if (file) {
         const success = await importCanvas(file);
         if (!success) {
-          alert(
+          toast.error(
             "Failed to import canvas. Please make sure it's a valid canvas file."
           );
         }
@@ -105,7 +107,7 @@ export default function CanvasToolbar({
       className="fixed bottom-1 left-1/2 -translate-x-1/2 z-50 grid place-items-center"
       style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}
     >
-      <div className="bg-card/60 flex items-center gap-2 backdrop-blur-lg p-2 rounded-xl shadow-lg border border-sky-harbor/80">
+      <Card className="flex flex-row items-center gap-2 backdrop-blur-sm p-2 bg-sidebar/70 border-card/80">
         {/* Export/Import Controls */}
         <Button
           variant="ghost"
@@ -218,32 +220,6 @@ export default function CanvasToolbar({
           <Home className="h-4 w-4" />
         </Button>
 
-        {/* Copy/Paste Controls */}
-        {/* <div className="h-6">
-          <Separator orientation="vertical" />
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={copySelection}
-          disabled={selectedElements.length === 0}
-          className="h-8 w-8"
-          aria-label="Copy (also copies to system clipboard for Figma)"
-          title="Copy selection - also copies to system clipboard for pasting into Figma"
-        >
-          <Copy className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={pasteClipboard}
-          disabled={!clipboard}
-          className="h-8 w-8"
-          aria-label="Paste"
-        >
-          <Clipboard className="h-4 w-4" />
-        </Button> */}
-
         {/* Undo/Redo Controls */}
         <div className="h-6">
           <Separator orientation="vertical" />
@@ -269,26 +245,7 @@ export default function CanvasToolbar({
         >
           <RotateCw className="h-4 w-4" />
         </Button>
-
-        {/* Reset Canvas */}
-        {/* <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            if (
-              window.confirm(
-                "Are you sure you want to reset the canvas? All changes will be lost."
-              )
-            ) {
-              resetCanvas();
-            }
-          }}
-          className="h-8 w-8 ml-2"
-          aria-label="Reset Canvas"
-        >
-          <Eraser className="h-4 w-4" />
-        </Button> */}
-      </div>
+      </Card>
     </div>
   );
 }

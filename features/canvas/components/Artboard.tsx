@@ -202,7 +202,7 @@ const Artboard: React.FC<ArtboardProps> = ({
     >
       <div
         ref={artboardRef}
-        className="bg-sky-harbor/50 relative mx-auto my-auto"
+        className="bg-card/50 relative mx-auto my-auto"
         style={{
           width: `${artboardDimensions.width}px`,
           height: `${artboardDimensions.height}px`,
@@ -255,7 +255,7 @@ const Artboard: React.FC<ArtboardProps> = ({
             className="absolute inset-0 pointer-events-none"
             style={{
               backgroundImage:
-                "linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px)",
+                "linear-gradient(to right, var(--background) 1px, transparent 1px), linear-gradient(to bottom,  var(--background) 1px, var(--sidebar) 1px)",
               backgroundSize: "20px 20px",
             }}
           />

@@ -174,8 +174,8 @@ const LayerItem: React.FC<LayerItemProps> = ({
           "flex items-center justify-between border rounded-md py-1 px-1.5 cursor-pointer transition-all duration-200 relative",
           "group",
           selectedElements.includes(element.id)
-            ? "border-storm-slate dark:border-sky-harbor/80 bg-sky-harbor/10"
-            : "border-transparent hover:border-sky-harbor/80 dark:hover:border-storm-slate hover:bg-sky-harbor/5",
+            ? "border"
+            : "border-transparent",
           isDragging && "invisible",
           isOver &&
             canDrop &&
@@ -193,9 +193,9 @@ const LayerItem: React.FC<LayerItemProps> = ({
           {isGroup && hasChildren && (
             <>
               {isGroupExpanded ? (
-                <ChevronDown className="h-3 w-3 text-coffee-bean dark:text-desert-sand" />
+                <ChevronDown className="h-3 w-3" />
               ) : (
-                <ChevronRight className="h-3 w-3 text-coffee-bean dark:text-desert-sand" />
+                <ChevronRight className="h-3 w-3" />
               )}
             </>
           )}
@@ -215,19 +215,19 @@ const LayerItem: React.FC<LayerItemProps> = ({
           {element.visible !== false ? (
             <Eye
               onClick={(e) => onToggleVisibility(e, element.id)}
-              className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
+              className="h-3 w-3 opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
               aria-label="Hide element"
             />
           ) : (
             <EyeOff
               onClick={(e) => onToggleVisibility(e, element.id)}
-              className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
+              className="h-3 w-3 opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
               aria-label="Show element"
             />
           )}
           <Trash2
             onClick={(e) => onDeleteElement(e, element.id)}
-            className="h-3 w-3 text-coffee-bean dark:text-desert-sand opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
+            className="h-3 w-3 opacity-30 group-hover:opacity-50 hover:opacity-100 transition-opacity duration-200"
           />
         </div>
       </li>
@@ -308,7 +308,7 @@ const LayersDragLayer: React.FC = () => {
         <div
           className={cn(
             "flex items-center justify-between border rounded-md py-1 px-1.5 bg-card cursor-grabbing",
-            "border-sky-harbor/80 dark:border-storm-slate bg-sky-harbor/20 dark:bg-sky-harbor/20"
+            "bg-card/20 dark:bg-card/20"
           )}
         >
           <span className="text-sm text-properties-text dark:text-foreground truncate">
@@ -365,7 +365,7 @@ const LayersPanel: React.FC = () => {
       <Collapsible
         open={open}
         onOpenChange={setOpen}
-        className="bg-card/60 z-50 space-y-1 fixed bottom-1 left-20 w-48 backdrop-blur-lg rounded-xl shadow-lg border border-sky-harbor/80 p-1 ml-6"
+        className="bg-sidebar/60 z-50 space-y-1 fixed bottom-1 left-20 w-48 backdrop-blur-sm rounded-xl shadow border border-card/80 p-1 ml-6"
         style={{ marginBottom: "max(20px, env(safe-area-inset-bottom))" }}
       >
         <CollapsibleTrigger

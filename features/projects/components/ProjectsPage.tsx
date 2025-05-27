@@ -15,6 +15,7 @@ import Image from "next/image";
 import { ThemeToggle } from "@/features/canvas/components/ThemeToggle";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import { Authenticated, Unauthenticated } from "convex/react";
+import { useGlobalKeyboardShortcuts } from "@/hooks/useGlobalKeyboardShortcuts";
 
 interface ProjectLimitBadgeProps {
   isLoading: boolean;
@@ -124,6 +125,9 @@ export default function ProjectsPage() {
     getDuplicateStats,
     getProjectLimitStats,
   } = projectsHook;
+
+  // Global keyboard shortcuts (including theme toggle)
+  useGlobalKeyboardShortcuts();
 
   // Ensure isLoading is always a boolean
   const isLoading = Boolean(hookIsLoading);

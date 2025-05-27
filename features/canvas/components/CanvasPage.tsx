@@ -17,6 +17,9 @@ import { useDragSelection } from "../hooks/useDragSelection";
 import { useCanvasStore } from "../store/useCanvasStore";
 import type { ToolType } from "../store/useCanvasStore";
 import { ColorPickerProvider } from "./ColorPicker";
+import { toast } from "sonner";
+import { useTheme } from "next-themes";
+import { useGlobalKeyboardShortcuts } from "@/hooks/useGlobalKeyboardShortcuts";
 
 export default function CanvasPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -50,6 +53,11 @@ export default function CanvasPage() {
     selectMultipleElements,
     addElement,
   } = useCanvasStore();
+
+  const { setTheme, theme } = useTheme();
+
+  // Global keyboard shortcuts (including theme toggle)
+  useGlobalKeyboardShortcuts();
 
   // Keyboard shortcuts: Full professional shortcuts support
   useEffect(() => {
@@ -423,7 +431,7 @@ export default function CanvasPage() {
         addImageElement(dataURL);
       } catch (error) {
         console.error("Error processing image file:", error);
-        alert("Failed to process image file.");
+        toast.error("Failed to process image file.");
       }
       return;
     }
@@ -432,13 +440,13 @@ export default function CanvasPage() {
     try {
       const result = await importCanvas(file);
       if (!result.success) {
-        alert(
+        toast.error(
           "Failed to import canvas. Please make sure it's a valid canvas file."
         );
       }
     } catch (error) {
       console.error("Error importing canvas:", error);
-      alert(
+      toast.error(
         "Failed to import canvas. Please make sure it's a valid canvas file."
       );
     }
@@ -447,14 +455,6 @@ export default function CanvasPage() {
   return (
     <ColorPickerProvider>
       <div className="bg-background flex h-dvh w-full overflow-hidden">
-        {/* Left Sidebar */}
-        <ToolSidebar
-          selectedTool={selectedTool}
-          onSelectTool={setSelectedTool}
-          onToggleLayers={() => setLayersOpen((prev) => !prev)}
-          layersOpen={layersOpen}
-        />
-
         {/* Main Canvas Area */}
         <CanvasViewport
           canvasRef={canvasRef}
@@ -489,6 +489,14 @@ export default function CanvasPage() {
         {/* Right Sidebar */}
         <PropertiesPanel />
       </div>
+
+      {/* Left Sidebar */}
+      <ToolSidebar
+        selectedTool={selectedTool}
+        onSelectTool={setSelectedTool}
+        onToggleLayers={() => setLayersOpen((prev) => !prev)}
+        layersOpen={layersOpen}
+      />
 
       {/* Project Header */}
       <ProjectHeader />

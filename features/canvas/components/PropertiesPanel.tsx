@@ -1,3 +1,4 @@
+import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ import {
   ImageProperties,
 } from "./properties";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function PropertiesPanel() {
   const {
@@ -70,15 +72,15 @@ export default function PropertiesPanel() {
 
   return (
     <div
-      className={`z-50 flex flex-col bg-card/95 shadow-xl backdrop-blur-md border border-white/20 transition-all duration-300 p-1 rounded-[1.25rem] ${
-        rightSidebarDocked
-          ? "m-4 bg-card/80 shadow backdrop-blur-sm"
-          : "p-1 rounded-r-none"
+      className={`z-50 transition-all duration-300 p-1 bg-sidebar/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm ${
+        rightSidebarDocked ? "m-4" : "rounded-r-none"
       }`}
     >
-      <aside className="flex-1 overflow-y-auto bg-white/15 dark:bg-white/10 border border-sky-harbor/80 rounded-xl w-64">
+      <Card
+        className={`flex-1 overflow-y-auto w-64 bg-card/50 dark:bg-card/50 border rounded-xl shadow-sm pt-0`}
+      >
         {/* Header with dock/undock button */}
-        <header className="flex items-center justify-between p-3">
+        <CardHeader className="flex flex-row items-center justify-between pt-2 [.border-b]:pb-2 border-b">
           <h3 className="text-sm font-medium text-properties-text dark:text-foreground">
             Properties
           </h3>
@@ -101,29 +103,13 @@ export default function PropertiesPanel() {
               )}
             </Button>
           </div>
-        </header>
-
-        <Separator />
+        </CardHeader>
 
         {/* Content */}
-        <div className="p-4">
+        <CardContent className="px-4">
           {selectedElements.length === 0 || hasMultipleSelection() ? (
             <ArtboardProperties />
-          ) : // ) : hasMultipleSelection() ? (
-          //   <div className="space-y-4">
-          //     <PropertySection>
-          //       <PropertyTitle>Multiple Selection</PropertyTitle>
-          //       <div className="text-sm text-muted-foreground">
-          //         {selectedElements.length} elements selected
-          //       </div>
-          //       <div className="text-xs text-muted-foreground mt-2">
-          //         Individual properties are not available when multiple elements
-          //         are selected. You can still move and delete the selected
-          //         elements.
-          //       </div>
-          //     </PropertySection>
-          //   </div>
-          selectedElementData ? (
+          ) : selectedElementData ? (
             <div className="space-y-6">
               {selectedElementData.type === "text" ? (
                 <>
@@ -519,8 +505,8 @@ export default function PropertiesPanel() {
               />
             </div>
           ) : null}
-        </div>
-      </aside>
+        </CardContent>
+      </Card>
     </div>
   );
 }

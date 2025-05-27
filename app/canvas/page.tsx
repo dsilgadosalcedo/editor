@@ -2,11 +2,15 @@
 
 import { useEffect, useRef } from "react";
 import { useHybridProjects } from "@/features/projects/hooks/useHybridProjects";
+import { useGlobalKeyboardShortcuts } from "@/hooks/useGlobalKeyboardShortcuts";
 
 export default function CanvasHome() {
   const { handleCreateNew, isLoading: isLoadingProjects } = useHybridProjects();
   const creationInProgress = useRef(false);
   const hasCreated = useRef(false);
+
+  // Global keyboard shortcuts (including theme toggle)
+  useGlobalKeyboardShortcuts();
 
   useEffect(() => {
     // Prevent multiple project creations

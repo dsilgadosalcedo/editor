@@ -16,29 +16,43 @@ const shortcuts = [
   { keys: ["Ctrl", "↑"], description: "Move element up one layer" },
   { keys: ["Ctrl", "↓"], description: "Move element down one layer" },
   { keys: ["↑", "↓", "←", "→"], description: "Move selected elements" },
+  { keys: ["Ctrl", "Shift", "L"], description: "Toggle theme" },
   { keys: ["?"], description: "Show keyboard shortcuts" },
 ];
 
-const KeyboardShortcuts: React.FC = () => {
-  const [isVisible, setIsVisible] = useState(false);
+interface KeyboardShortcutsProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
+  isOpen: externalIsOpen,
+  onClose: externalOnClose,
+}) => {
+  const [internalIsVisible, setInternalIsVisible] = useState(false);
+
+  // Use external state if provided, otherwise use internal state
+  const isVisible =
+    externalIsOpen !== undefined ? externalIsOpen : internalIsVisible;
+  const handleClose = externalOnClose || (() => setInternalIsVisible(false));
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Show shortcuts on ? or F1
-      if (e.key === "?" || e.key === "F1") {
+      // Show shortcuts on ? or F1 (only if not externally controlled)
+      if ((e.key === "?" || e.key === "F1") && externalIsOpen === undefined) {
         e.preventDefault();
-        setIsVisible(true);
+        setInternalIsVisible(true);
       }
       // Hide on Escape
       if (e.key === "Escape" && isVisible) {
         e.preventDefault();
-        setIsVisible(false);
+        handleClose();
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isVisible]);
+  }, [isVisible, handleClose, externalIsOpen]);
 
   if (!isVisible) return null;
 
@@ -55,7 +69,7 @@ const KeyboardShortcuts: React.FC = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsVisible(false)}
+            onClick={handleClose}
             className="h-8 w-8"
           >
             <X className="h-4 w-4" />

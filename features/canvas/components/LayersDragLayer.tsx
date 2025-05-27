@@ -56,7 +56,7 @@ export default function LayersDragLayer() {
         <div
           className={cn(
             "flex items-center justify-between border rounded-md py-1 px-1.5 bg-card cursor-grabbing",
-            "border-sky-harbor/80 dark:border-storm-slate bg-sky-harbor/20 dark:bg-sky-harbor/20"
+            "bg-card/20 dark:bg-card/20"
           )}
         >
           <span className="text-sm text-properties-text dark:text-foreground truncate">
