@@ -185,3 +185,53 @@ export const updateProjectName = (
 
   return updatedProject;
 };
+
+// Clean up duplicate "Untitled Project" entries, keeping only the most recent
+export const cleanupDuplicateProjects = (): {
+  cleaned: number;
+  remaining: number;
+} => {
+  const projects = getProjects();
+  const untitledProjects = projects.filter(
+    (p) =>
+      p.name === "Untitled Project" || p.name.match(/^Untitled Project \d+$/)
+  );
+
+  if (untitledProjects.length <= 1) {
+    return { cleaned: 0, remaining: untitledProjects.length };
+  }
+
+  // Sort by updatedAt (most recent first)
+  untitledProjects.sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+
+  // Keep the most recent one, delete the rest
+  const toDelete = untitledProjects.slice(1);
+
+  // Filter out the duplicates
+  const cleanedProjects = projects.filter(
+    (p) => !toDelete.some((duplicate) => duplicate.id === p.id)
+  );
+
+  saveProjects(cleanedProjects);
+
+  return { cleaned: toDelete.length, remaining: 1 };
+};
+
+// Get duplicate project stats without cleaning
+export const getDuplicateProjectStats = (): {
+  total: number;
+  untitled: number;
+} => {
+  const projects = getProjects();
+  const untitledProjects = projects.filter(
+    (p) =>
+      p.name === "Untitled Project" || p.name.match(/^Untitled Project \d+$/)
+  );
+
+  return {
+    total: projects.length,
+    untitled: untitledProjects.length,
+  };
+};

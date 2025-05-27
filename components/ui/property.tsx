@@ -61,10 +61,7 @@ function PropertyLabel({
 }) {
   return (
     <label
-      className={cn(
-        "text-xs text-foreground text-ellipsis overflow-hidden",
-        distribution === "column" && "w-20"
-      )}
+      className={cn("text-xs text-foreground text-ellipsis overflow-hidden")}
       {...props}
     />
   );

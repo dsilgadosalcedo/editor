@@ -1,28 +1,38 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-// import { useCanvasStore } from "@/features/canvas/store/useCanvasStore"; // No longer needed for createNewProject
-import { useHybridProjects } from "@/features/projects/hooks/useHybridProjects"; // Import useHybridProjects
+import { useEffect, useRef } from "react";
+import { useHybridProjects } from "@/features/projects/hooks/useHybridProjects";
 
 export default function CanvasHome() {
-  const router = useRouter(); // Keep router if handleCreateNew doesn't always redirect or if needed for fallback
-  const { handleCreateNew, isLoading: isLoadingProjects } = useHybridProjects(); // Get handleCreateNew and loading state
+  const { handleCreateNew, isLoading: isLoadingProjects } = useHybridProjects();
+  const creationInProgress = useRef(false);
+  const hasCreated = useRef(false);
 
   useEffect(() => {
+    // Prevent multiple project creations
+    if (hasCreated.current || creationInProgress.current) {
+      return;
+    }
+
     // If projects are still loading (which includes auth checks), don't try to create yet.
     if (isLoadingProjects) {
       return;
     }
+
+    // Mark creation as in progress to prevent duplicate calls
+    creationInProgress.current = true;
+    hasCreated.current = true;
+
     // handleCreateNew is async and will handle routing internally
-    handleCreateNew();
-    // The original router.push(`/canvas/${project.id}`); is now handled by handleCreateNew.
-  }, [handleCreateNew, isLoadingProjects, router]); // Add isLoadingProjects to dependencies
+    handleCreateNew().finally(() => {
+      creationInProgress.current = false;
+    });
+  }, [handleCreateNew, isLoadingProjects]);
 
   return (
     <main className="flex items-center justify-center min-h-screen">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-[0.5px] border-b-2 border-blue-600 mx-auto mb-4"></div>
         <p className="text-gray-600">Creating new project...</p>
       </div>
     </main>

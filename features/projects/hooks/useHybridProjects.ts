@@ -10,6 +10,8 @@ import {
   createProjectInLocal,
   saveProjectToLocal,
   getProjectByIdFromLocal,
+  cleanupDuplicateProjects,
+  getDuplicateProjectStats,
   type Project,
 } from "@/lib/project-storage";
 import { useProjectUpdate } from "@/hooks/useProjectUpdate";
@@ -376,6 +378,31 @@ export const useHybridProjects = () => {
     }
   };
 
+  const handleCleanupDuplicates = async () => {
+    try {
+      const stats = getDuplicateProjectStats();
+      if (stats.untitled <= 1) {
+        toast.info("No duplicate projects found to clean up.");
+        return;
+      }
+
+      const result = cleanupDuplicateProjects();
+      toast.success(
+        `Cleaned up ${result.cleaned} duplicate projects. ${result.remaining} project remaining.`
+      );
+
+      // Refresh the projects list
+      refreshProjects();
+    } catch (error) {
+      console.error("Error cleaning up duplicates:", error);
+      toast.error("Failed to clean up duplicate projects.");
+    }
+  };
+
+  const getDuplicateStats = () => {
+    return getDuplicateProjectStats();
+  };
+
   return {
     projects,
     isLoading:
@@ -391,5 +418,7 @@ export const useHybridProjects = () => {
     handleDeleteProject,
     handleUpdateProjectName,
     refreshProjects,
+    handleCleanupDuplicates,
+    getDuplicateStats,
   };
 };

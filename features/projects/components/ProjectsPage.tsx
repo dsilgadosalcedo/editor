@@ -2,7 +2,7 @@
 
 import { useHybridProjects } from "../hooks/useHybridProjects";
 import { Button } from "@/components/ui/button";
-import { Cloud, Plus } from "lucide-react";
+import { Cloud, Plus, Trash2 } from "lucide-react";
 import { ProjectCard, ProjectCardSkeleton, EmptyState } from ".";
 import { CloudStorageWarning } from "./CloudStorageWarning";
 import Image from "next/image";
@@ -19,6 +19,8 @@ function AuthenticatedContent() {
     handleDeleteProject,
     handleUpdateProjectName,
     refreshProjects,
+    handleCleanupDuplicates,
+    getDuplicateStats,
   } = useHybridProjects();
 
   if (isLoading) {
@@ -59,6 +61,16 @@ function AuthenticatedContent() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            {!isLoading && getDuplicateStats().untitled > 1 && (
+              <Button
+                onClick={handleCleanupDuplicates}
+                variant="outline"
+                className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-950"
+              >
+                <Trash2 />
+                Clean Duplicates ({getDuplicateStats().untitled})
+              </Button>
+            )}
             <Button
               onClick={handleCreateNew}
               className="flex items-center gap-2"
@@ -100,6 +112,8 @@ function UnauthenticatedContent() {
     handleDeleteProject,
     handleUpdateProjectName,
     refreshProjects,
+    handleCleanupDuplicates,
+    getDuplicateStats,
   } = useHybridProjects();
 
   return (
@@ -117,6 +131,16 @@ function UnauthenticatedContent() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            {!isLoading && getDuplicateStats().untitled > 1 && (
+              <Button
+                onClick={handleCleanupDuplicates}
+                variant="outline"
+                className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-950"
+              >
+                <Trash2 />
+                Clean Duplicates ({getDuplicateStats().untitled})
+              </Button>
+            )}
             <Button onClick={handleCreateNew}>
               <Plus />
               New Project
