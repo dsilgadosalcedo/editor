@@ -1,8 +1,6 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PropertyInput } from "../PropertyInput";
-import { ColorPicker } from "../ColorPicker";
 import {
   PropertySection,
   PropertyStack,
@@ -22,12 +20,9 @@ import {
   Expand,
   ArrowRightLeft,
   ArrowUpDown,
-  Type,
-  Bold,
   ArrowLeftRight,
-  Space,
-  AlignVerticalSpaceAround,
 } from "lucide-react";
+import { TextContentSection, TextStyleSection } from "./text";
 
 interface TextPropertiesProps {
   id: string;
@@ -86,74 +81,30 @@ export function TextProperties({
 }: TextPropertiesProps) {
   return (
     <>
-      <PropertySection>
-        <PropertyTitle>Name</PropertyTitle>
-        <PropertyField>
-          <Input
-            value={name || ""}
-            onChange={(e) => onNameChange(e.target.value)}
-            placeholder="Text"
-            className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
-            aria-label="Element name"
-          />
-        </PropertyField>
-      </PropertySection>
+      {/* Content Section */}
+      <TextContentSection
+        name={name}
+        content={content}
+        onNameChange={onNameChange}
+        onContentChange={onContentChange}
+      />
 
-      <PropertySection>
-        <PropertyTitle>Content</PropertyTitle>
-        <PropertyField>
-          <Input
-            value={content || ""}
-            onChange={(e) => onContentChange(e.target.value)}
-          />
-        </PropertyField>
-      </PropertySection>
+      {/* Style Section */}
+      <TextStyleSection
+        color={color}
+        fontSize={fontSize}
+        fontWeight={fontWeight}
+        letterSpacing={letterSpacing}
+        lineHeight={lineHeight}
+        layerName={name || "Text"}
+        onColorChange={onColorChange}
+        onFontSizeChange={onFontSizeChange}
+        onFontWeightChange={onFontWeightChange}
+        onLetterSpacingChange={onLetterSpacingChange}
+        onLineHeightChange={onLineHeightChange}
+      />
 
-      <PropertySection>
-        <PropertyTitle>Appearance</PropertyTitle>
-        <PropertyField>
-          <PropertyLabel>Color</PropertyLabel>
-          <ColorPicker
-            value={color}
-            onChange={(newColor) => onColorChange(newColor)}
-            aria-label="Text color"
-            layerName={name || "Text"}
-            propertyName="Text Color"
-          />
-        </PropertyField>
-      </PropertySection>
-
-      <PropertySection>
-        <PropertyTitle>Font</PropertyTitle>
-        <PropertyStack distribution="column">
-          <PropertyField>
-            <PropertyLabel>Size</PropertyLabel>
-            <PropertyInput
-              value={fontSize || 16}
-              min={1}
-              onChange={onFontSizeChange}
-              onInstantChange={onFontSizeChange}
-              icon={<Type className="h-3 w-3" />}
-              aria-label="Font size"
-            />
-          </PropertyField>
-
-          <PropertyField>
-            <PropertyLabel>Weight</PropertyLabel>
-            <PropertyInput
-              value={fontWeight || 400}
-              min={100}
-              max={900}
-              step={100}
-              onChange={onFontWeightChange}
-              onInstantChange={onFontWeightChange}
-              icon={<Bold className="h-3 w-3" />}
-              aria-label="Font weight"
-            />
-          </PropertyField>
-        </PropertyStack>
-      </PropertySection>
-
+      {/* Dimensions Section */}
       <PropertySection>
         <PropertyTitle>Dimensions</PropertyTitle>
         <PropertyStack distribution="column">
@@ -202,133 +153,112 @@ export function TextProperties({
         </PropertyStack>
       </PropertySection>
 
-      <PropertySection>
-        <PropertyTitle>Letter Spacing</PropertyTitle>
-        <PropertyField>
-          <PropertyInput
-            value={letterSpacing || 0}
-            onChange={onLetterSpacingChange}
-            onInstantChange={onLetterSpacingChange}
-            icon={<Space className="h-3 w-3" />}
-            aria-label="Letter spacing"
-          />
-        </PropertyField>
-      </PropertySection>
-
-      <PropertySection>
-        <PropertyTitle>Line Height</PropertyTitle>
-        <PropertyField>
-          <PropertyInput
-            value={lineHeight || 20}
-            min={1}
-            onChange={onLineHeightChange}
-            onInstantChange={onLineHeightChange}
-            icon={<AlignVerticalSpaceAround className="h-3 w-3" />}
-            aria-label="Line height"
-          />
-        </PropertyField>
-      </PropertySection>
-
-      <PropertySection>
-        <PropertyTitle>Alignment</PropertyTitle>
-        <PropertyStack distribution="column">
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onHorizontalAlignChange("left")}
-              className="h-8 w-8 text-properties-text dark:text-foreground"
-              aria-label="Align left"
-            >
-              <AlignStartVertical className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onHorizontalAlignChange("center")}
-              className="h-8 w-8 text-properties-text dark:text-foreground"
-              aria-label="Align center"
-            >
-              <AlignHorizontalJustifyCenter className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onHorizontalAlignChange("right")}
-              className="h-8 w-8 text-properties-text dark:text-foreground"
-              aria-label="Align right"
-            >
-              <AlignEndVertical className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onVerticalAlignChange("top")}
-              className="h-8 w-8 text-properties-text dark:text-foreground"
-              aria-label="Align top"
-            >
-              <AlignStartHorizontal className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onVerticalAlignChange("middle")}
-              className="h-8 w-8 text-properties-text dark:text-foreground"
-              aria-label="Align middle"
-            >
-              <AlignVerticalJustifyCenter className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onVerticalAlignChange("bottom")}
-              className="h-8 w-8 text-properties-text dark:text-foreground"
-              aria-label="Align bottom"
-            >
-              <AlignEndHorizontal className="h-4 w-4" />
-            </Button>
-          </div>
-        </PropertyStack>
-      </PropertySection>
-
+      {/* Text Resizing Section */}
       <PropertySection>
         <PropertyTitle>Text Resizing</PropertyTitle>
-        <PropertyField>
-          <div className="flex gap-1 w-full">
+        <PropertyStack distribution="column">
+          <div className="grid grid-cols-3 gap-1">
             <Button
               variant={textResizing === "auto-width" ? "default" : "outline"}
               size="sm"
               onClick={() => onTextResizingChange("auto-width")}
-              className="flex-1 gap-1"
-              title="Auto width - width adapts to text content"
+              className="text-xs p-1"
             >
-              <ArrowRightLeft className="h-3 w-3" />
-              Auto W
+              <ArrowRightLeft className="h-3 w-3 mr-1" />
+              Auto Width
             </Button>
             <Button
               variant={textResizing === "auto-height" ? "default" : "outline"}
               size="sm"
               onClick={() => onTextResizingChange("auto-height")}
-              className="flex-1 gap-1"
-              title="Auto height - text wraps to fit width"
+              className="text-xs p-1"
             >
-              <ArrowUpDown className="h-3 w-3" />
-              Auto H
+              <ArrowUpDown className="h-3 w-3 mr-1" />
+              Auto Height
             </Button>
             <Button
               variant={textResizing === "fixed" ? "default" : "outline"}
               size="sm"
               onClick={() => onTextResizingChange("fixed")}
-              className="flex-1 gap-1"
-              title="Fixed size - fixed width and height"
+              className="text-xs p-1"
             >
-              <Expand className="h-3 w-3" />
+              <Expand className="h-3 w-3 mr-1" />
               Fixed
             </Button>
           </div>
-        </PropertyField>
+        </PropertyStack>
+      </PropertySection>
+
+      {/* Alignment Section */}
+      <PropertySection>
+        <PropertyTitle>Alignment</PropertyTitle>
+        <PropertyStack distribution="column">
+          <PropertyField>
+            <PropertyLabel>Horizontal</PropertyLabel>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onHorizontalAlignChange("left")}
+                className="p-1 h-8 w-8"
+                aria-label="Align left"
+              >
+                <AlignStartHorizontal className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onHorizontalAlignChange("center")}
+                className="p-1 h-8 w-8"
+                aria-label="Align center"
+              >
+                <AlignHorizontalJustifyCenter className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onHorizontalAlignChange("right")}
+                className="p-1 h-8 w-8"
+                aria-label="Align right"
+              >
+                <AlignEndHorizontal className="h-3 w-3" />
+              </Button>
+            </div>
+          </PropertyField>
+
+          <PropertyField>
+            <PropertyLabel>Vertical</PropertyLabel>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onVerticalAlignChange("top")}
+                className="p-1 h-8 w-8"
+                aria-label="Align top"
+              >
+                <AlignStartVertical className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onVerticalAlignChange("middle")}
+                className="p-1 h-8 w-8"
+                aria-label="Align middle"
+              >
+                <AlignVerticalJustifyCenter className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onVerticalAlignChange("bottom")}
+                className="p-1 h-8 w-8"
+                aria-label="Align bottom"
+              >
+                <AlignEndVertical className="h-3 w-3" />
+              </Button>
+            </div>
+          </PropertyField>
+        </PropertyStack>
       </PropertySection>
     </>
   );

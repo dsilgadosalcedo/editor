@@ -1,39 +1,15 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  PanelLeftOpen,
-  PanelRightOpen,
-  Link,
-  Unlink,
-  ArrowLeftRight,
-  ArrowUpDown,
-  Square,
-  Zap,
-  Scan,
-} from "lucide-react";
-import { PropertyInput } from "./PropertyInput";
-import { ColorPicker } from "./ColorPicker";
 import { useCanvasStore } from "../store/useCanvasStore";
-import {
-  PropertySection,
-  PropertyStack,
-  PropertyTitle,
-  PropertyField,
-  PropertyLabel,
-} from "@/components/ui/property";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   ArtboardProperties,
   PositionProperties,
-  TextProperties,
-  ImageProperties,
+  PropertiesPanelHeader,
+  ElementPropertiesRenderer,
 } from "./properties";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function PropertiesPanel() {
   const {
-    elements,
     selectedElements,
     getSelectedElementData,
     hasMultipleSelection,
@@ -79,31 +55,11 @@ export default function PropertiesPanel() {
       <Card
         className={`flex-1 overflow-y-auto w-64 bg-card/50 dark:bg-card/50 border rounded-xl shadow-sm pt-0`}
       >
-        {/* Header with dock/undock button */}
-        <CardHeader className="flex flex-row items-center justify-between pt-2 [.border-b]:pb-2 border-b">
-          <h3 className="text-sm font-medium text-properties-text dark:text-foreground">
-            Properties
-          </h3>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleRightSidebarDock}
-              onMouseDown={(e) => e.stopPropagation()}
-              className="hover:bg-transparent transition-all duration-200 hover:scale-110 active:scale-95"
-              aria-label={
-                rightSidebarDocked ? "Undock sidebar" : "Dock sidebar"
-              }
-              title={rightSidebarDocked ? "Undock sidebar" : "Dock sidebar"}
-            >
-              {rightSidebarDocked ? (
-                <PanelLeftOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
-              ) : (
-                <PanelRightOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
-              )}
-            </Button>
-          </div>
-        </CardHeader>
+        {/* Header */}
+        <PropertiesPanelHeader
+          rightSidebarDocked={rightSidebarDocked}
+          onToggleDock={toggleRightSidebarDock}
+        />
 
         {/* Content */}
         <CardContent className="px-4">
@@ -111,370 +67,69 @@ export default function PropertiesPanel() {
             <ArtboardProperties />
           ) : selectedElementData ? (
             <div className="space-y-6">
-              {selectedElementData.type === "text" ? (
-                <>
-                  <TextProperties
-                    id={selectedElementData.id}
-                    name={selectedElementData.name || ""}
-                    content={selectedElementData.content || ""}
-                    color={selectedElementData.color}
-                    fontSize={selectedElementData.fontSize || 16}
-                    fontWeight={selectedElementData.fontWeight || 400}
-                    width={selectedElementData.width}
-                    height={selectedElementData.height}
-                    letterSpacing={selectedElementData.letterSpacing || 0}
-                    lineHeight={selectedElementData.lineHeight || 20}
-                    lockAspectRatio={
-                      selectedElementData.lockAspectRatio || false
-                    }
-                    textResizing={
-                      selectedElementData.textResizing || "auto-width"
-                    }
-                    onNameChange={(name) =>
-                      updateName(selectedElementData.id, name)
-                    }
-                    onContentChange={(content) =>
-                      updateTextContent(selectedElementData.id, content)
-                    }
-                    onColorChange={(color) =>
-                      updateFillColor(selectedElementData.id, color)
-                    }
-                    onFontSizeChange={(size) =>
-                      updateFontSize(selectedElementData.id, size)
-                    }
-                    onFontWeightChange={(weight) =>
-                      updateFontWeight(selectedElementData.id, weight)
-                    }
-                    onDimensionsChange={(width, height) =>
-                      resizeElement(
-                        selectedElementData.id,
-                        width,
-                        height,
-                        false
-                      )
-                    }
-                    onLetterSpacingChange={(spacing) =>
-                      updateLetterSpacing(selectedElementData.id, spacing)
-                    }
-                    onLineHeightChange={(height) =>
-                      updateLineHeight(selectedElementData.id, height)
-                    }
-                    onHorizontalAlignChange={(align) =>
-                      updateHorizontalAlign(selectedElementData.id, align)
-                    }
-                    onVerticalAlignChange={(align) =>
-                      updateVerticalAlign(selectedElementData.id, align)
-                    }
-                    onToggleAspectRatioLock={() =>
-                      toggleAspectRatioLock(selectedElementData.id)
-                    }
-                    onTextResizingChange={(resizing) =>
-                      updateTextResizing(selectedElementData.id, resizing)
-                    }
-                  />
-                </>
-              ) : selectedElementData.type === "image" ? (
-                <>
-                  <ImageProperties
-                    id={selectedElementData.id}
-                    name={selectedElementData.name || ""}
-                    src={selectedElementData.src || ""}
-                    width={selectedElementData.width}
-                    height={selectedElementData.height}
-                    cornerRadius={selectedElementData.cornerRadius || 0}
-                    borderWidth={selectedElementData.borderWidth || 0}
-                    borderColor={selectedElementData.borderColor || "#000000"}
-                    shadowBlur={selectedElementData.shadowBlur || 0}
-                    shadowColor={selectedElementData.shadowColor || "#000000"}
-                    lockAspectRatio={
-                      selectedElementData.lockAspectRatio || false
-                    }
-                    onNameChange={(name) =>
-                      updateName(selectedElementData.id, name)
-                    }
-                    onSrcChange={(src) =>
-                      updateImageSrc(selectedElementData.id, src)
-                    }
-                    onDimensionsChange={(width, height) =>
-                      resizeElement(
-                        selectedElementData.id,
-                        width,
-                        height,
-                        false
-                      )
-                    }
-                    onCornerRadiusChange={(radius) =>
-                      updateCornerRadius(selectedElementData.id, radius)
-                    }
-                    onCornerRadiusInstantChange={(radius) =>
-                      updateCornerRadiusNoHistory(
-                        selectedElementData.id,
-                        radius
-                      )
-                    }
-                    onBorderWidthChange={(width) =>
-                      updateBorderWidth(selectedElementData.id, width)
-                    }
-                    onBorderColorChange={(color) =>
-                      updateBorderColor(selectedElementData.id, color)
-                    }
-                    onShadowBlurChange={(blur) =>
-                      updateShadowBlur(selectedElementData.id, blur)
-                    }
-                    onShadowColorChange={(color) =>
-                      updateShadowColor(selectedElementData.id, color)
-                    }
-                    onToggleAspectRatioLock={() =>
-                      toggleAspectRatioLock(selectedElementData.id)
-                    }
-                  />
-                </>
-              ) : (
-                <>
-                  <PropertySection>
-                    <PropertyTitle>Name</PropertyTitle>
-                    <PropertyField>
-                      <Input
-                        value={selectedElementData.name || ""}
-                        onChange={(e) =>
-                          updateName(selectedElementData.id, e.target.value)
-                        }
-                        placeholder={
-                          selectedElementData.type.charAt(0).toUpperCase() +
-                          selectedElementData.type.slice(1)
-                        }
-                        className="h-8 w-full bg-white/20 border-white/60 text-properties-text dark:text-foreground"
-                        aria-label="Element name"
-                      />
-                    </PropertyField>
-                  </PropertySection>
+              {/* Element-specific properties */}
+              <ElementPropertiesRenderer
+                element={selectedElementData}
+                onNameChange={(name) =>
+                  updateName(selectedElementData.id, name)
+                }
+                onContentChange={(content) =>
+                  updateTextContent(selectedElementData.id, content)
+                }
+                onColorChange={(color) =>
+                  updateFillColor(selectedElementData.id, color)
+                }
+                onFontSizeChange={(size) =>
+                  updateFontSize(selectedElementData.id, size)
+                }
+                onFontWeightChange={(weight) =>
+                  updateFontWeight(selectedElementData.id, weight)
+                }
+                onDimensionsChange={(width, height) =>
+                  resizeElement(selectedElementData.id, width, height, false)
+                }
+                onLetterSpacingChange={(spacing) =>
+                  updateLetterSpacing(selectedElementData.id, spacing)
+                }
+                onLineHeightChange={(height) =>
+                  updateLineHeight(selectedElementData.id, height)
+                }
+                onHorizontalAlignChange={(align) =>
+                  updateHorizontalAlign(selectedElementData.id, align)
+                }
+                onVerticalAlignChange={(align) =>
+                  updateVerticalAlign(selectedElementData.id, align)
+                }
+                onToggleAspectRatioLock={() =>
+                  toggleAspectRatioLock(selectedElementData.id)
+                }
+                onTextResizingChange={(resizing) =>
+                  updateTextResizing(selectedElementData.id, resizing)
+                }
+                onSrcChange={(src) =>
+                  updateImageSrc(selectedElementData.id, src)
+                }
+                onCornerRadiusChange={(radius) =>
+                  updateCornerRadius(selectedElementData.id, radius)
+                }
+                onCornerRadiusInstantChange={(radius) =>
+                  updateCornerRadiusNoHistory(selectedElementData.id, radius)
+                }
+                onBorderWidthChange={(width) =>
+                  updateBorderWidth(selectedElementData.id, width)
+                }
+                onBorderColorChange={(color) =>
+                  updateBorderColor(selectedElementData.id, color)
+                }
+                onShadowBlurChange={(blur) =>
+                  updateShadowBlur(selectedElementData.id, blur)
+                }
+                onShadowColorChange={(color) =>
+                  updateShadowColor(selectedElementData.id, color)
+                }
+              />
 
-                  <PropertySection>
-                    <PropertyTitle>Dimensions</PropertyTitle>
-                    <PropertyStack distribution="column">
-                      <PropertyField>
-                        <PropertyLabel>Width</PropertyLabel>
-                        <div className="flex items-center max-w-37 gap-1">
-                          <PropertyInput
-                            value={selectedElementData.width}
-                            onChange={(val) =>
-                              resizeElement(
-                                selectedElementData.id,
-                                val,
-                                selectedElementData.height,
-                                false
-                              )
-                            }
-                            onInstantChange={(val) =>
-                              resizeElement(
-                                selectedElementData.id,
-                                val,
-                                selectedElementData.height,
-                                false
-                              )
-                            }
-                            icon={<ArrowLeftRight className="h-3 w-3" />}
-                            aria-label="Rectangle width"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              toggleAspectRatioLock(selectedElementData.id)
-                            }
-                            title={
-                              selectedElementData.lockAspectRatio
-                                ? "Unlock aspect ratio"
-                                : "Lock aspect ratio"
-                            }
-                            aria-label={
-                              selectedElementData.lockAspectRatio
-                                ? "Unlock aspect ratio"
-                                : "Lock aspect ratio"
-                            }
-                          >
-                            {selectedElementData.lockAspectRatio ? (
-                              <Link className="h-3 w-3" />
-                            ) : (
-                              <Unlink className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </PropertyField>
-                      <PropertyField>
-                        <PropertyLabel>Height</PropertyLabel>
-                        <PropertyInput
-                          value={selectedElementData.height}
-                          onChange={(val) =>
-                            resizeElement(
-                              selectedElementData.id,
-                              selectedElementData.width,
-                              val,
-                              false
-                            )
-                          }
-                          onInstantChange={(val) =>
-                            resizeElement(
-                              selectedElementData.id,
-                              selectedElementData.width,
-                              val,
-                              false
-                            )
-                          }
-                          icon={<ArrowUpDown className="h-3 w-3" />}
-                          aria-label="Rectangle height"
-                        />
-                      </PropertyField>
-                    </PropertyStack>
-                  </PropertySection>
-
-                  <PropertySection>
-                    <PropertyTitle>Appearance</PropertyTitle>
-                    <PropertyStack>
-                      <PropertyField>
-                        <PropertyLabel>Background</PropertyLabel>
-                        <ColorPicker
-                          value={selectedElementData.color}
-                          onChange={(color) =>
-                            updateFillColor(selectedElementData.id, color)
-                          }
-                          aria-label="Background color"
-                          layerName={
-                            selectedElementData.name ||
-                            selectedElementData.type.charAt(0).toUpperCase() +
-                              selectedElementData.type.slice(1)
-                          }
-                          propertyName="Background"
-                        />
-                      </PropertyField>
-                      <PropertyField>
-                        <PropertyLabel>Radius</PropertyLabel>
-                        <PropertyInput
-                          value={selectedElementData.cornerRadius || 0}
-                          min={0}
-                          max={Math.floor(
-                            Math.min(
-                              selectedElementData.width,
-                              selectedElementData.height
-                            ) / 2
-                          )}
-                          onChange={(val) =>
-                            updateCornerRadius(
-                              selectedElementData.id,
-                              Math.max(
-                                0,
-                                Math.min(
-                                  val,
-                                  Math.floor(
-                                    Math.min(
-                                      selectedElementData.width,
-                                      selectedElementData.height
-                                    ) / 2
-                                  )
-                                )
-                              )
-                            )
-                          }
-                          onInstantChange={(val) =>
-                            updateCornerRadiusNoHistory(
-                              selectedElementData.id,
-                              Math.max(
-                                0,
-                                Math.min(
-                                  val,
-                                  Math.floor(
-                                    Math.min(
-                                      selectedElementData.width,
-                                      selectedElementData.height
-                                    ) / 2
-                                  )
-                                )
-                              )
-                            )
-                          }
-                          icon={<Scan className="h-3 w-3" />}
-                          aria-label="Corner radius"
-                        />
-                      </PropertyField>
-                    </PropertyStack>
-                  </PropertySection>
-
-                  <PropertySection>
-                    <PropertyTitle>Border</PropertyTitle>
-                    <PropertyStack distribution="column">
-                      <PropertyField>
-                        <PropertyLabel>Width</PropertyLabel>
-                        <PropertyInput
-                          value={selectedElementData.borderWidth || 0}
-                          min={0}
-                          onChange={(val) =>
-                            updateBorderWidth(selectedElementData.id, val)
-                          }
-                          onInstantChange={(val) =>
-                            updateBorderWidth(selectedElementData.id, val)
-                          }
-                          icon={<Square className="h-3 w-3" />}
-                          aria-label="Border width"
-                        />
-                      </PropertyField>
-                      <PropertyField>
-                        <PropertyLabel>Color</PropertyLabel>
-                        <ColorPicker
-                          value={selectedElementData.borderColor || "#000000"}
-                          onChange={(color) =>
-                            updateBorderColor(selectedElementData.id, color)
-                          }
-                          aria-label="Border color"
-                          layerName={
-                            selectedElementData.name ||
-                            selectedElementData.type.charAt(0).toUpperCase() +
-                              selectedElementData.type.slice(1)
-                          }
-                          propertyName="Border"
-                        />
-                      </PropertyField>
-                    </PropertyStack>
-                  </PropertySection>
-
-                  <PropertySection>
-                    <PropertyTitle>Shadow</PropertyTitle>
-                    <PropertyStack distribution="column">
-                      <PropertyField>
-                        <PropertyLabel>Blur</PropertyLabel>
-                        <PropertyInput
-                          value={selectedElementData.shadowBlur || 0}
-                          min={0}
-                          onChange={(val) =>
-                            updateShadowBlur(selectedElementData.id, val)
-                          }
-                          onInstantChange={(val) =>
-                            updateShadowBlur(selectedElementData.id, val)
-                          }
-                          icon={<Zap className="h-3 w-3" />}
-                          aria-label="Shadow blur"
-                        />
-                      </PropertyField>
-                      <PropertyField>
-                        <PropertyLabel>Color</PropertyLabel>
-                        <ColorPicker
-                          value={selectedElementData.shadowColor || "#000000"}
-                          onChange={(color) =>
-                            updateShadowColor(selectedElementData.id, color)
-                          }
-                          aria-label="Shadow color"
-                          layerName={
-                            selectedElementData.name ||
-                            selectedElementData.type.charAt(0).toUpperCase() +
-                              selectedElementData.type.slice(1)
-                          }
-                          propertyName="Shadow"
-                        />
-                      </PropertyField>
-                    </PropertyStack>
-                  </PropertySection>
-                </>
-              )}
-
+              {/* Position properties (common for all elements) */}
               <PositionProperties
                 x={selectedElementData.x}
                 y={selectedElementData.y}
