@@ -1,6 +1,6 @@
 import { api } from "@/convex/_generated/api";
 import { ConvexReactClient } from "convex/react";
-import { CanvasElementData } from "@/features/canvas/store/useCanvasStore";
+import { CanvasElementData } from "@/features/canvas/types";
 import { Id } from "@/convex/_generated/dataModel";
 
 export interface CloudProject {

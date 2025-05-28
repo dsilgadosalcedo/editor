@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { CanvasElementData } from "@/features/canvas/store/useCanvasStore";
+import { CanvasElementData } from "@/features/canvas/types";
 import {
   copyToFigmaClipboard,
   isClipboardSupported,

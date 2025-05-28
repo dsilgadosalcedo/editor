@@ -1,6 +1,18 @@
 import React from "react";
 import { useDragLayer } from "react-dnd";
-import { LAYER_ITEM_TYPE, DragItem } from "./types";
+import { cn } from "@/lib/utils";
+import { useCanvasStore } from "../../store/useCanvasStore";
+import { LAYER_ITEM_TYPE } from "./types";
+
+const layerStyles: React.CSSProperties = {
+  position: "fixed",
+  pointerEvents: "none",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  zIndex: 1000,
+};
 
 function getItemStyles(currentOffset: { x: number; y: number } | null) {
   if (!currentOffset) {
@@ -14,30 +26,44 @@ function getItemStyles(currentOffset: { x: number; y: number } | null) {
   return {
     transform,
     WebkitTransform: transform,
+    opacity: 0.8,
   };
 }
 
-export const LayersDragLayer: React.FC = () => {
-  const { itemType, isDragging, item, currentOffset } = useDragLayer(
-    (monitor) => ({
-      item: monitor.getItem() as DragItem,
-      itemType: monitor.getItemType(),
-      currentOffset: monitor.getSourceClientOffset(),
-      isDragging: monitor.isDragging(),
-    })
-  );
+export default function LayersDragLayer() {
+  const { item, isDragging, currentOffset } = useDragLayer((monitor) => ({
+    item: monitor.getItem(),
+    isDragging:
+      monitor.isDragging() && monitor.getItemType() === LAYER_ITEM_TYPE,
+    currentOffset: monitor.getClientOffset(),
+  }));
 
-  if (!isDragging || itemType !== LAYER_ITEM_TYPE) {
+  if (!isDragging) {
     return null;
   }
 
+  const { elements } = useCanvasStore();
+  const element = elements.find((el) => el.id === item.id);
+  const name =
+    element?.name ||
+    (element
+      ? element.type.charAt(0).toUpperCase() + element.type.slice(1)
+      : "");
+
   return (
-    <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[9999]">
+    <div style={layerStyles}>
       <div style={getItemStyles(currentOffset)}>
-        <div className="bg-white dark:bg-gray-800 border rounded p-2 shadow-lg opacity-80">
-          {item?.element?.name || item?.elementType || "Item"}
+        <div
+          className={cn(
+            "flex items-center justify-between border rounded-md py-1 px-1.5 bg-card cursor-grabbing",
+            "bg-card/20 dark:bg-card/20"
+          )}
+        >
+          <span className="text-sm text-properties-text dark:text-foreground truncate">
+            {name}
+          </span>
         </div>
       </div>
     </div>
   );
-};
+}

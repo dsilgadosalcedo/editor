@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { CanvasElementData } from "../store/useCanvasStore";
+import type { CanvasElementData } from "../types";
 
 interface DragSelectionState {
   isSelecting: boolean;

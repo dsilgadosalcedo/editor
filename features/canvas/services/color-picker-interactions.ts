@@ -69,7 +69,7 @@ export const calculateAlpha = (
  * Create mouse event handlers for saturation/value area
  */
 export const createSaturationHandlers = (
-  containerRef: React.RefObject<HTMLDivElement>,
+  containerRef: React.RefObject<HTMLDivElement | null>,
   onSaturationChange: (saturation: number, value: number) => void,
   setIsDragging: (isDragging: boolean) => void
 ) => {
@@ -113,7 +113,7 @@ export const createSaturationHandlers = (
  * Create mouse event handlers for hue slider
  */
 export const createHueHandlers = (
-  containerRef: React.RefObject<HTMLDivElement>,
+  containerRef: React.RefObject<HTMLDivElement | null>,
   onHueChange: (hue: number) => void,
   setIsDragging: (isDragging: boolean) => void
 ) => {
@@ -151,7 +151,7 @@ export const createHueHandlers = (
  * Create mouse event handlers for alpha slider
  */
 export const createAlphaHandlers = (
-  containerRef: React.RefObject<HTMLDivElement>,
+  containerRef: React.RefObject<HTMLDivElement | null>,
   onAlphaChange: (alpha: number) => void,
   setIsDragging: (isDragging: boolean) => void
 ) => {
@@ -189,7 +189,7 @@ export const createAlphaHandlers = (
  * Create drag handlers for moveable color picker
  */
 export const createPickerDragHandlers = (
-  pickerRef: React.RefObject<HTMLDivElement>,
+  pickerRef: React.RefObject<HTMLDivElement | null>,
   onPositionChange: (x: number, y: number) => void,
   setIsDragging: (isDragging: boolean) => void,
   setDragOffset?: (offset: { x: number; y: number }) => void

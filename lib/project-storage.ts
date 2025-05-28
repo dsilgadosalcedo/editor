@@ -1,4 +1,4 @@
-import { CanvasElementData } from "@/features/canvas/store/useCanvasStore";
+import { CanvasElementData } from "@/features/canvas/types";
 
 export interface Project {
   id: string;
