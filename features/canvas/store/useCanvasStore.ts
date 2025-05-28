@@ -1,60 +1,27 @@
 import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { immer } from "zustand/middleware/immer";
 import {
   // createProject, // createProjectInLocal is now used in useHybridProjects
   saveProjectToLocal, // Renamed from saveProject
   // getProjects, // getLocalProjects is used in useHybridProjects
   // updateProjectName, // updateLocalProjectNameOnly is used in useProjectUpdate
   getProjectByIdFromLocal, // For loading logic
+  deleteProjectFromLocal,
+  generateProjectName,
+  isProjectLimitReached,
   type Project,
 } from "@/lib/project-storage";
+import { toast } from "sonner";
 
 // Add cloud project imports
 import { api } from "@/convex/_generated/api";
-
-export type ElementType = "rectangle" | "text" | "image" | "group";
-export type ToolType = ElementType | "hand" | null;
-
-export interface SavedCanvasData {
-  id: string;
-  title: string;
-  data: {
-    elements: CanvasElementData[];
-    artboardDimensions: { width: number; height: number };
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CanvasElementData {
-  id: string;
-  type: ElementType;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  content?: string;
-  src?: string; // For image elements
-  color: string;
-  borderWidth?: number;
-  borderColor?: string;
-  shadowBlur?: number;
-  shadowColor?: string;
-  selected: boolean;
-  cornerRadius?: number;
-  name?: string;
-  fontSize?: number;
-  fontWeight?: number;
-  letterSpacing?: number;
-  lineHeight?: number;
-  horizontalAlign?: "left" | "center" | "right";
-  verticalAlign?: "top" | "middle" | "bottom";
-  visible?: boolean;
-  lockAspectRatio?: boolean;
-  parentId?: string; // For grouped elements
-  children?: string[]; // For group elements
-  rotation?: number; // Rotation in degrees
-  textResizing?: "auto-width" | "auto-height" | "fixed"; // Text resizing mode (only for text elements)
-}
+import {
+  ElementType,
+  ToolType,
+  CanvasElementData,
+  SavedCanvasData,
+} from "../types";
 
 interface CanvasStoreState {
   elements: CanvasElementData[];
@@ -1415,10 +1382,22 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       };
     }),
   clearSelection: () =>
-    set((state) => ({
-      elements: state.elements.map((el) => ({ ...el, selected: false })),
-      selectedElements: [],
-    })),
+    set((state) => {
+      // If we're in isolation mode, don't clear everything - preserve the isolation state
+      if (state.isolatedGroupId) {
+        return {
+          elements: state.elements.map((el) => ({ ...el, selected: false })),
+          selectedElements: [],
+          // Keep isolatedGroupId intact
+        };
+      }
+
+      // Normal clearing when not in isolation mode
+      return {
+        elements: state.elements.map((el) => ({ ...el, selected: false })),
+        selectedElements: [],
+      };
+    }),
   getSelectedElementData: () => {
     const { elements, selectedElements } = get();
     return selectedElements.length === 1

@@ -17,10 +17,10 @@ import { toast } from "sonner";
 export default function CanvasIdPage() {
   const params = useParams();
   const router = useRouter();
-  const {
-    loadProjectById: loadProjectIntoStore,
-    loadCloudProject: loadCloudProjectIntoStore,
-  } = useCanvasStore();
+  const loadProjectIntoStore = useCanvasStore((state) => state.loadProjectById);
+  const loadCloudProjectIntoStore = useCanvasStore(
+    (state) => state.loadCloudProject
+  );
   const { isSignedIn } = useAuth();
   const { isAuthenticated, isLoading: convexAuthLoading } = useConvexAuth();
   const [isLoadingPage, setIsLoadingPage] = useState(true);

@@ -4,95 +4,29 @@ import React, { useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
 import { useCanvasStore } from "../store/useCanvasStore";
+import { CanvasElementProps } from "../types";
+import {
+  measureText,
+  calculateRotatedResize,
+  getRotatedCursor,
+} from "../utils";
 
-// Utility function to measure text dimensions
-const measureText = (
-  text: string,
-  fontSize: number,
-  fontWeight: number,
-  fontFamily: string = "var(--font-geist-sans)",
-  letterSpacing: number = 0,
-  lineHeight: number = fontSize * 1.2
-): { width: number; height: number } => {
-  // Create a temporary element to measure text
-  const tempDiv = document.createElement("div");
-  tempDiv.style.position = "absolute";
-  tempDiv.style.visibility = "hidden";
-  tempDiv.style.whiteSpace = "nowrap";
-  tempDiv.style.fontSize = `${fontSize}px`;
-  tempDiv.style.fontWeight = `${fontWeight}`;
-  tempDiv.style.fontFamily = fontFamily;
-  tempDiv.style.letterSpacing = `${letterSpacing}px`;
-  tempDiv.style.lineHeight = `${lineHeight}px`;
-  tempDiv.textContent = text || "Text";
-
-  document.body.appendChild(tempDiv);
-  const width = tempDiv.offsetWidth;
-  const height = tempDiv.offsetHeight;
-  document.body.removeChild(tempDiv);
-
-  return { width: Math.ceil(width), height: Math.ceil(height) };
-};
-
-interface CanvasElementProps {
-  element: {
-    id: string;
-    type: "rectangle" | "text" | "image" | "group";
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    content?: string;
-    src?: string;
-    color: string;
-    selected: boolean;
-    cornerRadius?: number;
-    borderWidth?: number;
-    borderColor?: string;
-    shadowBlur?: number;
-    shadowColor?: string;
-    fontSize?: number;
-    fontWeight?: number;
-    letterSpacing?: number;
-    lineHeight?: number;
-    horizontalAlign?: "left" | "center" | "right";
-    verticalAlign?: "top" | "middle" | "bottom";
-    visible?: boolean;
-    lockAspectRatio?: boolean;
-    name?: string;
-    children?: string[];
-    rotation?: number;
-    textResizing?: "auto-width" | "auto-height" | "fixed";
-    isolated?: boolean;
-    inIsolatedGroup?: boolean;
-    isInIsolationMode?: boolean;
-    isSelectableInIsolation?: boolean;
+      "cursor-s-resize",
+      "cursor-sw-resize",
+      "cursor-w-resize",
+      "cursor-nw-resize",
+      "cursor-n-resize",
+      "cursor-ne-resize",
+      "cursor-e-resize",
+    ],
   };
-  onSelect: (addToSelection?: boolean) => void;
-  onMove: (deltaX: number, deltaY: number) => void;
-  onMoveNoHistory: (deltaX: number, deltaY: number) => void;
-  onResize: (
-    width: number,
-    height: number,
-    preserveAspectRatio?: boolean
-  ) => void;
-  onResizeNoHistory: (
-    width: number,
-    height: number,
-    preserveAspectRatio?: boolean
-  ) => void;
-  onTextChange: (content: string) => void;
-  isPanMode?: boolean;
-  zoom: number;
-  onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
-  onUpdateCornerRadiusNoHistory?: (id: string, cornerRadius: number) => void;
-  onUpdateFontSize?: (id: string, fontSize: number) => void;
-  onUpdateLineHeight?: (id: string, lineHeight: number) => void;
-  onUpdateRotation?: (id: string, rotation: number) => void;
-  onUpdateRotationNoHistory?: (id: string, rotation: number) => void;
-  isMultipleSelected?: boolean;
-  onAddToHistory?: () => void;
-}
+
+  const cursorIndex = Math.round(normalizedRotation / 45) % 8;
+  return (
+    rotationMap[direction as keyof typeof rotationMap]?.[cursorIndex] ||
+    "cursor-pointer"
+  );
+};
 
 export default function CanvasElement({
   element,
@@ -287,6 +221,15 @@ export default function CanvasElement({
       return;
     }
 
+    // Outside of isolation mode, don't allow selection of elements that are children of groups
+    // The group itself should be selected instead
+    if (!element.isInIsolationMode && element.parentId) {
+      // This element is a child of a group, so select the group instead
+      const { selectElement } = useCanvasStore.getState();
+      selectElement(element.parentId, false);
+      return;
+    }
+
     // Check for Ctrl/Cmd key for multiple selection
     const isMultiSelectKey = e.ctrlKey || e.metaKey;
 
@@ -325,6 +268,15 @@ export default function CanvasElement({
 
     // In isolation mode, only allow selection of elements within the isolated group
     if (element.isInIsolationMode && !element.isSelectableInIsolation) {
+      return;
+    }
+
+    // Outside of isolation mode, don't allow selection of elements that are children of groups
+    // The group itself should be selected instead
+    if (!element.isInIsolationMode && element.parentId) {
+      // This element is a child of a group, so select the group instead
+      const { selectElement } = useCanvasStore.getState();
+      selectElement(element.parentId, false);
       return;
     }
 
@@ -461,6 +413,10 @@ export default function CanvasElement({
     if (element.type === "group") {
       e.stopPropagation();
       e.preventDefault();
+
+      // Prevent any other handlers from running
+      e.nativeEvent.stopImmediatePropagation();
+
       const { enterIsolationMode, getElementChildren } =
         useCanvasStore.getState();
 
@@ -515,8 +471,9 @@ export default function CanvasElement({
         onMoveNoHistory(Math.round(deltaX), Math.round(deltaY));
         setDragStart({ x: e.clientX, y: e.clientY });
       } else if (isResizing && resizeDir) {
-        const dx = (e.clientX - resizeStart.x) / (zoom / 100);
-        const dy = (e.clientY - resizeStart.y) / (zoom / 100);
+        const rawDx = (e.clientX - resizeStart.x) / (zoom / 100);
+        const rawDy = (e.clientY - resizeStart.y) / (zoom / 100);
+
         let newWidth = resizeStart.width;
         let newHeight = resizeStart.height;
         let moveX = 0;
@@ -527,15 +484,15 @@ export default function CanvasElement({
 
         switch (resizeDir) {
           case "e":
-            newWidth = resizeStart.width + dx;
+            newWidth = resizeStart.width + rawDx;
             if (preserveAspectRatio) {
               const aspectRatio = resizeStart.height / resizeStart.width;
               newHeight = newWidth * aspectRatio;
             }
             break;
           case "w":
-            newWidth = resizeStart.width - dx;
-            moveX = dx;
+            newWidth = resizeStart.width - rawDx;
+            moveX = rawDx;
             if (preserveAspectRatio) {
               const aspectRatio = resizeStart.height / resizeStart.width;
               newHeight = newWidth * aspectRatio;
@@ -544,15 +501,15 @@ export default function CanvasElement({
             }
             break;
           case "s":
-            newHeight = resizeStart.height + dy;
+            newHeight = resizeStart.height + rawDy;
             if (preserveAspectRatio) {
               const aspectRatio = resizeStart.width / resizeStart.height;
               newWidth = newHeight * aspectRatio;
             }
             break;
           case "n":
-            newHeight = resizeStart.height - dy;
-            moveY = dy;
+            newHeight = resizeStart.height - rawDy;
+            moveY = rawDy;
             if (preserveAspectRatio) {
               const aspectRatio = resizeStart.width / resizeStart.height;
               newWidth = newHeight * aspectRatio;
@@ -561,9 +518,9 @@ export default function CanvasElement({
             }
             break;
           case "ne":
-            newWidth = resizeStart.width + dx;
-            newHeight = resizeStart.height - dy;
-            moveY = dy;
+            newWidth = resizeStart.width + rawDx;
+            newHeight = resizeStart.height - rawDy;
+            moveY = rawDy;
             if (preserveAspectRatio) {
               // Calculate scale based on the more significant change
               const scaleX = newWidth / resizeStart.width;
@@ -577,10 +534,10 @@ export default function CanvasElement({
             }
             break;
           case "nw":
-            newWidth = resizeStart.width - dx;
-            newHeight = resizeStart.height - dy;
-            moveX = dx;
-            moveY = dy;
+            newWidth = resizeStart.width - rawDx;
+            newHeight = resizeStart.height - rawDy;
+            moveX = rawDx;
+            moveY = rawDy;
             if (preserveAspectRatio) {
               const scaleX = newWidth / resizeStart.width;
               const scaleY = newHeight / resizeStart.height;
@@ -594,8 +551,8 @@ export default function CanvasElement({
             }
             break;
           case "se":
-            newWidth = resizeStart.width + dx;
-            newHeight = resizeStart.height + dy;
+            newWidth = resizeStart.width + rawDx;
+            newHeight = resizeStart.height + rawDy;
             if (preserveAspectRatio) {
               const scaleX = newWidth / resizeStart.width;
               const scaleY = newHeight / resizeStart.height;
@@ -607,9 +564,9 @@ export default function CanvasElement({
             }
             break;
           case "sw":
-            newWidth = resizeStart.width - dx;
-            newHeight = resizeStart.height + dy;
-            moveX = dx;
+            newWidth = resizeStart.width - rawDx;
+            newHeight = resizeStart.height + rawDy;
+            moveX = rawDx;
             if (preserveAspectRatio) {
               const scaleX = newWidth / resizeStart.width;
               const scaleY = newHeight / resizeStart.height;
@@ -624,15 +581,31 @@ export default function CanvasElement({
         }
         newWidth = Math.max(20, Math.round(newWidth));
         newHeight = Math.max(20, Math.round(newHeight));
-        // Apply size change then position change
-        onResizeNoHistory(newWidth, newHeight, preserveAspectRatio);
-        if (moveX || moveY) {
-          onMoveNoHistory(Math.round(moveX), Math.round(moveY));
+
+        // Use the mathematically correct approach for rotated elements
+        const newProps = calculateRotatedResize(
+          element,
+          resizeDir,
+          newWidth,
+          newHeight
+        );
+
+        // Apply the calculated changes
+        onResizeNoHistory(newProps.width, newProps.height, preserveAspectRatio);
+
+        // Apply position change only if shouldMove is true
+        if (newProps.shouldMove) {
+          const deltaX = newProps.x - element.x;
+          const deltaY = newProps.y - element.y;
+          if (Math.abs(deltaX) > 0.1 || Math.abs(deltaY) > 0.1) {
+            onMoveNoHistory(Math.round(deltaX), Math.round(deltaY));
+          }
         }
+
         // Update base for next incremental resize
         setResizeStart({
-          width: newWidth,
-          height: newHeight,
+          width: newProps.width,
+          height: newProps.height,
           x: e.clientX,
           y: e.clientY,
         });
@@ -657,59 +630,76 @@ export default function CanvasElement({
         onMoveNoHistory(Math.round(deltaX), Math.round(deltaY));
         setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
       } else if (isResizing && resizeDir) {
-        const dx = (e.touches[0].clientX - resizeStart.x) / (zoom / 100);
-        const dy = (e.touches[0].clientY - resizeStart.y) / (zoom / 100);
+        const rawDx = (e.touches[0].clientX - resizeStart.x) / (zoom / 100);
+        const rawDy = (e.touches[0].clientY - resizeStart.y) / (zoom / 100);
+
         let newWidth = resizeStart.width;
         let newHeight = resizeStart.height;
         let moveX = 0;
         let moveY = 0;
         switch (resizeDir) {
           case "e":
-            newWidth = resizeStart.width + dx;
+            newWidth = resizeStart.width + rawDx;
             break;
           case "w":
-            newWidth = resizeStart.width - dx;
-            moveX = dx;
+            newWidth = resizeStart.width - rawDx;
+            moveX = rawDx;
             break;
           case "s":
-            newHeight = resizeStart.height + dy;
+            newHeight = resizeStart.height + rawDy;
             break;
           case "n":
-            newHeight = resizeStart.height - dy;
-            moveY = dy;
+            newHeight = resizeStart.height - rawDy;
+            moveY = rawDy;
             break;
           case "ne":
-            newWidth = resizeStart.width + dx;
-            newHeight = resizeStart.height - dy;
-            moveY = dy;
+            newWidth = resizeStart.width + rawDx;
+            newHeight = resizeStart.height - rawDy;
+            moveY = rawDy;
             break;
           case "nw":
-            newWidth = resizeStart.width - dx;
-            newHeight = resizeStart.height - dy;
-            moveX = dx;
-            moveY = dy;
+            newWidth = resizeStart.width - rawDx;
+            newHeight = resizeStart.height - rawDy;
+            moveX = rawDx;
+            moveY = rawDy;
             break;
           case "se":
-            newWidth = resizeStart.width + dx;
-            newHeight = resizeStart.height + dy;
+            newWidth = resizeStart.width + rawDx;
+            newHeight = resizeStart.height + rawDy;
             break;
           case "sw":
-            newWidth = resizeStart.width - dx;
-            newHeight = resizeStart.height + dy;
-            moveX = dx;
+            newWidth = resizeStart.width - rawDx;
+            newHeight = resizeStart.height + rawDy;
+            moveX = rawDx;
             break;
         }
         newWidth = Math.max(20, Math.round(newWidth));
         newHeight = Math.max(20, Math.round(newHeight));
-        // Apply size change then position change
-        onResizeNoHistory(newWidth, newHeight, false); // Touch doesn't support shift key
-        if (moveX || moveY) {
-          onMoveNoHistory(Math.round(moveX), Math.round(moveY));
+
+        // Use the mathematically correct approach for rotated elements
+        const newProps = calculateRotatedResize(
+          element,
+          resizeDir,
+          newWidth,
+          newHeight
+        );
+
+        // Apply the calculated changes
+        onResizeNoHistory(newProps.width, newProps.height, false);
+
+        // Apply position change only if shouldMove is true
+        if (newProps.shouldMove) {
+          const deltaX = newProps.x - element.x;
+          const deltaY = newProps.y - element.y;
+          if (Math.abs(deltaX) > 0.1 || Math.abs(deltaY) > 0.1) {
+            onMoveNoHistory(Math.round(deltaX), Math.round(deltaY));
+          }
         }
+
         // Update base for next incremental resize
         setResizeStart({
-          width: newWidth,
-          height: newHeight,
+          width: newProps.width,
+          height: newProps.height,
           x: e.touches[0].clientX,
           y: e.touches[0].clientY,
         });
@@ -1052,6 +1042,8 @@ export default function CanvasElement({
           // Cursor changes based on isolation mode and selection ability
           element.isInIsolationMode && !element.isSelectableInIsolation
             ? "cursor-not-allowed"
+            : element.parentId && !element.isInIsolationMode
+            ? "cursor-pointer" // Child elements should show they'll select the parent
             : "cursor-move",
           // Opacity for isolation mode - show all elements but make non-isolated ones transparent
           element.isInIsolationMode &&
@@ -1080,7 +1072,7 @@ export default function CanvasElement({
             element.type !== "image" &&
             (element.borderWidth ||
               (element.type === "group" && element.selected))
-              ? element.type === "group"
+              ? element.type === "group" && element.selected
                 ? "dashed"
                 : "solid"
               : undefined,
@@ -1101,13 +1093,34 @@ export default function CanvasElement({
         }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
-        onDoubleClick={
-          element.type === "text"
-            ? handleTextDoubleClick
-            : element.type === "group"
-            ? handleGroupDoubleClick
-            : undefined
-        }
+        onDoubleClick={(e) => {
+          // Text editing takes priority
+          if (element.type === "text") {
+            handleTextDoubleClick(e);
+            return;
+          }
+          // Prevent other handlers
+          e.stopPropagation();
+          e.preventDefault();
+          e.nativeEvent.stopImmediatePropagation();
+          // If already in isolation mode, exit on double-click
+          if (element.isInIsolationMode) {
+            useCanvasStore.getState().exitIsolationMode();
+            return;
+          }
+          // If this is a group, enter isolation (possibly selecting a child)
+          if (element.type === "group") {
+            handleGroupDoubleClick(e);
+            return;
+          }
+          // If this element is inside a group, double-click isolates its parent group and selects this element
+          if (element.parentId) {
+            useCanvasStore
+              .getState()
+              .enterIsolationMode(element.parentId, element.id);
+            return;
+          }
+        }}
       >
         {element.type === "image" && (
           <img
@@ -1238,7 +1251,10 @@ export default function CanvasElement({
                 {/* Rectangle, Image, and Group elements: Only 4 corner handles */}
                 {/* top-left */}
                 <div
-                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
+                  className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                    "nw",
+                    element.rotation || 0
+                  )}`}
                   style={{
                     left: `${
                       -element.width / 2 - (4.25 + 1 / 2) * (100 / zoom)
@@ -1257,7 +1273,10 @@ export default function CanvasElement({
                 />
                 {/* top-right */}
                 <div
-                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
+                  className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                    "ne",
+                    element.rotation || 0
+                  )}`}
                   style={{
                     left: `${
                       element.width / 2 - (4.25 - 1 / 2) * (100 / zoom)
@@ -1276,7 +1295,10 @@ export default function CanvasElement({
                 />
                 {/* bottom-left */}
                 <div
-                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nesw-resize"
+                  className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                    "sw",
+                    element.rotation || 0
+                  )}`}
                   style={{
                     left: `${
                       -element.width / 2 - (4.25 + 1 / 2) * (100 / zoom)
@@ -1295,7 +1317,10 @@ export default function CanvasElement({
                 />
                 {/* bottom-right */}
                 <div
-                  className="absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs cursor-nwse-resize"
+                  className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                    "se",
+                    element.rotation || 0
+                  )}`}
                   style={{
                     left: `${
                       element.width / 2 - (4.25 - 1 / 2) * (100 / zoom)

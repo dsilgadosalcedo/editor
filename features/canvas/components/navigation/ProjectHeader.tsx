@@ -7,12 +7,18 @@ import { useProjectUpdate } from "@/hooks/useProjectUpdate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, FolderOpen } from "lucide-react";
+import { ChevronLeft, FolderOpen, ArrowLeft } from "lucide-react";
 
 export default function ProjectHeader() {
   const router = useRouter();
-  const { projectName, projectId, setProjectName, setProjectData } =
-    useCanvasStore();
+  const {
+    projectName,
+    projectId,
+    setProjectName,
+    setProjectData,
+    isolatedGroupId,
+    exitIsolationMode,
+  } = useCanvasStore();
   const { updateProjectName } = useProjectUpdate();
   const [editName, setEditName] = useState(projectName);
 
@@ -62,6 +68,10 @@ export default function ProjectHeader() {
     }
   };
 
+  const handleExitIsolation = () => {
+    exitIsolationMode();
+  };
+
   return (
     <div className="absolute top-5 left-5 z-50 flex items-center gap-2">
       {/* Projects button */}
@@ -85,6 +95,19 @@ export default function ProjectHeader() {
           maxLength={50}
         />
       </div>
+
+      {/* Exit Isolation Mode Button */}
+      {isolatedGroupId && (
+        <Button
+          onClick={handleExitIsolation}
+          variant="secondary"
+          size="sm"
+          className="bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 text-amber-800 shadow-md"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Exit Isolation
+        </Button>
+      )}
     </div>
   );
 }

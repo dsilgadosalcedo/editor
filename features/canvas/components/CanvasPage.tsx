@@ -360,7 +360,7 @@ export default function CanvasPage() {
 
     if (selectedElementsData.length === 0) return;
 
-    // Calculate bounding box of all selected elements
+    // Calculate bounding box of all selected elements (in artboard coordinates)
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
@@ -379,34 +379,48 @@ export default function CanvasPage() {
     const selectionCenterX = minX + selectionWidth / 2;
     const selectionCenterY = minY + selectionHeight / 2;
 
-    // Get artboard dimensions
-    const artboardW = artboardDimensions.width;
-    const artboardH = artboardDimensions.height;
-    const padding = 40; // px margin around selection
+    // Get viewport dimensions
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    const padding = 60; // px margin around selection
 
     // Calculate zoom to fit selection with padding
-    const scaleX = (artboardW - padding * 2) / selectionWidth;
-    const scaleY = (artboardH - padding * 2) / selectionHeight;
+    const scaleX = (viewportW - padding * 2) / selectionWidth;
+    const scaleY = (viewportH - padding * 2) / selectionHeight;
     const newZoom = Math.round(
       Math.min(
-        800, // Extended max zoom (was 400)
-        Math.max(10, Math.min(scaleX, scaleY) * 100) // Extended min zoom (was 50)
+        800, // Max zoom
+        Math.max(10, Math.min(scaleX, scaleY) * 100) // Min zoom
       )
     );
 
     setZoom(newZoom);
 
-    // Center the selection in the artboard
+    // Calculate where the artboard center should be in viewport to center the selection
+    // Account for artboard offset: the artboard is positioned at calc(50% - 90px) left and calc(50% - 40px) top
+    const artboardOffsetX = viewportW / 2 - 90; // matches artboard positioning
+    const artboardOffsetY = viewportH / 2 - 40; // matches artboard positioning
+
+    // Calculate canvas position to center the selection in viewport
+    // We want: viewportCenter = artboardOffset + artboardCenter + (selectionCenter - artboardCenter) * zoom
+    // Solving for canvasPosition: canvasPosition = viewportCenter - (artboardOffset + selectionCenter * zoom)
+    const targetCanvasX =
+      viewportW / 2 - (artboardOffsetX + selectionCenterX * (newZoom / 100));
+    const targetCanvasY =
+      viewportH / 2 - (artboardOffsetY + selectionCenterY * (newZoom / 100));
+
     setCanvasPosition({
-      x: artboardW / 2 - selectionCenterX * (newZoom / 100),
-      y: artboardH / 2 - selectionCenterY * (newZoom / 100),
+      x: targetCanvasX,
+      y: targetCanvasY,
     });
   };
 
   // Helper: Reset view to artboard at 75% zoom
   const handleResetView = () => {
     setZoom(75);
-    // Center the artboard in the viewport
+    // Center the artboard in the viewport accounting for its offset positioning
+    // The artboard is positioned at calc(50% - 90px) left and calc(50% - 40px) top
+    // So to center it, we need to account for these offsets
     setCanvasPosition({
       x: 0,
       y: 0,

@@ -4,8 +4,6 @@ import ArtboardControlPoints from "./ArtboardControlPoints";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
 import MultiSelectionUI from "./MultiSelectionUI";
 import { useCanvasStore } from "../store/useCanvasStore";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 
 interface ArtboardProps {
   artboardDimensions: { width: number; height: number };
@@ -216,11 +214,17 @@ const Artboard: React.FC<ArtboardProps> = ({
           marginTop: `-${artboardDimensions.height / 2}px`,
         }}
         onMouseDown={(e) => {
-          onSelectElement(null);
+          // Don't clear selection when in isolation mode to prevent accidental exit
+          if (!isolatedGroupId) {
+            onSelectElement(null);
+          }
           // if (selectedTool !== "hand") onSelectElement(null);
         }}
         onTouchStart={(e) => {
-          onSelectElement(null);
+          // Don't clear selection when in isolation mode to prevent accidental exit
+          if (!isolatedGroupId) {
+            onSelectElement(null);
+          }
           // if (selectedTool !== "hand") onSelectElement(null);
         }}
         onDoubleClick={(e) => {
@@ -230,26 +234,6 @@ const Artboard: React.FC<ArtboardProps> = ({
           }
         }}
       >
-        {/* Exit Isolation Mode Button */}
-        {isolatedGroupId && (
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              exitIsolationMode();
-            }}
-            variant="secondary"
-            size="sm"
-            className="absolute top-4 left-4 z-50 bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 text-amber-800 shadow-md"
-            style={{
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "top left",
-            }}
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Exit Isolation
-          </Button>
-        )}
-
         {showGuides && (
           <div
             className="absolute inset-0 pointer-events-none"
