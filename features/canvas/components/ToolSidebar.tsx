@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ToolType } from "../store/useCanvasStore";
+import type { ToolType } from "../types/props";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
 import { useCanvasStore } from "../store/useCanvasStore";

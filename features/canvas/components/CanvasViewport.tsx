@@ -1,5 +1,5 @@
 import React from "react";
-import type { ToolType } from "../store/useCanvasStore";
+import type { ToolType } from "../types/props";
 import { useCanvasStore } from "../store/useCanvasStore";
 import Artboard from "./Artboard";
 

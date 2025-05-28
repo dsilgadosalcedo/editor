@@ -15,7 +15,7 @@ import { AutoSave } from "./AutoSave";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
 import { useDragSelection } from "../hooks/useDragSelection";
 import { useCanvasStore } from "../store/useCanvasStore";
-import type { ToolType } from "../store/useCanvasStore";
+import type { ToolType } from "../types/props";
 import { ColorPickerProvider } from "./ColorPicker";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";

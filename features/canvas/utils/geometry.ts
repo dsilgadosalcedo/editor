@@ -57,6 +57,35 @@ export const calculateRotatedResize = (
 };
 
 /**
+ * Transform mouse deltas for rotated element resizing
+ * This function adjusts the mouse movement deltas based on element rotation
+ */
+export const transformRotatedResize = (
+  dx: number,
+  dy: number,
+  direction: string,
+  rotation: number
+): { dx: number; dy: number } => {
+  if (!rotation) {
+    return { dx, dy };
+  }
+
+  // Convert rotation to radians
+  const radians = (rotation * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  // Apply inverse rotation to mouse deltas
+  const transformedDx = dx * cos + dy * sin;
+  const transformedDy = -dx * sin + dy * cos;
+
+  return {
+    dx: transformedDx,
+    dy: transformedDy,
+  };
+};
+
+/**
  * Helper function to get appropriate cursor for rotated resize handle
  */
 export const getRotatedCursor = (direction: string, rotation: number) => {

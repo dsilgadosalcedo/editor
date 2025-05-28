@@ -23,6 +23,55 @@ import {
   SavedCanvasData,
 } from "../types";
 
+// Import services
+import {
+  createElement,
+  createImageElement,
+  CreateElementOptions,
+  CreateImageElementOptions,
+} from "../services/element-operations";
+import {
+  selectElement as selectElementService,
+  selectMultipleElements as selectMultipleElementsService,
+  clearSelection as clearSelectionService,
+  getSelectedElementData as getSelectedElementDataService,
+  getSelectedElementsData as getSelectedElementsDataService,
+  hasMultipleSelection as hasMultipleSelectionService,
+  type SelectionState,
+} from "../services/selection";
+import {
+  addToHistory as addToHistoryService,
+  getHistoryUpdate as getHistoryUpdateService,
+  undo as undoService,
+  redo as redoService,
+  type HistoryState,
+} from "../services/history";
+import {
+  getElementDescendants,
+  getTopLevelElements,
+  getElementChildren,
+  groupElements as groupElementsService,
+  ungroupElements as ungroupElementsService,
+  moveElementToGroup as moveElementToGroupService,
+  reorderElementsHierarchical as reorderElementsHierarchicalService,
+  type GroupingState,
+} from "../services/grouping";
+import {
+  moveElement as moveElementService,
+  moveSelectedElements as moveSelectedElementsService,
+  resizeElement as resizeElementService,
+  deleteElement as deleteElementService,
+  updateElementProperty,
+  copyToClipboard,
+  pasteFromClipboard,
+  toggleElementVisibility as toggleElementVisibilityService,
+  resetCanvas as resetCanvasService,
+} from "../services/canvas-state";
+import {
+  validateProjectState as validateProjectStateService,
+  type ProjectValidationState,
+} from "../services/validation";
+
 interface CanvasStoreState {
   elements: CanvasElementData[];
   selectedElements: string[];
@@ -200,47 +249,44 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   // Helper function to get history update object
   getHistoryUpdate: () => {
     const state = get();
-    return {
-      past: [...state.past, state.elements],
-      future: [], // Clear future when making new changes
-    };
+    return getHistoryUpdateService({
+      elements: state.elements,
+      past: state.past,
+      future: state.future,
+    });
   },
 
   // Action to add current state to history
   addToHistory: () => {
-    set((state) => ({
-      past: [...state.past, state.elements],
-      future: [], // Clear future when making new changes
-    }));
+    const state = get();
+    const historyResult = addToHistoryService({
+      elements: state.elements,
+      past: state.past,
+      future: state.future,
+    });
+
+    set({
+      past: historyResult.past,
+      future: historyResult.future,
+    });
     // Auto-save project after history changes - This will need to trigger save via a component/hook
     // get().autoSaveProject(); // Commenting out direct call
   },
 
-  // Group helper functions
+  // Group helper functions - use services
   getElementDescendants: (elementId: string) => {
     const state = get();
-    const descendants: string[] = [];
-    const directChildren =
-      state.elements.find((el) => el.id === elementId)?.children || [];
-
-    for (const childId of directChildren) {
-      descendants.push(childId);
-      descendants.push(...get().getElementDescendants(childId)); // Recursively get grandchildren
-    }
-
-    return descendants;
+    return getElementDescendants(state.elements, elementId);
   },
 
   getTopLevelElements: () => {
     const state = get();
-    return state.elements.filter((el) => !el.parentId);
+    return getTopLevelElements(state.elements);
   },
 
   getElementChildren: (elementId: string) => {
     const state = get();
-    const element = state.elements.find((el) => el.id === elementId);
-    if (!element?.children) return [];
-    return state.elements.filter((el) => element.children?.includes(el.id));
+    return getElementChildren(state.elements, elementId);
   },
 
   setArtboardDimensions: (dims) => {
@@ -278,26 +324,17 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
   validateProjectState: () => {
     const state = get();
-    const issues: string[] = [];
+    const validationState: ProjectValidationState = {
+      projectId: state.projectId,
+      projectName: state.projectName,
+      elements: state.elements,
+    };
 
-    if (!state.projectId) {
-      issues.push("Missing project ID");
-    }
-    if (!state.projectName) {
-      issues.push("Missing project name");
-    }
-
-    // Check if project exists in storage
-    if (state.projectId) {
-      const project = getProjectByIdFromLocal(state.projectId);
-      if (!project) {
-        issues.push("Project not found in storage");
-      }
-    }
+    const result = validateProjectStateService(validationState);
 
     return {
-      isValid: issues.length === 0,
-      issues,
+      isValid: result.isValid,
+      issues: result.issues,
     };
   },
   reloadCurrentProject: () => {
@@ -350,77 +387,14 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   setZoomSensitivity: (sensitivity) =>
     set({ zoomSensitivity: Math.round(sensitivity * 10) / 10 }),
   addElement: (type) => {
-    const { artboardDimensions, elements, getHistoryUpdate } = get();
-    let newElement: CanvasElementData;
+    const { artboardDimensions, getHistoryUpdate } = get();
 
-    if (type === "rectangle") {
-      newElement = {
-        id: `${type}-${Date.now()}`,
-        type,
-        x: Math.round(artboardDimensions.width / 2 - 75),
-        y: Math.round(artboardDimensions.height / 2 - 37.5),
-        width: 150,
-        height: 75,
-        color: "#3b82f6",
-        selected: true,
-        visible: true,
-        rotation: 0,
-      };
-    } else if (type === "text") {
-      newElement = {
-        id: `${type}-${Date.now()}`,
-        type,
-        x: Math.round(artboardDimensions.width / 2 - 50),
-        y: Math.round(artboardDimensions.height / 2 - 10),
-        width: 100,
-        height: 20,
-        content: "Text",
-        color: "#000000",
-        selected: true,
-        fontSize: 16,
-        fontWeight: 400,
-        letterSpacing: 0,
-        lineHeight: 20,
-        horizontalAlign: "left",
-        verticalAlign: "top",
-        visible: true,
-        rotation: 0,
-        textResizing: "auto-width",
-      };
-    } else if (type === "image") {
-      newElement = {
-        id: `${type}-${Date.now()}`,
-        type,
-        x: Math.round(artboardDimensions.width / 2 - 75),
-        y: Math.round(artboardDimensions.height / 2 - 56),
-        width: 150,
-        height: 112,
-        src: "https://picsum.photos/150/112?random=" + Date.now(),
-        color: "transparent",
-        selected: true,
-        visible: true,
-        rotation: 0,
-      };
-    } else if (type === "group") {
-      newElement = {
-        id: `${type}-${Date.now()}`,
-        type,
-        x: Math.round(artboardDimensions.width / 2 - 100),
-        y: Math.round(artboardDimensions.height / 2 - 75),
-        width: 200,
-        height: 150,
-        color: "transparent",
-        borderWidth: 1,
-        borderColor: "#3b82f6",
-        selected: true,
-        visible: true,
-        children: [],
-        name: "Group",
-        rotation: 0,
-      };
-    } else {
-      return; // Invalid type
-    }
+    const options: CreateElementOptions = {
+      artboardWidth: artboardDimensions.width,
+      artboardHeight: artboardDimensions.height,
+    };
+
+    const newElement = createElement(type, options);
 
     set((state) => ({
       ...getHistoryUpdate(),
@@ -435,44 +409,16 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     // get().autoSaveProject(); // Commenting out direct call
   },
   addImageElement: (src, x, y) => {
-    const { artboardDimensions, elements, getHistoryUpdate } = get();
+    const { artboardDimensions, getHistoryUpdate } = get();
 
-    // Create image to get dimensions
-    const img = new Image();
-    img.onload = () => {
-      const maxWidth = 400;
-      const maxHeight = 300;
+    const options: CreateImageElementOptions = {
+      artboardWidth: artboardDimensions.width,
+      artboardHeight: artboardDimensions.height,
+      src,
+      position: x !== undefined && y !== undefined ? { x, y } : undefined,
+    };
 
-      // Calculate dimensions maintaining aspect ratio
-      let width = img.naturalWidth;
-      let height = img.naturalHeight;
-
-      if (width > maxWidth || height > maxHeight) {
-        const scale = Math.min(maxWidth / width, maxHeight / height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-
-      const newElement: CanvasElementData = {
-        id: `image-${Date.now()}`,
-        type: "image",
-        x:
-          x !== undefined
-            ? x
-            : Math.round(artboardDimensions.width / 2 - width / 2),
-        y:
-          y !== undefined
-            ? y
-            : Math.round(artboardDimensions.height / 2 - height / 2),
-        width,
-        height,
-        src,
-        color: "transparent",
-        selected: true,
-        visible: true,
-        rotation: 0,
-      };
-
+    createImageElement(options).then((newElement) => {
       set((state) => ({
         ...getHistoryUpdate(),
         elements: [
@@ -481,176 +427,103 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ],
         selectedElements: [newElement.id],
       }));
-    };
-
-    img.onerror = () => {
-      // Fallback if image fails to load
-      const newElement: CanvasElementData = {
-        id: `image-${Date.now()}`,
-        type: "image",
-        x:
-          x !== undefined
-            ? x
-            : Math.round(artboardDimensions.width / 2 - 150 / 2),
-        y:
-          y !== undefined
-            ? y
-            : Math.round(artboardDimensions.height / 2 - 112 / 2),
-        width: 150,
-        height: 112,
-        src,
-        color: "transparent",
-        selected: true,
-        visible: true,
-        rotation: 0,
-      };
-
-      set((state) => ({
-        ...getHistoryUpdate(),
-        elements: [
-          ...state.elements.map((el) => ({ ...el, selected: false })),
-          newElement,
-        ],
-        selectedElements: [newElement.id],
-      }));
-    };
-
-    img.src = src;
+    });
   },
-  selectElement: (id, addToSelection = false) =>
-    set((state) => {
-      if (addToSelection) {
-        // Add to or remove from selection
-        const isAlreadySelected = state.selectedElements.includes(id);
-        const newSelectedElements = isAlreadySelected
-          ? state.selectedElements.filter((elId) => elId !== id)
-          : [...state.selectedElements, id];
+  selectElement: (id, addToSelection = false) => {
+    const state = get();
+    const selectionState: SelectionState = {
+      selectedElements: state.selectedElements,
+      elements: state.elements,
+    };
 
-        return {
-          elements: state.elements.map((el) => ({
-            ...el,
-            selected: newSelectedElements.includes(el.id),
-          })),
-          selectedElements: newSelectedElements,
-        };
-      } else {
-        // Single selection
-        return {
-          elements: state.elements.map((el) => ({
-            ...el,
-            selected: el.id === id,
-          })),
-          selectedElements: [id],
-        };
-      }
-    }),
-  selectMultipleElements: (ids) =>
-    set((state) => ({
-      elements: state.elements.map((el) => ({
-        ...el,
-        selected: ids.includes(el.id),
-      })),
-      selectedElements: ids,
-    })),
+    const result = selectElementService(selectionState, id, addToSelection);
+
+    set({
+      elements: result.updatedElements,
+      selectedElements: result.selectedElements,
+    });
+  },
+  selectMultipleElements: (ids) => {
+    const state = get();
+    const selectionState: SelectionState = {
+      selectedElements: state.selectedElements,
+      elements: state.elements,
+    };
+
+    const result = selectMultipleElementsService(selectionState, ids);
+
+    set({
+      elements: result.updatedElements,
+      selectedElements: result.selectedElements,
+    });
+  },
   moveElement: (id, dx, dy) => {
-    const beforeState = get();
-    const element = beforeState.elements.find((el) => el.id === id);
-
-    if (!element) return;
+    const { getHistoryUpdate, getElementDescendants } = get();
 
     set((state) => {
-      const { getHistoryUpdate, getElementDescendants } = get();
-
-      // If moving a group, also move all its descendants
-      const elementsToMove =
-        element.type === "group" ? [id, ...getElementDescendants(id)] : [id];
+      const updatedElements = moveElementService(
+        state.elements,
+        id,
+        dx,
+        dy,
+        (elementId: string) => getElementDescendants(elementId)
+      );
 
       return {
         ...getHistoryUpdate(),
-        elements: state.elements.map((el) =>
-          elementsToMove.includes(el.id)
-            ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
-            : el
-        ),
+        elements: updatedElements,
       };
     });
 
     // Auto-save immediately after change
     // get().autoSaveProject(); // Commenting out direct call
   },
-  moveElementNoHistory: (id, dx, dy) =>
-    set((state) => {
-      const { getElementDescendants } = get();
-      const element = state.elements.find((el) => el.id === id);
+  moveElementNoHistory: (id, dx, dy) => {
+    const { getElementDescendants } = get();
 
-      if (!element) return state;
-
-      // If moving a group, also move all its descendants
-      const elementsToMove =
-        element.type === "group" ? [id, ...getElementDescendants(id)] : [id];
-
-      return {
-        elements: state.elements.map((el) =>
-          elementsToMove.includes(el.id)
-            ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
-            : el
-        ),
-      };
-    }),
+    set((state) => ({
+      elements: moveElementService(
+        state.elements,
+        id,
+        dx,
+        dy,
+        (elementId: string) => getElementDescendants(elementId)
+      ),
+    }));
+  },
   moveSelectedElements: (dx, dy) => {
+    const { getHistoryUpdate, getElementDescendants } = get();
+
     set((state) => {
-      const { getHistoryUpdate, getElementDescendants } = get();
-
-      // Get all elements that should be moved (selected elements + their descendants)
-      const elementsToMove = new Set<string>();
-
-      state.selectedElements.forEach((id) => {
-        elementsToMove.add(id);
-        const element = state.elements.find((el) => el.id === id);
-        if (element?.type === "group") {
-          getElementDescendants(id).forEach((descendantId) =>
-            elementsToMove.add(descendantId)
-          );
-        }
-      });
+      const updatedElements = moveSelectedElementsService(
+        state.elements,
+        state.selectedElements,
+        dx,
+        dy,
+        (elementId: string) => getElementDescendants(elementId)
+      );
 
       return {
         ...getHistoryUpdate(),
-        elements: state.elements.map((el) =>
-          elementsToMove.has(el.id)
-            ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
-            : el
-        ),
+        elements: updatedElements,
       };
     });
     // Auto-save immediately after change
     // get().autoSaveProject(); // Commenting out direct call
   },
-  moveSelectedElementsNoHistory: (dx, dy) =>
-    set((state) => {
-      const { getElementDescendants } = get();
+  moveSelectedElementsNoHistory: (dx, dy) => {
+    const { getElementDescendants } = get();
 
-      // Get all elements that should be moved (selected elements + their descendants)
-      const elementsToMove = new Set<string>();
-
-      state.selectedElements.forEach((id) => {
-        elementsToMove.add(id);
-        const element = state.elements.find((el) => el.id === id);
-        if (element?.type === "group") {
-          getElementDescendants(id).forEach((descendantId) =>
-            elementsToMove.add(descendantId)
-          );
-        }
-      });
-
-      return {
-        elements: state.elements.map((el) =>
-          elementsToMove.has(el.id)
-            ? { ...el, x: Math.round(el.x + dx), y: Math.round(el.y + dy) }
-            : el
-        ),
-      };
-    }),
+    set((state) => ({
+      elements: moveSelectedElementsService(
+        state.elements,
+        state.selectedElements,
+        dx,
+        dy,
+        (elementId: string) => getElementDescendants(elementId)
+      ),
+    }));
+  },
   resizeElement: (id, width, height, preserveAspectRatio = false) => {
     set((state) => {
       const { getHistoryUpdate, getElementDescendants } = get();
@@ -959,48 +832,44 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       elements: [],
       selectedElements: [],
     })),
-  undo: () =>
-    set((state) => {
-      if (state.past.length === 0) return state;
-      const previous = state.past[state.past.length - 1];
+  undo: () => {
+    const state = get();
+    const historyState: HistoryState = {
+      elements: state.elements,
+      past: state.past,
+      future: state.future,
+    };
 
-      // Preserve selection by finding elements that were selected in the current state
-      const currentlySelectedIds = state.selectedElements;
-      const elementsToKeepSelected = previous
-        .filter((el) => currentlySelectedIds.includes(el.id))
-        .map((el) => el.id);
+    const result = undoService(historyState, state.selectedElements);
 
-      return {
-        past: state.past.slice(0, state.past.length - 1),
-        future: [state.elements, ...state.future],
-        elements: previous.map((el) => ({
-          ...el,
-          selected: elementsToKeepSelected.includes(el.id),
-        })),
-        selectedElements: elementsToKeepSelected,
-      };
-    }),
-  redo: () =>
-    set((state) => {
-      if (state.future.length === 0) return state;
-      const next = state.future[0];
+    set({
+      elements: result.elements,
+      past: result.past,
+      future: result.future,
+      selectedElements: result.elements
+        .filter((el) => el.selected)
+        .map((el) => el.id),
+    });
+  },
+  redo: () => {
+    const state = get();
+    const historyState: HistoryState = {
+      elements: state.elements,
+      past: state.past,
+      future: state.future,
+    };
 
-      // Preserve selection by finding elements that were selected in the current state
-      const currentlySelectedIds = state.selectedElements;
-      const elementsToKeepSelected = next
-        .filter((el) => currentlySelectedIds.includes(el.id))
-        .map((el) => el.id);
+    const result = redoService(historyState, state.selectedElements);
 
-      return {
-        past: [...state.past, state.elements],
-        future: state.future.slice(1),
-        elements: next.map((el) => ({
-          ...el,
-          selected: elementsToKeepSelected.includes(el.id),
-        })),
-        selectedElements: elementsToKeepSelected,
-      };
-    }),
+    set({
+      elements: result.elements,
+      past: result.past,
+      future: result.future,
+      selectedElements: result.elements
+        .filter((el) => el.selected)
+        .map((el) => el.id),
+    });
+  },
   reorderElements: (oldIndex, newIndex) =>
     set((state) => {
       const { getHistoryUpdate } = get();
@@ -1381,36 +1250,46 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ),
       };
     }),
-  clearSelection: () =>
-    set((state) => {
-      // If we're in isolation mode, don't clear everything - preserve the isolation state
-      if (state.isolatedGroupId) {
-        return {
-          elements: state.elements.map((el) => ({ ...el, selected: false })),
-          selectedElements: [],
-          // Keep isolatedGroupId intact
-        };
-      }
+  clearSelection: () => {
+    const state = get();
+    const selectionState: SelectionState = {
+      selectedElements: state.selectedElements,
+      elements: state.elements,
+    };
 
-      // Normal clearing when not in isolation mode
-      return {
-        elements: state.elements.map((el) => ({ ...el, selected: false })),
-        selectedElements: [],
-      };
-    }),
+    const result = clearSelectionService(selectionState);
+
+    set({
+      elements: result.updatedElements,
+      selectedElements: result.selectedElements,
+    });
+  },
   getSelectedElementData: () => {
-    const { elements, selectedElements } = get();
-    return selectedElements.length === 1
-      ? elements.find((el) => el.id === selectedElements[0])
-      : undefined;
+    const state = get();
+    const selectionState: SelectionState = {
+      selectedElements: state.selectedElements,
+      elements: state.elements,
+    };
+
+    return getSelectedElementDataService(selectionState);
   },
   getSelectedElementsData: () => {
-    const { elements, selectedElements } = get();
-    return elements.filter((el) => selectedElements.includes(el.id));
+    const state = get();
+    const selectionState: SelectionState = {
+      selectedElements: state.selectedElements,
+      elements: state.elements,
+    };
+
+    return getSelectedElementsDataService(selectionState);
   },
   hasMultipleSelection: () => {
-    const { selectedElements } = get();
-    return selectedElements.length > 1;
+    const state = get();
+    const selectionState: SelectionState = {
+      selectedElements: state.selectedElements,
+      elements: state.elements,
+    };
+
+    return hasMultipleSelectionService(selectionState);
   },
   copySelection: () => {
     const state = get();
