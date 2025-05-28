@@ -180,12 +180,9 @@ export default function ToolSidebar({
               clearSelection();
             }}
           >
-            <ToolIcon
-              icon={selectedTool === "hand" ? Hand : MousePointer}
-              className={cn(layersOpen && "text-properties-gold")}
-            />
+            <ToolIcon icon={selectedTool === "hand" ? Hand : MousePointer} />
           </ToolButton>
-          <ToolButton
+          {/* <ToolButton
             className={cn(layersOpen && "bg-accent")}
             onClick={() => {
               onToggleLayers();
@@ -196,7 +193,7 @@ export default function ToolSidebar({
               icon={Layers}
               className={cn(layersOpen && "text-properties-gold")}
             />
-          </ToolButton>
+          </ToolButton> */}
         </div>
       </section>
 

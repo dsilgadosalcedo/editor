@@ -19,7 +19,6 @@ import type { ToolType } from "../types/props";
 import { ColorPickerProvider } from "./ColorPicker";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
-import { useGlobalKeyboardShortcuts } from "@/hooks/useGlobalKeyboardShortcuts";
 
 export default function CanvasPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -55,9 +54,6 @@ export default function CanvasPage() {
   } = useCanvasStore();
 
   const { setTheme, theme } = useTheme();
-
-  // Global keyboard shortcuts (including theme toggle)
-  useGlobalKeyboardShortcuts();
 
   // Keyboard shortcuts: Full professional shortcuts support
   useEffect(() => {
@@ -138,6 +134,13 @@ export default function CanvasPage() {
         if (key === "arrowdown" && selectedElements.length === 1 && !isTyping) {
           e.preventDefault();
           moveElementDown(selectedElements[0]);
+          return;
+        }
+
+        // Toggle theme with Ctrl/Cmd+Shift+L (only when not typing in inputs)
+        if (key === "l" && e.shiftKey && !isTyping) {
+          e.preventDefault();
+          setTheme(theme === "dark" ? "light" : "dark");
           return;
         }
 
@@ -258,6 +261,8 @@ export default function CanvasPage() {
     moveElement,
     elements,
     addElement,
+    setTheme,
+    theme,
   ]);
 
   // Pan/zoom logic
@@ -490,7 +495,7 @@ export default function CanvasPage() {
         />
 
         {/* Layers Panel */}
-        {layersOpen && <LayersPanel />}
+        {/* {layersOpen && <LayersPanel />} */}
 
         {/* Canvas Toolbar */}
         <CanvasToolbar

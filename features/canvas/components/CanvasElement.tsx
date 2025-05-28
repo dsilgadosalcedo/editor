@@ -222,7 +222,7 @@ export default function CanvasElement({
     onMoveNoHistory,
     onAddToHistory,
     zoom,
-    { isDragging: dragState.isDragging },
+    dragState,
     setDragState,
     setPrepareDrag,
     setJustDragged
@@ -277,6 +277,33 @@ export default function CanvasElement({
     useCanvasStore
   );
 
+  // Handle element selection and drag initiation
+  const handleElementMouseDown = (e: React.MouseEvent) => {
+    // Skip if clicking on handles or toolbar
+    const target = e.target as HTMLElement;
+    if (target.closest("[data-handle]") || target.closest("[data-toolbar]")) {
+      return;
+    }
+
+    // Select the element if not already selected
+    if (!element.selected) {
+      onSelect(e.shiftKey || e.ctrlKey || e.metaKey);
+    }
+
+    // Call the drag handler
+    dragHandlers.handleMouseDown(e);
+  };
+
+  const handleElementTouchStart = (e: React.TouchEvent) => {
+    // Select the element if not already selected
+    if (!element.selected) {
+      onSelect(false);
+    }
+
+    // Call the drag handler
+    dragHandlers.handleTouchStart(e);
+  };
+
   // Handle resize double-click to fit text
   const handleResizeDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -294,8 +321,8 @@ export default function CanvasElement({
         ref={elementRef}
         className={getElementContainerClasses(element)}
         style={getElementContainerStyles(element, zoom)}
-        onMouseDown={dragHandlers.handleMouseDown}
-        onTouchStart={dragHandlers.handleTouchStart}
+        onMouseDown={handleElementMouseDown}
+        onTouchStart={handleElementTouchStart}
         onDoubleClick={
           element.type === "text"
             ? textEditingHandlers.handleTextDoubleClick
@@ -361,6 +388,7 @@ export default function CanvasElement({
             {!isMultipleSelected && element.type === "text" ? (
               // Text elements: Font scale handle
               <div
+                data-handle="font-scale"
                 className="absolute w-3 h-3 hover:scale-125 transition-all duration-100 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-nwse-resize"
                 style={getFontScaleHandleStyles(element, zoom)}
                 onMouseDown={fontScaleHandlers.handleFontScaleDragStart}
@@ -372,6 +400,7 @@ export default function CanvasElement({
                 {["nw", "ne", "sw", "se"].map((direction) => (
                   <div
                     key={direction}
+                    data-handle={`resize-${direction}`}
                     className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
                       direction,
                       element.rotation || 0
@@ -397,6 +426,7 @@ export default function CanvasElement({
                   {(["tl", "tr", "bl", "br"] as const).map((position) => (
                     <div
                       key={position}
+                      data-handle={`rotation-${position}`}
                       className="absolute w-8 h-8 rounded-full cursor-crosshair"
                       style={getRotationHandleStyles(element, zoom, position)}
                       onMouseDown={rotationHandlers.handleRotationStart}
@@ -412,6 +442,7 @@ export default function CanvasElement({
               !rotationState.isRotating &&
               !isEditing && (
                 <div
+                  data-handle="rotation-text"
                   className="absolute w-8 h-8 rounded-full cursor-crosshair"
                   style={getRotationHandleStyles(element, zoom, "br")}
                   onMouseDown={rotationHandlers.handleRotationStart}
@@ -423,6 +454,7 @@ export default function CanvasElement({
             {!isMultipleSelected &&
               (element.type === "rectangle" || element.type === "image") && (
                 <div
+                  data-handle="corner-radius"
                   className="absolute w-3 h-3 hover:scale-125 transition-all duration-200 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-pointer"
                   onMouseDown={cornerRadiusHandlers.handleCornerRadiusDragStart}
                   title="Drag to adjust corner radius"

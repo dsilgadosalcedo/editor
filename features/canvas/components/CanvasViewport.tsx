@@ -84,15 +84,7 @@ export default function CanvasViewport({
       onTouchEnd={handleTouchEnd}
     >
       {/* Grid Background */}
-      <div
-        className="fixed z-10 w-full h-full top-0 left-0 canvas-background"
-        onMouseDown={() => {
-          clearSelection();
-        }}
-        onTouchStart={() => {
-          clearSelection();
-        }}
-      >
+      <div className="fixed z-10 w-full h-full top-0 left-0 canvas-background">
         <div
           className="absolute select-none w-[120vw] h-[150vw] -z-10 -top-190 left-0 rotate-45 origin-center opacity-50"
           style={{

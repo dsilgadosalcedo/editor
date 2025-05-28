@@ -214,18 +214,25 @@ const Artboard: React.FC<ArtboardProps> = ({
           marginTop: `-${artboardDimensions.height / 2}px`,
         }}
         onMouseDown={(e) => {
-          // Don't clear selection when in isolation mode to prevent accidental exit
-          if (!isolatedGroupId) {
-            onSelectElement(null);
+          // Only clear selection if clicking directly on the artboard background
+          // Don't clear if clicking on an element or its controls
+          const target = e.target as HTMLElement;
+          if (target === e.currentTarget) {
+            // Don't clear selection when in isolation mode to prevent accidental exit
+            if (!isolatedGroupId) {
+              onSelectElement(null);
+            }
           }
-          // if (selectedTool !== "hand") onSelectElement(null);
         }}
         onTouchStart={(e) => {
-          // Don't clear selection when in isolation mode to prevent accidental exit
-          if (!isolatedGroupId) {
-            onSelectElement(null);
+          // Only clear selection if touching directly on the artboard background
+          const target = e.target as HTMLElement;
+          if (target === e.currentTarget) {
+            // Don't clear selection when in isolation mode to prevent accidental exit
+            if (!isolatedGroupId) {
+              onSelectElement(null);
+            }
           }
-          // if (selectedTool !== "hand") onSelectElement(null);
         }}
         onDoubleClick={(e) => {
           if (isolatedGroupId) {

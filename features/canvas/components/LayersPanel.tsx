@@ -37,9 +37,9 @@ const LayersPanel: React.FC = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="fixed top-1/2 -translate-y-1/2 left-20 z-50">
+      <div className="fixed top-1/2 -translate-y-1/2 left-28 z-50">
         <div className="p-1 bg-sidebar/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
-          <div className="flex-1 bg-card/50 dark:bg-card/50 border rounded-xl flex flex-col p-4 w-64 shadow-sm">
+          <div className="flex-1 bg-card/50 dark:bg-card/50 border rounded-xl flex flex-col p-4 w-64 shadow-sm max-h-70 overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-properties-text dark:text-foreground">

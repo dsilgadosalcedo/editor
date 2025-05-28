@@ -53,7 +53,7 @@ export const createElementDragHandlers = (
   onMoveNoHistory: (dx: number, dy: number) => void,
   onAddToHistory: (() => void) | undefined,
   zoom: number,
-  element: any,
+  dragState: { isDragging: boolean },
   setDragState: React.Dispatch<React.SetStateAction<ElementDragState>>,
   setPrepareDrag: (prepare: boolean) => void,
   setJustDragged: (dragged: boolean) => void
@@ -71,37 +71,52 @@ export const createElementDragHandlers = (
     setPrepareDrag(true);
     const startX = e.clientX;
     const startY = e.clientY;
-    setDragState((prev) => ({ ...prev, isDragging: false, startX, startY }));
+    let lastX = startX;
+    let lastY = startY;
+    let currentDragState: ElementDragState = {
+      isDragging: false,
+      startX,
+      startY,
+    };
+    setDragState(currentDragState);
 
     const handleMouseMove = (e: MouseEvent) => {
-      const dx = (e.clientX - startX) / (zoom / 100);
-      const dy = (e.clientY - startY) / (zoom / 100);
+      const totalDx = (e.clientX - startX) / (zoom / 100);
+      const totalDy = (e.clientY - startY) / (zoom / 100);
 
       // Start dragging if moved more than 3 pixels
-      if (!element.isDragging && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
-        setDragState((prev) => ({ ...prev, isDragging: true }));
+      if (
+        !currentDragState.isDragging &&
+        (Math.abs(totalDx) > 3 || Math.abs(totalDy) > 3)
+      ) {
+        currentDragState = { ...currentDragState, isDragging: true };
+        setDragState(currentDragState);
         setPrepareDrag(false);
       }
 
-      if (element.isDragging) {
+      if (currentDragState.isDragging) {
+        // Calculate incremental movement since last frame
+        const dx = (e.clientX - lastX) / (zoom / 100);
+        const dy = (e.clientY - lastY) / (zoom / 100);
         onMoveNoHistory(dx, dy);
+
+        // Update last position
+        lastX = e.clientX;
+        lastY = e.clientY;
       }
     };
 
     const handleMouseUp = () => {
-      if (element.isDragging) {
-        const dx = (e.clientX - startX) / (zoom / 100);
-        const dy = (e.clientY - startY) / (zoom / 100);
-        onMove(dx, dy);
-        onAddToHistory?.();
-        setJustDragged(true);
-        setTimeout(() => setJustDragged(false), 100);
-      }
-
       setDragState((prev) => ({ ...prev, isDragging: false }));
       setPrepareDrag(false);
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
+
+      if (currentDragState.isDragging) {
+        onAddToHistory?.();
+        setJustDragged(true);
+        setTimeout(() => setJustDragged(false), 100);
+      }
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -116,38 +131,52 @@ export const createElementDragHandlers = (
     setPrepareDrag(true);
     const startX = touch.clientX;
     const startY = touch.clientY;
-    setDragState((prev) => ({ ...prev, isDragging: false, startX, startY }));
+    let lastX = startX;
+    let lastY = startY;
+    let currentDragState: ElementDragState = {
+      isDragging: false,
+      startX,
+      startY,
+    };
+    setDragState(currentDragState);
 
     const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
-      const dx = (touch.clientX - startX) / (zoom / 100);
-      const dy = (touch.clientY - startY) / (zoom / 100);
+      const totalDx = (touch.clientX - startX) / (zoom / 100);
+      const totalDy = (touch.clientY - startY) / (zoom / 100);
 
-      if (!element.isDragging && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
-        setDragState((prev) => ({ ...prev, isDragging: true }));
+      if (
+        !currentDragState.isDragging &&
+        (Math.abs(totalDx) > 3 || Math.abs(totalDy) > 3)
+      ) {
+        currentDragState = { ...currentDragState, isDragging: true };
+        setDragState(currentDragState);
         setPrepareDrag(false);
       }
 
-      if (element.isDragging) {
+      if (currentDragState.isDragging) {
+        // Calculate incremental movement since last frame
+        const dx = (touch.clientX - lastX) / (zoom / 100);
+        const dy = (touch.clientY - lastY) / (zoom / 100);
         onMoveNoHistory(dx, dy);
+
+        // Update last position
+        lastX = touch.clientX;
+        lastY = touch.clientY;
       }
     };
 
     const handleTouchEnd = () => {
-      if (element.isDragging) {
-        const touch = e.changedTouches[0];
-        const dx = (touch.clientX - startX) / (zoom / 100);
-        const dy = (touch.clientY - startY) / (zoom / 100);
-        onMove(dx, dy);
-        onAddToHistory?.();
-        setJustDragged(true);
-        setTimeout(() => setJustDragged(false), 100);
-      }
-
       setDragState((prev) => ({ ...prev, isDragging: false }));
       setPrepareDrag(false);
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
+
+      if (currentDragState.isDragging) {
+        onAddToHistory?.();
+        setJustDragged(true);
+        setTimeout(() => setJustDragged(false), 100);
+      }
     };
 
     document.addEventListener("touchmove", handleTouchMove, { passive: false });

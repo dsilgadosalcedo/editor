@@ -69,7 +69,7 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const [isDraggingHue, setIsDraggingHue] = useState(false);
   const [isDraggingAlpha, setIsDraggingAlpha] = useState(false);
   const [isInternalUpdate, setIsInternalUpdate] = useState(false);
-  const [colorFormat, setColorFormat] = useState<ColorFormat>("hex");
+  const [colorFormat, setColorFormat] = useState<ColorFormat>("rgba");
   const [lastUpdateTime, setLastUpdateTime] = useState(0);
 
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -176,6 +176,10 @@ const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     }
     return "Color Picker";
   };
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div
