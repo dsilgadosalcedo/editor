@@ -13,6 +13,8 @@ import {
   cleanupDuplicateProjects,
   getDuplicateProjectStats,
   createProjectWithLimitCheck,
+  validateAndFixLocalStorage,
+  MAX_PROJECTS,
   type Project,
 } from "@/lib/project-storage";
 import { useProjectUpdate } from "@/hooks/useProjectUpdate";
@@ -151,7 +153,26 @@ export const useHybridProjects = () => {
     } else {
       // For unauthenticated users, only load local projects if they exist
       // and the user hasn't just signed out
-      const local = getLocalProjects();
+
+      // First, validate localStorage to detect manipulation attempts
+      const validationResult = validateAndFixLocalStorage();
+
+      if (validationResult.wasManipulated) {
+        console.warn(
+          `🚨 Detected localStorage manipulation: Found ${validationResult.originalCount} projects, ` +
+            `but limit is ${MAX_PROJECTS}. Automatically removed ${validationResult.removedCount} excess projects.`
+        );
+        toast.warning(
+          `Project limit enforced: Removed ${validationResult.removedCount} excess projects. ` +
+            `Maximum allowed: ${MAX_PROJECTS} projects.`
+        );
+      } else if (validationResult.hadInvalidData) {
+        console.warn(
+          `🧹 Cleaned up ${validationResult.removedCount} invalid projects from localStorage`
+        );
+      }
+
+      const local = getLocalProjects(); // This now returns validated/limited projects
 
       // If user is explicitly not signed in (false, not undefined),
       // and we have local projects, it might be from a previous session
@@ -174,9 +195,9 @@ export const useHybridProjects = () => {
     // Skip this check if called from canvas page (which already checks the limit)
     if (!skipLimitCheck) {
       const currentProjectCount = projects.length;
-      if (currentProjectCount >= 10) {
+      if (currentProjectCount >= MAX_PROJECTS) {
         toast.error(
-          "Project limit reached! You can have a maximum of 10 projects. Please delete some projects before creating new ones."
+          `Project limit reached! You can have a maximum of ${MAX_PROJECTS} projects. Please delete some projects before creating new ones.`
         );
         return;
       }
@@ -410,6 +431,20 @@ export const useHybridProjects = () => {
       // Cloud projects will refresh automatically via useQuery
       return;
     } else {
+      // Validate localStorage before refreshing for unauthenticated users
+      const validationResult = validateAndFixLocalStorage();
+
+      if (validationResult.wasManipulated) {
+        console.warn(
+          `🚨 Detected localStorage manipulation: Found ${validationResult.originalCount} projects, ` +
+            `but limit is ${MAX_PROJECTS}. Automatically removed ${validationResult.removedCount} excess projects.`
+        );
+        toast.warning(
+          `Project limit enforced: Removed ${validationResult.removedCount} excess projects. ` +
+            `Maximum allowed: ${MAX_PROJECTS} projects.`
+        );
+      }
+
       setProjects(getLocalProjects());
     }
   };
@@ -440,7 +475,7 @@ export const useHybridProjects = () => {
   const getProjectLimitStats = () => {
     // Use the actual projects state which includes both local and cloud projects
     const current = projects.length;
-    const max = 10; // MAX_PROJECTS constant
+    const max = MAX_PROJECTS;
     return {
       current,
       max,
@@ -451,7 +486,7 @@ export const useHybridProjects = () => {
 
   const checkProjectLimit = () => {
     // Use the actual projects state instead of just local storage
-    return projects.length >= 10; // MAX_PROJECTS constant
+    return projects.length >= MAX_PROJECTS;
   };
 
   return {

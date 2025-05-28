@@ -12,7 +12,7 @@ export interface Project {
 }
 
 const PROJECTS_STORAGE_KEY = "canvas-projects";
-const MAX_PROJECTS = 10;
+export const MAX_PROJECTS = 10;
 
 // Generate a unique project name
 export const generateProjectName = (): string => {
@@ -28,15 +28,79 @@ export const generateProjectName = (): string => {
   return name;
 };
 
-// Get all projects from localStorage
+// Get projects from localStorage with limit enforcement
 export const getProjects = (): Project[] => {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") {
+    return [];
+  }
 
   try {
     const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) {
+      return [];
+    }
+
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) {
+      console.warn("Invalid projects data in localStorage, resetting...");
+      localStorage.removeItem(PROJECTS_STORAGE_KEY);
+      return [];
+    }
+
+    // Validate each project structure
+    const validProjects = parsed.filter((item): item is Project => {
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.id === "string" &&
+        typeof item.name === "string" &&
+        typeof item.data === "object" &&
+        item.data !== null &&
+        Array.isArray(item.data.elements) &&
+        typeof item.data.artboardDimensions === "object" &&
+        typeof item.data.artboardDimensions.width === "number" &&
+        typeof item.data.artboardDimensions.height === "number" &&
+        typeof item.createdAt === "string" &&
+        typeof item.updatedAt === "string"
+      );
+    });
+
+    // Enforce project limit - if exceeded, keep only the most recent projects
+    if (validProjects.length > MAX_PROJECTS) {
+      console.warn(
+        `Found ${validProjects.length} projects in localStorage, but limit is ${MAX_PROJECTS}. ` +
+          `Keeping only the ${MAX_PROJECTS} most recently updated projects.`
+      );
+
+      // Sort by updatedAt (most recent first) and take only the allowed number
+      const limitedProjects = validProjects
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
+        .slice(0, MAX_PROJECTS);
+
+      // Save the limited projects back to localStorage
+      saveProjects(limitedProjects);
+
+      return limitedProjects;
+    }
+
+    // If invalid projects were filtered out, save the cleaned data
+    if (validProjects.length !== parsed.length) {
+      console.warn(
+        `Removed ${
+          parsed.length - validProjects.length
+        } invalid projects from localStorage`
+      );
+      saveProjects(validProjects);
+    }
+
+    return validProjects;
   } catch (error) {
-    console.error("Error reading projects from localStorage:", error);
+    console.error("Error parsing projects from localStorage:", error);
+    // Clear corrupted data
+    localStorage.removeItem(PROJECTS_STORAGE_KEY);
     return [];
   }
 };
@@ -396,4 +460,67 @@ export const createProjectWithLimitCheck = (
     project,
     limitReached: false,
   };
+};
+
+// Validate and fix localStorage projects (detect manipulation attempts)
+export const validateAndFixLocalStorage = (): {
+  wasManipulated: boolean;
+  originalCount: number;
+  finalCount: number;
+  removedCount: number;
+  hadInvalidData: boolean;
+} => {
+  if (typeof window === "undefined") {
+    return {
+      wasManipulated: false,
+      originalCount: 0,
+      finalCount: 0,
+      removedCount: 0,
+      hadInvalidData: false,
+    };
+  }
+
+  try {
+    const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
+    if (!stored) {
+      return {
+        wasManipulated: false,
+        originalCount: 0,
+        finalCount: 0,
+        removedCount: 0,
+        hadInvalidData: false,
+      };
+    }
+
+    const parsed = JSON.parse(stored);
+    const originalCount = Array.isArray(parsed) ? parsed.length : 0;
+
+    // This will trigger the validation and auto-fixing in getProjects()
+    const validatedProjects = getProjects();
+    const finalCount = validatedProjects.length;
+
+    const wasManipulated = originalCount > MAX_PROJECTS;
+    const hadInvalidData =
+      Array.isArray(parsed) &&
+      parsed.length !== validatedProjects.length &&
+      originalCount <= MAX_PROJECTS;
+    const removedCount = Math.max(0, originalCount - finalCount);
+
+    return {
+      wasManipulated,
+      originalCount,
+      finalCount,
+      removedCount,
+      hadInvalidData,
+    };
+  } catch (error) {
+    console.error("Error validating localStorage:", error);
+    return {
+      wasManipulated: false,
+      originalCount: 0,
+      finalCount: 0,
+      removedCount: 0,
+      hadInvalidData: true,
+    };
+  }
 };
