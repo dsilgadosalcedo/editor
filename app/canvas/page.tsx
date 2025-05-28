@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useHybridProjects } from "@/features/projects/hooks/useHybridProjects";
 import { useGlobalKeyboardShortcuts } from "@/hooks/useGlobalKeyboardShortcuts";
+import { toast } from "sonner";
 
 export default function CanvasHome() {
-  const { handleCreateNew, isLoading: isLoadingProjects } = useHybridProjects();
+  const router = useRouter();
+  const {
+    handleCreateNew,
+    isLoading: isLoadingProjects,
+    getProjectLimitStats,
+  } = useHybridProjects();
   const creationInProgress = useRef(false);
   const hasCreated = useRef(false);
+  const hasCheckedLimit = useRef(false);
 
   // Global keyboard shortcuts (including theme toggle)
   useGlobalKeyboardShortcuts();
@@ -23,15 +31,28 @@ export default function CanvasHome() {
       return;
     }
 
+    // Check project limit before creating
+    if (!hasCheckedLimit.current) {
+      const limitStats = getProjectLimitStats();
+      if (limitStats.isAtLimit) {
+        toast.error(
+          `Project limit reached! You have ${limitStats.current}/10 projects. Please delete some projects before creating new ones.`
+        );
+        router.push("/projects");
+        return;
+      }
+      hasCheckedLimit.current = true;
+    }
+
     // Mark creation as in progress to prevent duplicate calls
     creationInProgress.current = true;
     hasCreated.current = true;
 
     // handleCreateNew is async and will handle routing internally
-    handleCreateNew().finally(() => {
+    handleCreateNew(true).finally(() => {
       creationInProgress.current = false;
     });
-  }, [handleCreateNew, isLoadingProjects]);
+  }, [handleCreateNew, isLoadingProjects, getProjectLimitStats, router]);
 
   return (
     <main className="flex items-center justify-center min-h-screen">

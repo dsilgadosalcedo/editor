@@ -94,15 +94,15 @@ export default function ToolSidebar({
       // Create and download the file
       const blob = new Blob([svgContent], { type: "image/svg+xml" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "canvas.svg";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `canvas-${Date.now()}.svg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-      toast.success("SVG downloaded successfully!");
+      // Clean up
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading SVG:", error);
       toast.error("Failed to download SVG. Please try again.");

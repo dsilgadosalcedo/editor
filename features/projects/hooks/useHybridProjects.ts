@@ -13,8 +13,6 @@ import {
   cleanupDuplicateProjects,
   getDuplicateProjectStats,
   createProjectWithLimitCheck,
-  getProjectLimitInfo,
-  isProjectLimitReached,
   type Project,
 } from "@/lib/project-storage";
 import { useProjectUpdate } from "@/hooks/useProjectUpdate";
@@ -76,7 +74,6 @@ export const useHybridProjects = () => {
 
       if (localProjectsToMigrate.length > 0 && cloudProjects.length === 0) {
         console.log("Migrating local projects to cloud...");
-        toast.info("Migrating your local projects to the cloud...");
         let allMigratedSuccessfully = true;
         for (const localProject of localProjectsToMigrate) {
           try {
@@ -107,7 +104,6 @@ export const useHybridProjects = () => {
         if (allMigratedSuccessfully) {
           localStorage.removeItem("canvas-projects"); // Clear all local storage only if all migrated
           console.log("Migration completed successfully!");
-          toast.success("All local projects migrated to the cloud!");
         } else {
           toast.warning(
             "Some local projects could not be migrated. They remain available locally."
@@ -153,20 +149,37 @@ export const useHybridProjects = () => {
       }
       // else: cloudProjects is still loading, isLoading remains true
     } else {
+      // For unauthenticated users, only load local projects if they exist
+      // and the user hasn't just signed out
       const local = getLocalProjects();
-      setProjects(local);
+
+      // If user is explicitly not signed in (false, not undefined),
+      // and we have local projects, it might be from a previous session
+      if (isSignedIn === false && local.length > 0) {
+        console.log(
+          "🧹 User not signed in but local projects found, clearing them..."
+        );
+        // Clear projects immediately to prevent them from being displayed
+        localStorage.removeItem("canvas-projects");
+        setProjects([]);
+      } else {
+        setProjects(local);
+      }
       setIsLoading(false);
     }
   }, [isSignedIn, isAuthenticated, convexAuthLoading, cloudProjects]);
 
-  const handleCreateNew = async () => {
+  const handleCreateNew = async (skipLimitCheck = false) => {
     // Check project limit for EVERYONE (authenticated and unauthenticated)
-    const currentProjectCount = projects.length;
-    if (currentProjectCount >= 10) {
-      toast.error(
-        "Project limit reached! You can have a maximum of 10 projects. Please delete some projects before creating new ones."
-      );
-      return;
+    // Skip this check if called from canvas page (which already checks the limit)
+    if (!skipLimitCheck) {
+      const currentProjectCount = projects.length;
+      if (currentProjectCount >= 10) {
+        toast.error(
+          "Project limit reached! You can have a maximum of 10 projects. Please delete some projects before creating new ones."
+        );
+        return;
+      }
     }
 
     const now = new Date().toISOString();
@@ -193,7 +206,6 @@ export const useHybridProjects = () => {
           cloudResult.createdAt,
           cloudResult.updatedAt
         );
-        toast.success("Project created and saved to cloud.");
         router.push(`/canvas/${cloudResult.id}`);
       } catch (error) {
         console.error("Error creating cloud project:", error);
@@ -209,7 +221,6 @@ export const useHybridProjects = () => {
         now,
         now
       );
-      toast.success("Project created locally.");
       router.push(`/canvas/${localProject.id}`);
     }
   };
@@ -233,7 +244,6 @@ export const useHybridProjects = () => {
               "Local version is newer, syncing to cloud:",
               localProject.name
             );
-            toast.info("Syncing local changes to cloud...");
 
             try {
               await convexUpdateProject({
@@ -242,7 +252,6 @@ export const useHybridProjects = () => {
                 data: localProject.data,
                 updatedAt: localProject.updatedAt,
               });
-              toast.success("Local changes synced to cloud successfully");
             } catch (syncError) {
               console.error(
                 "Failed to sync local changes to cloud:",
@@ -252,10 +261,10 @@ export const useHybridProjects = () => {
                 "Using local version. Cloud sync failed - will retry later."
               );
             }
-          } else {
-            // Cloud version is more recent or same, update local storage
+          } else if (cloudUpdatedAt > localUpdatedAt) {
+            // Cloud version is more recent, update local storage and show toast
             console.log(
-              "Using cloud version (more recent):",
+              "Cloud version is newer, updating local storage:",
               cloudProject.name
             );
             saveProjectToLocal(
@@ -268,10 +277,30 @@ export const useHybridProjects = () => {
               },
               true
             ); // Preserve the cloud timestamp
-            toast.info("Using cloud version (up to date)");
+          } else {
+            // Versions are the same, no need to show toast
+            console.log(
+              "Cloud and local versions are in sync:",
+              cloudProject.name
+            );
+            // Silently ensure local storage is up to date
+            saveProjectToLocal(
+              {
+                id: cloudProject.id,
+                name: cloudProject.name,
+                data: cloudProject.data,
+                createdAt: cloudProject.createdAt,
+                updatedAt: cloudProject.updatedAt,
+              },
+              true
+            ); // Preserve the cloud timestamp
           }
         } else if (cloudProject && !localProject) {
-          // Only cloud version exists, save to local
+          // Only cloud version exists, save to local (this is a meaningful sync)
+          console.log(
+            "Downloading cloud project to local storage:",
+            cloudProject.name
+          );
           saveProjectToLocal(
             {
               id: cloudProject.id,
@@ -287,7 +316,6 @@ export const useHybridProjects = () => {
           console.log(
             "Local project exists but not in cloud, syncing to cloud"
           );
-          toast.info("Syncing local project to cloud...");
 
           try {
             await convexCreateProject({
@@ -296,7 +324,6 @@ export const useHybridProjects = () => {
               createdAt: localProject.createdAt,
               updatedAt: localProject.updatedAt,
             });
-            toast.success("Local project synced to cloud successfully");
           } catch (syncError) {
             console.error("Failed to sync local project to cloud:", syncError);
             toast.warning(
@@ -323,7 +350,6 @@ export const useHybridProjects = () => {
       try {
         await convexDeleteProject({ id: id as Id<"projects"> });
         deleteProjectFromLocal(id);
-        toast.success("Project deleted from cloud and locally.");
         // Projects list will update via useQuery for cloud, or manually if only local was shown before auth
       } catch (error) {
         console.error("Error deleting cloud project:", error);
@@ -336,7 +362,6 @@ export const useHybridProjects = () => {
     } else {
       deleteProjectFromLocal(id);
       setProjects(getLocalProjects());
-      toast.success("Project deleted locally.");
     }
     // Manually trigger a refresh of the projects list if not relying purely on useQuery
     if (!(isSignedIn && isAuthenticated && cloudProjects !== undefined)) {
@@ -371,7 +396,7 @@ export const useHybridProjects = () => {
       }
 
       if (!result.error) {
-        toast.success("Project name updated successfully.");
+        // Removed toast - user doesn't want informational toasts
       }
       // If there's an error but success is true, it means local save worked but cloud failed
       // The useProjectUpdate hook already shows the appropriate warning
@@ -393,14 +418,12 @@ export const useHybridProjects = () => {
     try {
       const stats = getDuplicateProjectStats();
       if (stats.duplicates === 0) {
-        toast.info("No duplicate projects found to clean up.");
+        // Removed toast - user doesn't want informational toasts
         return;
       }
 
       const result = cleanupDuplicateProjects();
-      toast.success(
-        `Cleaned up ${result.cleaned} duplicate projects. ${result.remaining} projects remaining.`
-      );
+      // Removed toast - user doesn't want informational toasts
 
       // Refresh the projects list
       refreshProjects();
@@ -415,11 +438,20 @@ export const useHybridProjects = () => {
   };
 
   const getProjectLimitStats = () => {
-    return getProjectLimitInfo();
+    // Use the actual projects state which includes both local and cloud projects
+    const current = projects.length;
+    const max = 10; // MAX_PROJECTS constant
+    return {
+      current,
+      max,
+      isAtLimit: current >= max,
+      remaining: Math.max(0, max - current),
+    };
   };
 
   const checkProjectLimit = () => {
-    return isProjectLimitReached();
+    // Use the actual projects state instead of just local storage
+    return projects.length >= 10; // MAX_PROJECTS constant
   };
 
   return {

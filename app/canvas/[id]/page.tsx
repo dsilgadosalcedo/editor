@@ -50,7 +50,7 @@ export default function CanvasIdPage() {
       if (!isSignedIn || !isAuthenticated || !isIdForCloudProject) {
         const localProjectExists = loadProjectIntoStore(projectIdFromParams);
         if (localProjectExists) {
-          toast.success("Loaded local project.");
+          // Removed toast - user doesn't want informational toasts
         } else {
           toast.error("Local project not found.");
           router.push("/projects");
@@ -79,7 +79,7 @@ export default function CanvasIdPage() {
             "Local version is newer, syncing to cloud:",
             localProject.name
           );
-          toast.info("Syncing local changes to cloud...");
+          // Removed toast - user doesn't want informational toasts
 
           try {
             await convexUpdateProject({
@@ -88,7 +88,7 @@ export default function CanvasIdPage() {
               data: localProject.data,
               updatedAt: localProject.updatedAt,
             });
-            toast.success("Local changes synced to cloud successfully");
+            // Removed toast - user doesn't want informational toasts
           } catch (syncError) {
             console.error("Failed to sync local changes to cloud:", syncError);
             toast.warning(
@@ -97,22 +97,32 @@ export default function CanvasIdPage() {
           }
 
           loadProjectIntoStore(localProject.id);
-        } else {
-          // Cloud version is more recent or same, use it and update local storage
+        } else if (cloudDate > localDate) {
+          // Cloud version is more recent, use it and update local storage
+          console.log(
+            "Cloud version is newer, using cloud version:",
+            cloudProjectData.name
+          );
           loadCloudProjectIntoStore(cloudProjectData as LocalProject);
-          toast.info("Using cloud version (up to date).");
+          // Removed toast - user doesn't want informational toasts
+        } else {
+          // Versions are the same, no need to show toast
+          console.log(
+            "Cloud and local versions are in sync:",
+            cloudProjectData.name
+          );
+          loadCloudProjectIntoStore(cloudProjectData as LocalProject);
+          // No toast needed - versions are already in sync
         }
       } else if (cloudProjectData) {
         loadCloudProjectIntoStore(cloudProjectData as LocalProject);
-        toast.success("Loaded project from cloud.");
+        // Removed toast - user doesn't want informational toasts
       } else if (localProject && isIdForCloudProject) {
         loadProjectIntoStore(localProject.id);
-        toast.info(
-          "Loaded local version. Cloud version not found or unreachable."
-        );
+        // Removed toast - user doesn't want informational toasts
       } else if (localProject && !isIdForCloudProject) {
         loadProjectIntoStore(localProject.id);
-        toast.success("Loaded local project.");
+        // Removed toast - user doesn't want informational toasts
       } else {
         toast.error("Project not found.");
         router.push("/projects");

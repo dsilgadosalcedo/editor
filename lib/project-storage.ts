@@ -332,6 +332,34 @@ export const removeOldestProjects = (
   };
 };
 
+// Clear all projects from localStorage (useful for sign out)
+export const clearAllProjects = (): {
+  cleared: number;
+  success: boolean;
+} => {
+  if (typeof window === "undefined") {
+    return { cleared: 0, success: false };
+  }
+
+  try {
+    const projects = getProjects();
+    const projectCount = projects.length;
+
+    localStorage.removeItem(PROJECTS_STORAGE_KEY);
+
+    return {
+      cleared: projectCount,
+      success: true,
+    };
+  } catch (error) {
+    console.error("Error clearing projects from localStorage:", error);
+    return {
+      cleared: 0,
+      success: false,
+    };
+  }
+};
+
 // Create project with limit enforcement
 export const createProjectWithLimitCheck = (
   id?: string,

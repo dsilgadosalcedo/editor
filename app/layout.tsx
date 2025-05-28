@@ -4,6 +4,9 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { ClerkProvider } from "@clerk/nextjs";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
+import { AuthStateProvider } from "@/components/AuthStateProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,7 +48,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ClerkProvider>
-            <ConvexClientProvider>{children}</ConvexClientProvider>
+            <ConvexClientProvider>
+              <AuthStateProvider>
+                <TooltipProvider>
+                  {children}
+                  <Toaster />
+                </TooltipProvider>
+              </AuthStateProvider>
+            </ConvexClientProvider>
           </ClerkProvider>
         </ThemeProvider>
       </body>

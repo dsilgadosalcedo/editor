@@ -49,36 +49,12 @@ export default function CanvasToolbar({
     copySelection,
     pasteClipboard,
     clipboard,
-    saveCanvas,
-    loadCanvas,
     exportCanvas,
     importCanvas,
   } = useCanvasStore();
 
   const canUndo = past.length > 0;
   const canRedo = future.length > 0;
-
-  const handleSave = async () => {
-    const title = prompt("Enter canvas title (optional):");
-    const canvasId = await saveCanvas(title || undefined);
-    if (canvasId) {
-      toast.success(`Canvas saved successfully! ID: ${canvasId}`);
-    } else {
-      toast.error("Failed to save canvas");
-    }
-  };
-
-  const handleLoad = async () => {
-    const canvasId = prompt("Enter canvas ID to load:");
-    if (canvasId) {
-      const success = await loadCanvas(canvasId);
-      if (success) {
-        toast.success("Canvas loaded successfully!");
-      } else {
-        toast.error("Failed to load canvas");
-      }
-    }
-  };
 
   const handleExport = () => {
     exportCanvas();

@@ -16,6 +16,10 @@ import { ThemeToggle } from "@/features/canvas/components/ThemeToggle";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import { Authenticated, Unauthenticated } from "convex/react";
 import { useGlobalKeyboardShortcuts } from "@/hooks/useGlobalKeyboardShortcuts";
+import { Skeleton } from "@/components/ui/skeleton";
+import { clearAllProjects } from "@/lib/project-storage";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
+import { toast } from "sonner";
 
 interface ProjectLimitBadgeProps {
   isLoading: boolean;
@@ -72,6 +76,11 @@ interface HeaderActionsProps {
   getDuplicateStats: () => { duplicates: number };
   handleCleanupDuplicates: () => void;
   handleCreateNew: () => void;
+  getProjectLimitStats: () => {
+    current: number;
+    remaining: number;
+    isAtLimit: boolean;
+  };
 }
 
 const HeaderActions = ({
@@ -79,37 +88,54 @@ const HeaderActions = ({
   getDuplicateStats,
   handleCleanupDuplicates,
   handleCreateNew,
-}: HeaderActionsProps) => (
-  <div className="flex items-center gap-2">
-    <ThemeToggle />
-    {!isLoading && getDuplicateStats().duplicates > 0 && (
-      <Button
-        onClick={handleCleanupDuplicates}
-        variant="outline"
-        className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-950"
-      >
-        <Trash2 />
-        Clean Duplicates ({getDuplicateStats().duplicates})
-      </Button>
-    )}
-    <Button onClick={handleCreateNew} className="flex items-center gap-2">
-      <Plus />
-      New Project
-    </Button>
-    <Authenticated>
-      <UserButton afterSignOutUrl="/projects" />
-    </Authenticated>
+  getProjectLimitStats,
+}: HeaderActionsProps) => {
+  const limitStats = getProjectLimitStats();
+  const isAtLimit = !isLoading && limitStats.isAtLimit;
 
-    <Unauthenticated>
-      <SignInButton mode="modal" fallbackRedirectUrl="/projects">
-        <Button>
-          <Cloud />
-          Sign In to Save
+  return (
+    <div className="flex items-center gap-2">
+      <ThemeToggle />
+      {!isLoading && getDuplicateStats().duplicates > 0 && (
+        <Button
+          onClick={handleCleanupDuplicates}
+          variant="outline"
+          className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-950"
+        >
+          <Trash2 />
+          Clean Duplicates ({getDuplicateStats().duplicates})
         </Button>
-      </SignInButton>
-    </Unauthenticated>
-  </div>
-);
+      )}
+
+      {!isLoading ? (
+        <Button
+          onClick={handleCreateNew}
+          className="flex items-center gap-2"
+          disabled={isAtLimit}
+          variant={isAtLimit ? "outline" : "default"}
+        >
+          <Plus />
+          New Project
+        </Button>
+      ) : (
+        <Skeleton className="w-32.5 h-9" />
+      )}
+
+      <Authenticated>
+        <UserButton afterSignOutUrl="/projects" />
+      </Authenticated>
+
+      <Unauthenticated>
+        <SignInButton mode="modal" fallbackRedirectUrl="/projects">
+          <Button>
+            <Cloud />
+            Sign In to Save
+          </Button>
+        </SignInButton>
+      </Unauthenticated>
+    </div>
+  );
+};
 
 export default function ProjectsPage() {
   const projectsHook = useHybridProjects();
@@ -177,6 +203,7 @@ export default function ProjectsPage() {
             getDuplicateStats={getDuplicateStats}
             handleCleanupDuplicates={handleCleanupDuplicates}
             handleCreateNew={handleCreateNew}
+            getProjectLimitStats={getProjectLimitStats}
           />
         </header>
 
