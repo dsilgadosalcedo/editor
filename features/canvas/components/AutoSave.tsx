@@ -5,14 +5,23 @@ import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
 import { useProjectUpdate } from "@/hooks/useProjectUpdate";
 import { useAuth } from "@clerk/nextjs";
 import { useConvexAuth } from "convex/react";
+import {
+  useElements,
+  useArtboardDimensions,
+  useProjectId,
+  useProjectName,
+} from "../store/selectors";
 
 export const AutoSave = () => {
   const { isSignedIn } = useAuth();
   const { isAuthenticated } = useConvexAuth();
   const { updateProjectData } = useProjectUpdate();
 
-  const { elements, artboardDimensions, projectId, projectName } =
-    useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const elements = useElements();
+  const artboardDimensions = useArtboardDimensions();
+  const projectId = useProjectId();
+  const projectName = useProjectName();
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedDataRef = useRef<string>("");

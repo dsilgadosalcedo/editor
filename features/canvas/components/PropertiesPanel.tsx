@@ -1,4 +1,5 @@
 import React from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -9,42 +10,61 @@ import {
 } from "./properties";
 
 export default function PropertiesPanel() {
-  const {
-    selectedElements,
-    getSelectedElementData,
-    hasMultipleSelection,
-    updateName,
-    updateTextContent,
-    updateFillColor,
-    updateFontSize,
-    updateFontWeight,
-    updateLetterSpacing,
-    updateLineHeight,
-    updateHorizontalAlign,
-    updateVerticalAlign,
-    resizeElement,
-    moveElement,
-    updateCornerRadius,
-    updateCornerRadiusNoHistory,
-    updateBorderWidth,
-    updateBorderColor,
-    updateShadowBlur,
-    updateShadowColor,
-    toggleAspectRatioLock,
-    updateImageSrc,
-    rightSidebarDocked,
-    toggleRightSidebarDock,
-    updateTextResizing,
-    updateRotation,
-    alignToArtboardLeft,
-    alignToArtboardRight,
-    alignToArtboardTop,
-    alignToArtboardBottom,
-    alignToArtboardCenterHorizontal,
-    alignToArtboardCenterVertical,
-  } = useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const selectedElements = useCanvasStore((state) => state.selectedElements);
+  const selectedElementData = useCanvasStore((state) =>
+    state.getSelectedElementData()
+  );
+  const hasMultipleSelection = useCanvasStore((state) =>
+    state.hasMultipleSelection()
+  );
+  const rightSidebarDocked = useCanvasStore(
+    (state) => state.rightSidebarDocked
+  );
 
-  const selectedElementData = getSelectedElementData();
+  // Group related actions together using useShallow
+  const elementActions = useCanvasStore(
+    useShallow((state) => ({
+      updateName: state.updateName,
+      updateTextContent: state.updateTextContent,
+      updateFillColor: state.updateFillColor,
+      updateFontSize: state.updateFontSize,
+      updateFontWeight: state.updateFontWeight,
+      updateLetterSpacing: state.updateLetterSpacing,
+      updateLineHeight: state.updateLineHeight,
+      updateHorizontalAlign: state.updateHorizontalAlign,
+      updateVerticalAlign: state.updateVerticalAlign,
+      resizeElement: state.resizeElement,
+      moveElement: state.moveElement,
+      updateCornerRadius: state.updateCornerRadius,
+      updateCornerRadiusNoHistory: state.updateCornerRadiusNoHistory,
+      updateBorderWidth: state.updateBorderWidth,
+      updateBorderColor: state.updateBorderColor,
+      updateShadowBlur: state.updateShadowBlur,
+      updateShadowColor: state.updateShadowColor,
+      toggleAspectRatioLock: state.toggleAspectRatioLock,
+      updateImageSrc: state.updateImageSrc,
+      updateTextResizing: state.updateTextResizing,
+      updateRotation: state.updateRotation,
+    }))
+  );
+
+  const alignmentActions = useCanvasStore(
+    useShallow((state) => ({
+      alignToArtboardLeft: state.alignToArtboardLeft,
+      alignToArtboardRight: state.alignToArtboardRight,
+      alignToArtboardTop: state.alignToArtboardTop,
+      alignToArtboardBottom: state.alignToArtboardBottom,
+      alignToArtboardCenterHorizontal: state.alignToArtboardCenterHorizontal,
+      alignToArtboardCenterVertical: state.alignToArtboardCenterVertical,
+    }))
+  );
+
+  const uiActions = useCanvasStore(
+    useShallow((state) => ({
+      toggleRightSidebarDock: state.toggleRightSidebarDock,
+    }))
+  );
 
   return (
     <div
@@ -58,12 +78,12 @@ export default function PropertiesPanel() {
         {/* Header */}
         <PropertiesPanelHeader
           rightSidebarDocked={rightSidebarDocked}
-          onToggleDock={toggleRightSidebarDock}
+          onToggleDock={uiActions.toggleRightSidebarDock}
         />
 
         {/* Content */}
         <CardContent className="px-4">
-          {selectedElements.length === 0 || hasMultipleSelection() ? (
+          {selectedElements.length === 0 || hasMultipleSelection ? (
             <ArtboardProperties />
           ) : selectedElementData ? (
             <div className="space-y-6">
@@ -71,61 +91,102 @@ export default function PropertiesPanel() {
               <ElementPropertiesRenderer
                 element={selectedElementData}
                 onNameChange={(name) =>
-                  updateName(selectedElementData.id, name)
+                  elementActions.updateName(selectedElementData.id, name)
                 }
                 onContentChange={(content) =>
-                  updateTextContent(selectedElementData.id, content)
+                  elementActions.updateTextContent(
+                    selectedElementData.id,
+                    content
+                  )
                 }
                 onColorChange={(color) =>
-                  updateFillColor(selectedElementData.id, color)
+                  elementActions.updateFillColor(selectedElementData.id, color)
                 }
                 onFontSizeChange={(size) =>
-                  updateFontSize(selectedElementData.id, size)
+                  elementActions.updateFontSize(selectedElementData.id, size)
                 }
                 onFontWeightChange={(weight) =>
-                  updateFontWeight(selectedElementData.id, weight)
+                  elementActions.updateFontWeight(
+                    selectedElementData.id,
+                    weight
+                  )
                 }
                 onDimensionsChange={(width, height) =>
-                  resizeElement(selectedElementData.id, width, height, false)
+                  elementActions.resizeElement(
+                    selectedElementData.id,
+                    width,
+                    height,
+                    false
+                  )
                 }
                 onLetterSpacingChange={(spacing) =>
-                  updateLetterSpacing(selectedElementData.id, spacing)
+                  elementActions.updateLetterSpacing(
+                    selectedElementData.id,
+                    spacing
+                  )
                 }
                 onLineHeightChange={(height) =>
-                  updateLineHeight(selectedElementData.id, height)
+                  elementActions.updateLineHeight(
+                    selectedElementData.id,
+                    height
+                  )
                 }
                 onHorizontalAlignChange={(align) =>
-                  updateHorizontalAlign(selectedElementData.id, align)
+                  elementActions.updateHorizontalAlign(
+                    selectedElementData.id,
+                    align
+                  )
                 }
                 onVerticalAlignChange={(align) =>
-                  updateVerticalAlign(selectedElementData.id, align)
+                  elementActions.updateVerticalAlign(
+                    selectedElementData.id,
+                    align
+                  )
                 }
                 onToggleAspectRatioLock={() =>
-                  toggleAspectRatioLock(selectedElementData.id)
+                  elementActions.toggleAspectRatioLock(selectedElementData.id)
                 }
                 onTextResizingChange={(resizing) =>
-                  updateTextResizing(selectedElementData.id, resizing)
+                  elementActions.updateTextResizing(
+                    selectedElementData.id,
+                    resizing
+                  )
                 }
                 onSrcChange={(src) =>
-                  updateImageSrc(selectedElementData.id, src)
+                  elementActions.updateImageSrc(selectedElementData.id, src)
                 }
                 onCornerRadiusChange={(radius) =>
-                  updateCornerRadius(selectedElementData.id, radius)
+                  elementActions.updateCornerRadius(
+                    selectedElementData.id,
+                    radius
+                  )
                 }
                 onCornerRadiusInstantChange={(radius) =>
-                  updateCornerRadiusNoHistory(selectedElementData.id, radius)
+                  elementActions.updateCornerRadiusNoHistory(
+                    selectedElementData.id,
+                    radius
+                  )
                 }
                 onBorderWidthChange={(width) =>
-                  updateBorderWidth(selectedElementData.id, width)
+                  elementActions.updateBorderWidth(
+                    selectedElementData.id,
+                    width
+                  )
                 }
                 onBorderColorChange={(color) =>
-                  updateBorderColor(selectedElementData.id, color)
+                  elementActions.updateBorderColor(
+                    selectedElementData.id,
+                    color
+                  )
                 }
                 onShadowBlurChange={(blur) =>
-                  updateShadowBlur(selectedElementData.id, blur)
+                  elementActions.updateShadowBlur(selectedElementData.id, blur)
                 }
                 onShadowColorChange={(color) =>
-                  updateShadowColor(selectedElementData.id, color)
+                  elementActions.updateShadowColor(
+                    selectedElementData.id,
+                    color
+                  )
                 }
               />
 
@@ -135,27 +196,38 @@ export default function PropertiesPanel() {
                 y={selectedElementData.y}
                 rotation={selectedElementData.rotation || 0}
                 onXChange={(deltaX) =>
-                  moveElement(selectedElementData.id, deltaX, 0)
+                  elementActions.moveElement(selectedElementData.id, deltaX, 0)
                 }
                 onYChange={(deltaY) =>
-                  moveElement(selectedElementData.id, 0, deltaY)
+                  elementActions.moveElement(selectedElementData.id, 0, deltaY)
                 }
                 onRotationChange={(rotation) =>
-                  updateRotation(selectedElementData.id, rotation)
+                  elementActions.updateRotation(
+                    selectedElementData.id,
+                    rotation
+                  )
                 }
-                onAlignLeft={() => alignToArtboardLeft(selectedElementData.id)}
+                onAlignLeft={() =>
+                  alignmentActions.alignToArtboardLeft(selectedElementData.id)
+                }
                 onAlignRight={() =>
-                  alignToArtboardRight(selectedElementData.id)
+                  alignmentActions.alignToArtboardRight(selectedElementData.id)
                 }
-                onAlignTop={() => alignToArtboardTop(selectedElementData.id)}
+                onAlignTop={() =>
+                  alignmentActions.alignToArtboardTop(selectedElementData.id)
+                }
                 onAlignBottom={() =>
-                  alignToArtboardBottom(selectedElementData.id)
+                  alignmentActions.alignToArtboardBottom(selectedElementData.id)
                 }
                 onAlignCenterHorizontal={() =>
-                  alignToArtboardCenterHorizontal(selectedElementData.id)
+                  alignmentActions.alignToArtboardCenterHorizontal(
+                    selectedElementData.id
+                  )
                 }
                 onAlignCenterVertical={() =>
-                  alignToArtboardCenterVertical(selectedElementData.id)
+                  alignmentActions.alignToArtboardCenterVertical(
+                    selectedElementData.id
+                  )
                 }
               />
             </div>

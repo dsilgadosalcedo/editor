@@ -2,16 +2,14 @@ import React from "react";
 import {
   Minus,
   Plus,
-  Eraser,
   RotateCcw,
   RotateCw,
   Copy,
   Clipboard,
-  Save,
-  FolderOpen,
+  Trash2,
+  Home,
   Download,
   Upload,
-  Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,9 +20,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCanvasStore } from "../store/useCanvasStore";
+import {
+  useSelectedElements,
+  useHistoryState,
+  useHistoryActions,
+  useSelectionActions,
+} from "../store/selectors";
 import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useShallow } from "zustand/react/shallow";
 
 interface CanvasToolbarProps {
   zoom: number;
@@ -39,25 +44,25 @@ export default function CanvasToolbar({
   onZoomToSelection,
   onResetView,
 }: CanvasToolbarProps) {
-  const {
-    selectedElements,
-    past,
-    future,
-    undo,
-    redo,
-    resetCanvas,
-    copySelection,
-    pasteClipboard,
-    clipboard,
-    exportCanvas,
-    importCanvas,
-  } = useCanvasStore();
+  // Use optimized selectors
+  const selectedElements = useSelectedElements();
+  const historyState = useHistoryState();
+  const historyActions = useHistoryActions();
+  const selectionActions = useSelectionActions();
 
-  const canUndo = past.length > 0;
-  const canRedo = future.length > 0;
+  // Group file and canvas actions
+  const fileActions = useCanvasStore(
+    useShallow((state) => ({
+      resetCanvas: state.resetCanvas,
+      exportCanvas: state.exportCanvas,
+      importCanvas: state.importCanvas,
+    }))
+  );
+
+  const clipboard = useCanvasStore((state) => state.clipboard);
 
   const handleExport = () => {
-    exportCanvas();
+    fileActions.exportCanvas();
   };
 
   const handleImport = () => {
@@ -67,8 +72,8 @@ export default function CanvasToolbar({
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        const success = await importCanvas(file);
-        if (!success) {
+        const result = await fileActions.importCanvas(file);
+        if (!result.success) {
           toast.error(
             "Failed to import canvas. Please make sure it's a valid canvas file."
           );
@@ -204,8 +209,8 @@ export default function CanvasToolbar({
         <Button
           variant="ghost"
           size="icon"
-          onClick={undo}
-          disabled={!canUndo}
+          onClick={historyActions.undo}
+          disabled={!historyState.canUndo}
           className="h-8 w-8"
           aria-label="Undo"
         >
@@ -214,12 +219,54 @@ export default function CanvasToolbar({
         <Button
           variant="ghost"
           size="icon"
-          onClick={redo}
-          disabled={!canRedo}
+          onClick={historyActions.redo}
+          disabled={!historyState.canRedo}
           className="h-8 w-8"
           aria-label="Redo"
         >
           <RotateCw className="h-4 w-4" />
+        </Button>
+
+        {/* Copy/Paste Controls */}
+        <div className="h-6">
+          <Separator orientation="vertical" />
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={selectionActions.copySelection}
+          disabled={selectedElements.length === 0}
+          className="h-8 w-8"
+          aria-label="Copy"
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={selectionActions.pasteClipboard}
+          disabled={!clipboard || clipboard.length === 0}
+          className="h-8 w-8"
+          aria-label="Paste"
+        >
+          <Clipboard className="h-4 w-4" />
+        </Button>
+
+        {/* Reset Canvas */}
+        <div className="h-6">
+          <Separator orientation="vertical" />
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={fileActions.resetCanvas}
+          className="h-8 w-8"
+          aria-label="Reset Canvas"
+          title="Clear all elements from canvas"
+        >
+          <Trash2 className="h-4 w-4" />
         </Button>
       </Card>
     </div>

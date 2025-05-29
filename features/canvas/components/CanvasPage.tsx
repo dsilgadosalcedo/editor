@@ -15,10 +15,22 @@ import { AutoSave } from "./AutoSave";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
 import { useDragSelection } from "../hooks/useDragSelection";
 import { useCanvasStore } from "../store/useCanvasStore";
+import {
+  useElements,
+  useSelectedElements,
+  useArtboardDimensions,
+  usePanSensitivity,
+  useZoomSensitivity,
+  useRightSidebarDocked,
+  useCanvasActions,
+  useSelectionActions,
+  useHistoryActions,
+} from "../store/selectors";
 import type { ToolType } from "../types/props";
 import { ColorPickerProvider } from "./ColorPicker";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { useShallow } from "zustand/react/shallow";
 
 export default function CanvasPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -28,30 +40,35 @@ export default function CanvasPage() {
   const [selectedTool, setSelectedTool] = useState<ToolType>(null);
   const [layersOpen, setLayersOpen] = useState(true);
 
-  // Zustand store
-  const {
-    elements,
-    selectedElements,
-    artboardDimensions,
-    panSensitivity,
-    zoomSensitivity,
-    deleteElement,
-    undo,
-    redo,
-    copySelection,
-    pasteClipboard,
-    saveCanvas,
-    loadCanvas,
-    clearSelection,
-    moveElementUp,
-    moveElementDown,
-    moveElement,
-    importCanvas,
-    addImageElement,
-    rightSidebarDocked,
-    selectMultipleElements,
-    addElement,
-  } = useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const elements = useElements();
+  const selectedElements = useSelectedElements();
+  const artboardDimensions = useArtboardDimensions();
+  const panSensitivity = usePanSensitivity();
+  const zoomSensitivity = useZoomSensitivity();
+  const rightSidebarDocked = useRightSidebarDocked();
+
+  // Group related actions using optimized selectors
+  const canvasActions = useCanvasActions();
+  const selectionActions = useSelectionActions();
+  const historyActions = useHistoryActions();
+
+  // Additional actions that need individual selectors
+  const layerActions = useCanvasStore(
+    useShallow((state) => ({
+      moveElementUp: state.moveElementUp,
+      moveElementDown: state.moveElementDown,
+      moveElement: state.moveElement,
+    }))
+  );
+
+  const fileActions = useCanvasStore(
+    useShallow((state) => ({
+      importCanvas: state.importCanvas,
+      saveCanvas: state.saveCanvas,
+      loadCanvas: state.loadCanvas,
+    }))
+  );
 
   const { setTheme, theme } = useTheme();
 
@@ -91,9 +108,7 @@ export default function CanvasPage() {
           // Select all elements
           const allElementIds = elements.map((el) => el.id);
           if (allElementIds.length > 0) {
-            // Use selectMultipleElements to select all
-            const { selectMultipleElements } = useCanvasStore.getState();
-            selectMultipleElements(allElementIds);
+            selectionActions.selectMultipleElements(allElementIds);
           }
           return;
         }
@@ -102,9 +117,9 @@ export default function CanvasPage() {
         if (key === "z" && !isTyping) {
           e.preventDefault();
           if (e.shiftKey) {
-            redo();
+            historyActions.redo();
           } else {
-            undo();
+            historyActions.undo();
           }
           return;
         }
@@ -112,28 +127,28 @@ export default function CanvasPage() {
         // Copy with Ctrl/Cmd+C (only when not typing in inputs and element is selected)
         if (key === "c" && selectedElements.length > 0 && !isTyping) {
           e.preventDefault();
-          copySelection();
+          selectionActions.copySelection();
           return;
         }
 
         // Paste with Ctrl/Cmd+V (only when not typing in inputs)
         if (key === "v" && !isTyping) {
           e.preventDefault();
-          pasteClipboard();
+          selectionActions.pasteClipboard();
           return;
         }
 
         // Move element up one layer with Ctrl/Cmd+ArrowUp (only when not typing and single element is selected)
         if (key === "arrowup" && selectedElements.length === 1 && !isTyping) {
           e.preventDefault();
-          moveElementUp(selectedElements[0]);
+          layerActions.moveElementUp(selectedElements[0]);
           return;
         }
 
         // Move element down one layer with Ctrl/Cmd+ArrowDown (only when not typing and single element is selected)
         if (key === "arrowdown" && selectedElements.length === 1 && !isTyping) {
           e.preventDefault();
-          moveElementDown(selectedElements[0]);
+          layerActions.moveElementDown(selectedElements[0]);
           return;
         }
 
@@ -162,7 +177,7 @@ export default function CanvasPage() {
       ) {
         e.preventDefault();
         // Delete all selected elements
-        selectedElements.forEach((id) => deleteElement(id));
+        selectedElements.forEach((id) => canvasActions.deleteElement(id));
         return;
       }
 
@@ -174,7 +189,7 @@ export default function CanvasPage() {
         );
         if (!isShortcutsVisible) {
           e.preventDefault();
-          clearSelection();
+          selectionActions.clearSelection();
         }
         return;
       }
@@ -218,7 +233,7 @@ export default function CanvasPage() {
 
         // Move all selected elements
         selectedElements.forEach((id) => {
-          moveElement(id, dx, dy);
+          layerActions.moveElement(id, dx, dy);
         });
 
         return;
@@ -228,17 +243,21 @@ export default function CanvasPage() {
       if (!isTyping && !modifier && !e.altKey && !e.shiftKey) {
         if (e.key === "1") {
           e.preventDefault();
-          addElement("text");
+          canvasActions.addElement("text");
           return;
         }
         if (e.key === "2") {
           e.preventDefault();
-          addElement("rectangle");
+          canvasActions.addElement("rectangle");
           return;
         }
         if (e.key === "3") {
           e.preventDefault();
-          addElement("image");
+          // For image, we need to prompt for URL or use a default
+          const imageUrl = prompt("Enter image URL:");
+          if (imageUrl) {
+            canvasActions.addImageElement(imageUrl);
+          }
           return;
         }
       }
@@ -247,20 +266,12 @@ export default function CanvasPage() {
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [
-    undo,
-    redo,
-    deleteElement,
-    selectedElements,
-    copySelection,
-    pasteClipboard,
-    saveCanvas,
-    loadCanvas,
-    clearSelection,
-    moveElementUp,
-    moveElementDown,
-    moveElement,
     elements,
-    addElement,
+    selectedElements,
+    canvasActions,
+    selectionActions,
+    historyActions,
+    layerActions,
     setTheme,
     theme,
   ]);
@@ -303,7 +314,7 @@ export default function CanvasPage() {
     canvasPosition,
     zoom,
     elements,
-    selectMultipleElements,
+    selectionActions.selectMultipleElements,
     artboardDimensions
   );
 
@@ -447,7 +458,7 @@ export default function CanvasPage() {
         });
 
         // Create image element from dropped file
-        addImageElement(dataURL);
+        canvasActions.addImageElement(dataURL);
       } catch (error) {
         console.error("Error processing image file:", error);
         toast.error("Failed to process image file.");
@@ -457,7 +468,7 @@ export default function CanvasPage() {
 
     // Handle JSON canvas files
     try {
-      const result = await importCanvas(file);
+      const result = await fileActions.importCanvas(file);
       if (!result.success) {
         toast.error(
           "Failed to import canvas. Please make sure it's a valid canvas file."

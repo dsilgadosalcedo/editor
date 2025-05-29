@@ -3,6 +3,8 @@ import { ChevronUp, ChevronDown, Group, Ungroup, Eye } from "lucide-react";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Button } from "@/components/ui/button";
 import { useColorPicker } from "./ColorPicker";
+import { useSelectedElements } from "../store/selectors";
+import { useShallow } from "zustand/react/shallow";
 
 interface ElementFloatingToolbarProps {
   elementId: string;
@@ -25,16 +27,22 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
   elementName,
   isMultipleSelection = false,
 }) => {
-  const {
-    moveElementUp,
-    moveElementDown,
-    updateFillColor,
-    groupElements,
-    ungroupElements,
-    hasMultipleSelection,
-    selectedElements,
-    enterIsolationMode,
-  } = useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const selectedElements = useSelectedElements();
+
+  // Group related actions using useShallow
+  const elementActions = useCanvasStore(
+    useShallow((state) => ({
+      moveElementUp: state.moveElementUp,
+      moveElementDown: state.moveElementDown,
+      updateFillColor: state.updateFillColor,
+      groupElements: state.groupElements,
+      ungroupElements: state.ungroupElements,
+      hasMultipleSelection: state.hasMultipleSelection,
+      enterIsolationMode: state.enterIsolationMode,
+    }))
+  );
+
   const { openColorPicker } = useColorPicker();
 
   // Check if we currently have multiple elements selected
@@ -42,12 +50,12 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
 
   const handleMoveUp = (e: React.MouseEvent) => {
     e.stopPropagation();
-    moveElementUp(elementId);
+    elementActions.moveElementUp(elementId);
   };
 
   const handleMoveDown = (e: React.MouseEvent) => {
     e.stopPropagation();
-    moveElementDown(elementId);
+    elementActions.moveElementDown(elementId);
   };
 
   const handleColorClick = (e: React.MouseEvent) => {
@@ -77,7 +85,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     }
 
     const handleColorChange = (newColor: string) => {
-      updateFillColor(elementId, newColor);
+      elementActions.updateFillColor(elementId, newColor);
     };
 
     const layerName =
@@ -95,18 +103,18 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
 
   const handleGroupElements = (e: React.MouseEvent) => {
     e.stopPropagation();
-    groupElements();
+    elementActions.groupElements();
   };
 
   const handleUngroupElements = (e: React.MouseEvent) => {
     e.stopPropagation();
-    ungroupElements();
+    elementActions.ungroupElements();
   };
 
   const handleEnterIsolation = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (elementType === "group") {
-      enterIsolationMode(elementId);
+      elementActions.enterIsolationMode(elementId);
     }
   };
 

@@ -12,7 +12,12 @@ import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
 
 export const useProjects = () => {
   const router = useRouter();
-  const { clearCurrentProject, projectId } = useCanvasStore();
+
+  // Use optimized selectors to prevent unnecessary re-renders
+  const clearCurrentProject = useCanvasStore(
+    (state) => state.clearCurrentProject
+  );
+  const projectId = useCanvasStore((state) => state.projectId);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

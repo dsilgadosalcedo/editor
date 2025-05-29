@@ -1,17 +1,17 @@
 import React, { useState } from "react";
 import {
-  Hand,
-  Square,
   Type,
-  Layers,
+  Square,
   Image as ImageIcon,
+  Hand,
   MousePointer,
+  Layers,
+  Keyboard,
   MoreHorizontal,
   Download,
-  Group,
-  Keyboard,
-  Sun,
-  Moon,
+  Palette,
+  Settings,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,14 @@ import type { ToolType } from "../types/props";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
 import { useCanvasStore } from "../store/useCanvasStore";
+import {
+  useElements,
+  useSelectedElements,
+  useProjectName,
+  useArtboardDimensions,
+  useCanvasActions,
+  useSelectionActions,
+} from "../store/selectors";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -43,14 +51,14 @@ export default function ToolSidebar({
   onToggleLayers,
   layersOpen,
 }: ToolSidebarProps) {
-  const {
-    elements,
-    selectedElements,
-    addElement,
-    projectName,
-    artboardDimensions,
-    clearSelection,
-  } = useCanvasStore();
+  // Use optimized selectors
+  const elements = useElements();
+  const selectedElements = useSelectedElements();
+  const projectName = useProjectName();
+  const artboardDimensions = useArtboardDimensions();
+  const canvasActions = useCanvasActions();
+  const selectionActions = useSelectionActions();
+
   const { theme, setTheme } = useTheme();
   const [showShortcuts, setShowShortcuts] = useState(false);
 
@@ -142,7 +150,7 @@ export default function ToolSidebar({
       <section className="p-1 bg-sidebar/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
         <div className="flex-1 bg-card/50 dark:bg-card/50 border rounded-xl flex flex-col p-4 w-16 items-center gap-2 shadow-sm">
           <ToolButton
-            onClick={() => addElement("text")}
+            onClick={() => canvasActions.addElement("text")}
             aria-label="Add text (Shortcut: 1)"
             tabIndex={0}
             shortcut="1"
@@ -151,7 +159,7 @@ export default function ToolSidebar({
           </ToolButton>
           <ToolButton
             onClick={() => {
-              addElement("rectangle");
+              canvasActions.addElement("rectangle");
             }}
             aria-label="Add rectangle (Shortcut: 2)"
             tabIndex={0}
@@ -160,7 +168,13 @@ export default function ToolSidebar({
             <ToolIcon icon={Square} />
           </ToolButton>
           <ToolButton
-            onClick={() => addElement("image")}
+            onClick={() => {
+              // For image, we need to prompt for URL or use a default
+              const imageUrl = prompt("Enter image URL:");
+              if (imageUrl) {
+                canvasActions.addImageElement(imageUrl);
+              }
+            }}
             aria-label="Add image (Shortcut: 3)"
             tabIndex={0}
             shortcut="3"
@@ -177,7 +191,7 @@ export default function ToolSidebar({
             )}
             onClick={() => {
               onSelectTool(selectedTool === "hand" ? null : "hand");
-              clearSelection();
+              selectionActions.clearSelection();
             }}
           >
             <ToolIcon icon={selectedTool === "hand" ? Hand : MousePointer} />
@@ -186,7 +200,7 @@ export default function ToolSidebar({
             className={cn(layersOpen && "bg-accent")}
             onClick={() => {
               onToggleLayers();
-              clearSelection();
+              selectionActions.clearSelection();
             }}
           >
             <ToolIcon
@@ -213,13 +227,9 @@ export default function ToolSidebar({
                 <MoreHorizontal className="h-6 w-6 group-active:text-properties-gold dark:group-active:text-properties-gold group-active:scale-90 transition-all duration-200 text-properties-text dark:text-foreground" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              side="right"
-              align="end"
-              className="w-48 z-[60]"
-            >
+            <DropdownMenuContent align="start" side="right">
               <DropdownMenuItem onClick={handleDownloadAsSVG}>
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="mr-2 h-4 w-4" />
                 Download as SVG
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -228,10 +238,9 @@ export default function ToolSidebar({
       </section>
 
       {/* Keyboard Shortcuts Modal */}
-      <KeyboardShortcuts
-        isOpen={showShortcuts}
-        onClose={() => setShowShortcuts(false)}
-      />
+      {showShortcuts && (
+        <KeyboardShortcuts onClose={() => setShowShortcuts(false)} />
+      )}
     </aside>
   );
 }
@@ -254,21 +263,26 @@ const ToolButton = ({
   "aria-label": ariaLabel,
 }: ToolButtonProps) => {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className={cn("relative group", className)}
-      onClick={onClick}
-      tabIndex={tabIndex}
-      aria-label={ariaLabel}
-    >
-      {children}
+    <div className="relative flex flex-col items-center">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onClick}
+        className={cn(
+          "group active:text-properties-gold dark:active:text-properties-gold active:scale-90 transition-all duration-200",
+          className
+        )}
+        tabIndex={tabIndex}
+        aria-label={ariaLabel}
+      >
+        {children}
+      </Button>
       {shortcut && (
-        <span className="absolute bottom-1 right-1 text-[8px] text-gray-400 select-none pointer-events-none">
+        <span className="absolute -bottom-2.5 w-full text-[8px] text-gray-400 select-none pointer-events-none text-center">
           {shortcut}
         </span>
       )}
-    </Button>
+    </div>
   );
 };
 

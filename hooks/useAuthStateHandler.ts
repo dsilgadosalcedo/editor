@@ -12,7 +12,11 @@ import { toast } from "sonner";
  */
 export const useAuthStateHandler = () => {
   const { isSignedIn, isLoaded } = useAuth();
-  const { clearCurrentProject } = useCanvasStore();
+
+  // Use optimized selector to prevent unnecessary re-renders
+  const clearCurrentProject = useCanvasStore(
+    (state) => state.clearCurrentProject
+  );
   const previousSignedInState = useRef<boolean | undefined | null>(null);
   const hasInitialized = useRef(false);
 

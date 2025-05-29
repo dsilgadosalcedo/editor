@@ -11,29 +11,42 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { AspectRatioSelector } from "../AspectRatioSelector";
 import { Lock, Unlock } from "lucide-react";
+import {
+  useArtboardDimensions,
+  useArtboardAspectRatio,
+  useProjectName,
+  usePanSensitivity,
+  useZoomSensitivity,
+} from "../../store/selectors";
+import { useShallow } from "zustand/react/shallow";
 
 export function ArtboardProperties() {
-  const {
-    artboardDimensions,
-    artboardAspectRatio,
-    setArtboardDimensions,
-    setArtboardAspectRatio,
-    projectName,
-    setProjectName,
-    panSensitivity,
-    setPanSensitivity,
-    zoomSensitivity,
-    setZoomSensitivity,
-  } = useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const artboardDimensions = useArtboardDimensions();
+  const artboardAspectRatio = useArtboardAspectRatio();
+  const projectName = useProjectName();
+  const panSensitivity = usePanSensitivity();
+  const zoomSensitivity = useZoomSensitivity();
+
+  // Group related artboard actions using useShallow
+  const artboardActions = useCanvasStore(
+    useShallow((state) => ({
+      setArtboardDimensions: state.setArtboardDimensions,
+      setArtboardAspectRatio: state.setArtboardAspectRatio,
+      setProjectName: state.setProjectName,
+      setPanSensitivity: state.setPanSensitivity,
+      setZoomSensitivity: state.setZoomSensitivity,
+    }))
+  );
 
   const handleUpdateArtboardWidth = (width: number) => {
     if (artboardAspectRatio !== null) {
       // Lock aspect ratio - adjust height to maintain ratio
       const newHeight = Math.round(width / artboardAspectRatio);
-      setArtboardDimensions({ width, height: newHeight });
+      artboardActions.setArtboardDimensions({ width, height: newHeight });
     } else {
       // Custom ratio - allow free resizing
-      setArtboardDimensions({ ...artboardDimensions, width });
+      artboardActions.setArtboardDimensions({ ...artboardDimensions, width });
     }
   };
 
@@ -41,10 +54,10 @@ export function ArtboardProperties() {
     if (artboardAspectRatio !== null) {
       // Lock aspect ratio - adjust width to maintain ratio
       const newWidth = Math.round(height * artboardAspectRatio);
-      setArtboardDimensions({ width: newWidth, height });
+      artboardActions.setArtboardDimensions({ width: newWidth, height });
     } else {
       // Custom ratio - allow free resizing
-      setArtboardDimensions({ ...artboardDimensions, height });
+      artboardActions.setArtboardDimensions({ ...artboardDimensions, height });
     }
   };
 
@@ -56,7 +69,7 @@ export function ArtboardProperties() {
           <PropertyField>
             <Input
               value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
+              onChange={(e) => artboardActions.setProjectName(e.target.value)}
               aria-label="Project name"
               placeholder="Enter project name"
             />
@@ -72,8 +85,8 @@ export function ArtboardProperties() {
           <PropertyField distribution="column">
             <AspectRatioSelector
               currentDimensions={artboardDimensions}
-              onDimensionsChange={setArtboardDimensions}
-              onAspectRatioChange={setArtboardAspectRatio}
+              onDimensionsChange={artboardActions.setArtboardDimensions}
+              onAspectRatioChange={artboardActions.setArtboardAspectRatio}
               variant="default"
             />
           </PropertyField>
@@ -134,8 +147,10 @@ export function ArtboardProperties() {
                 min={0.1}
                 max={5.0}
                 step={0.1}
-                onChange={(val) => setPanSensitivity(val)}
-                onInstantChange={(val) => setPanSensitivity(val)}
+                onChange={(val) => artboardActions.setPanSensitivity(val)}
+                onInstantChange={(val) =>
+                  artboardActions.setPanSensitivity(val)
+                }
                 aria-label="Pan sensitivity"
               />
             </PropertyField>
@@ -147,8 +162,10 @@ export function ArtboardProperties() {
                 min={0.1}
                 max={3.0}
                 step={0.1}
-                onChange={(val) => setZoomSensitivity(val)}
-                onInstantChange={(val) => setZoomSensitivity(val)}
+                onChange={(val) => artboardActions.setZoomSensitivity(val)}
+                onInstantChange={(val) =>
+                  artboardActions.setZoomSensitivity(val)
+                }
                 aria-label="Zoom sensitivity"
               />
             </PropertyField>

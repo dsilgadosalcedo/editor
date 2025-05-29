@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useDrag, useDrop } from "react-dnd";
 import { Separator } from "@/components/ui/separator";
 import { LAYER_ITEM_TYPE } from "./types";
+import { useShallow } from "zustand/react/shallow";
 
 interface DragItem {
   id: string;
@@ -44,7 +45,14 @@ export const LayerItem: React.FC<LayerItemProps> = ({
   totalElements,
 }) => {
   const [isGroupExpanded, setIsGroupExpanded] = useState(true);
-  const { reorderElementsHierarchical, enterIsolationMode } = useCanvasStore();
+
+  // Group related layer actions using useShallow
+  const layerActions = useCanvasStore(
+    useShallow((state) => ({
+      reorderElementsHierarchical: state.reorderElementsHierarchical,
+      enterIsolationMode: state.enterIsolationMode,
+    }))
+  );
 
   const isGroup = element.type === "group";
   const children = isGroup ? getElementChildren(element.id) : [];
@@ -98,7 +106,11 @@ export const LayerItem: React.FC<LayerItemProps> = ({
       drop: (item: DragItem, monitor) => {
         if (!monitor.didDrop() && item.id !== element.id) {
           const position = getDropPosition(monitor);
-          reorderElementsHierarchical(item.id, element.id, position);
+          layerActions.reorderElementsHierarchical(
+            item.id,
+            element.id,
+            position
+          );
         }
       },
       canDrop: (item: DragItem) => {
@@ -122,7 +134,7 @@ export const LayerItem: React.FC<LayerItemProps> = ({
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isGroup) {
-      enterIsolationMode(element.id);
+      layerActions.enterIsolationMode(element.id);
     }
   };
 

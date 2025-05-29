@@ -1,39 +1,51 @@
 import React from "react";
 import { ArrowLeft } from "lucide-react";
 import { useCanvasStore } from "../store/useCanvasStore";
+import {
+  useSelectedElements,
+  useIsolatedGroupId,
+  useCanvasActions,
+  useSelectionActions,
+} from "../store/selectors";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { LayerItem, LayersDragLayer } from "./layers";
+import { useShallow } from "zustand/react/shallow";
 
 const LayersPanel: React.FC = () => {
-  const {
-    getTopLevelElements,
-    selectedElements,
-    selectElement,
-    getElementChildren,
-    deleteElement,
-    toggleElementVisibility,
-    isolatedGroupId,
-    exitIsolationMode,
-  } = useCanvasStore();
+  // Use optimized selectors
+  const selectedElements = useSelectedElements();
+  const isolatedGroupId = useIsolatedGroupId();
+  const canvasActions = useCanvasActions();
+  const selectionActions = useSelectionActions();
+
+  // Group related layer functions
+  const layerFunctions = useCanvasStore(
+    useShallow((state) => ({
+      getTopLevelElements: state.getTopLevelElements,
+      getElementChildren: state.getElementChildren,
+      toggleElementVisibility: state.toggleElementVisibility,
+      exitIsolationMode: state.exitIsolationMode,
+    }))
+  );
 
   const handleDeleteElement = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation();
-    deleteElement(elementId);
+    canvasActions.deleteElement(elementId);
   };
 
   const handleToggleVisibility = (e: React.MouseEvent, elementId: string) => {
     e.stopPropagation();
-    toggleElementVisibility(elementId);
+    layerFunctions.toggleElementVisibility(elementId);
   };
 
   const handleExitIsolation = () => {
-    exitIsolationMode();
+    layerFunctions.exitIsolationMode();
   };
 
-  const topLevelElements = getTopLevelElements();
+  const topLevelElements = layerFunctions.getTopLevelElements();
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -77,8 +89,8 @@ const LayersPanel: React.FC = () => {
                       onDeleteElement={handleDeleteElement}
                       onToggleVisibility={handleToggleVisibility}
                       selectedElements={selectedElements}
-                      selectElement={selectElement}
-                      getElementChildren={getElementChildren}
+                      selectElement={selectionActions.selectElement}
+                      getElementChildren={layerFunctions.getElementChildren}
                       isIsolated={element.id === isolatedGroupId}
                       index={index}
                       totalElements={topLevelElements.length}

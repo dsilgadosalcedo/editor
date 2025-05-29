@@ -42,8 +42,13 @@ export const useHybridProjects = () => {
   const router = useRouter();
   const { isSignedIn } = useAuth();
   const { isAuthenticated, isLoading: convexAuthLoading } = useConvexAuth();
-  const { clearCurrentProject, projectId: currentCanvasProjectId } =
-    useCanvasStore();
+
+  // Use optimized selectors to prevent unnecessary re-renders
+  const clearCurrentProject = useCanvasStore(
+    (state) => state.clearCurrentProject
+  );
+  const currentCanvasProjectId = useCanvasStore((state) => state.projectId);
+
   const { updateProjectName } = useProjectUpdate();
 
   const [projects, setProjects] = useState<UnifiedProject[]>([]);

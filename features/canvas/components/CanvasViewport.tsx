@@ -1,7 +1,13 @@
 import React from "react";
 import type { ToolType } from "../types/props";
 import { useCanvasStore } from "../store/useCanvasStore";
+import { useShallow } from "zustand/react/shallow";
 import Artboard from "./Artboard";
+import {
+  useElements,
+  useSelectedElements,
+  useArtboardDimensions,
+} from "../store/selectors";
 
 interface CanvasViewportProps {
   canvasRef: React.RefObject<HTMLDivElement | null>;
@@ -45,30 +51,35 @@ export default function CanvasViewport({
   handleTouchEnd,
   selectionRectangle,
 }: CanvasViewportProps) {
-  const {
-    artboardDimensions,
-    elements,
-    selectedElements,
-    selectElement,
-    moveElement,
-    moveElementNoHistory,
-    moveSelectedElements,
-    moveSelectedElementsNoHistory,
-    resizeElement,
-    resizeElementNoHistory,
-    resizeSelectedElements,
-    resizeSelectedElementsNoHistory,
-    updateTextContent,
-    updateCornerRadius,
-    updateCornerRadiusNoHistory,
-    updateFontSize,
-    updateLineHeight,
-    updateRotation,
-    updateRotationNoHistory,
-    clearSelection,
-    setArtboardDimensions,
-    addToHistory,
-  } = useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const artboardDimensions = useArtboardDimensions();
+  const elements = useElements();
+  const selectedElements = useSelectedElements();
+
+  // Group related element actions using useShallow
+  const elementActions = useCanvasStore(
+    useShallow((state) => ({
+      selectElement: state.selectElement,
+      moveElement: state.moveElement,
+      moveElementNoHistory: state.moveElementNoHistory,
+      moveSelectedElements: state.moveSelectedElements,
+      moveSelectedElementsNoHistory: state.moveSelectedElementsNoHistory,
+      resizeElement: state.resizeElement,
+      resizeElementNoHistory: state.resizeElementNoHistory,
+      resizeSelectedElements: state.resizeSelectedElements,
+      resizeSelectedElementsNoHistory: state.resizeSelectedElementsNoHistory,
+      updateTextContent: state.updateTextContent,
+      updateCornerRadius: state.updateCornerRadius,
+      updateCornerRadiusNoHistory: state.updateCornerRadiusNoHistory,
+      updateFontSize: state.updateFontSize,
+      updateLineHeight: state.updateLineHeight,
+      updateRotation: state.updateRotation,
+      updateRotationNoHistory: state.updateRotationNoHistory,
+      clearSelection: state.clearSelection,
+      setArtboardDimensions: state.setArtboardDimensions,
+      addToHistory: state.addToHistory,
+    }))
+  );
 
   return (
     <div
@@ -103,21 +114,28 @@ export default function CanvasViewport({
           elements={elements}
           selectedElements={selectedElements}
           onSelectElement={(id, addToSelection) => {
-            if (id === null) clearSelection();
-            else selectElement(id, addToSelection);
+            if (id === null) elementActions.clearSelection();
+            else elementActions.selectElement(id, addToSelection);
           }}
-          onMoveElement={moveElement}
-          onMoveElementNoHistory={moveElementNoHistory}
-          onMoveSelectedElements={moveSelectedElements}
-          onMoveSelectedElementsNoHistory={moveSelectedElementsNoHistory}
+          onMoveElement={elementActions.moveElement}
+          onMoveElementNoHistory={elementActions.moveElementNoHistory}
+          onMoveSelectedElements={elementActions.moveSelectedElements}
+          onMoveSelectedElementsNoHistory={
+            elementActions.moveSelectedElementsNoHistory
+          }
           onResizeElement={(id, w, h, preserveAspectRatio) =>
-            resizeElement(id, w, h, preserveAspectRatio)
+            elementActions.resizeElement(id, w, h, preserveAspectRatio)
           }
           onResizeElementNoHistory={(id, w, h, preserveAspectRatio) =>
-            resizeElementNoHistory(id, w, h, preserveAspectRatio)
+            elementActions.resizeElementNoHistory(id, w, h, preserveAspectRatio)
           }
           onResizeSelectedElements={(baseId, w, h, preserveAspectRatio) =>
-            resizeSelectedElements(baseId, w, h, preserveAspectRatio)
+            elementActions.resizeSelectedElements(
+              baseId,
+              w,
+              h,
+              preserveAspectRatio
+            )
           }
           onResizeSelectedElementsNoHistory={(
             baseId,
@@ -125,23 +143,30 @@ export default function CanvasViewport({
             h,
             preserveAspectRatio
           ) =>
-            resizeSelectedElementsNoHistory(baseId, w, h, preserveAspectRatio)
+            elementActions.resizeSelectedElementsNoHistory(
+              baseId,
+              w,
+              h,
+              preserveAspectRatio
+            )
           }
-          onTextChange={updateTextContent}
+          onTextChange={elementActions.updateTextContent}
           selectedTool={selectedTool}
           canvasPosition={canvasPosition}
           artboardRef={artboardRef}
           canvasContainerRef={canvasContainerRef}
-          onUpdateCornerRadius={updateCornerRadius}
-          onUpdateCornerRadiusNoHistory={updateCornerRadiusNoHistory}
-          onUpdateFontSize={updateFontSize}
-          onUpdateLineHeight={updateLineHeight}
-          onUpdateRotation={updateRotation}
-          onUpdateRotationNoHistory={updateRotationNoHistory}
-          onResizeArtboard={(width, height) =>
-            setArtboardDimensions({ width, height })
+          onUpdateCornerRadius={elementActions.updateCornerRadius}
+          onUpdateCornerRadiusNoHistory={
+            elementActions.updateCornerRadiusNoHistory
           }
-          onAddToHistory={addToHistory}
+          onUpdateFontSize={elementActions.updateFontSize}
+          onUpdateLineHeight={elementActions.updateLineHeight}
+          onUpdateRotation={elementActions.updateRotation}
+          onUpdateRotationNoHistory={elementActions.updateRotationNoHistory}
+          onResizeArtboard={(width, height) =>
+            elementActions.setArtboardDimensions({ width, height })
+          }
+          onAddToHistory={elementActions.addToHistory}
         />
 
         {/* Selection Rectangle */}

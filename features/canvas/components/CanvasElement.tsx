@@ -4,6 +4,8 @@ import React, { useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
 import { useCanvasStore } from "../store/useCanvasStore";
+import { useIsolatedGroupId, useElements } from "../store/selectors";
+import { useShallow } from "zustand/react/shallow";
 import { CanvasElementProps } from "../types";
 import { calculateRotatedResize, transformRotatedResize } from "../utils";
 
@@ -117,17 +119,44 @@ export default function CanvasElement({
   const [justDragged, setJustDragged] = useState(false);
   const [prepareDrag, setPrepareDrag] = useState(false);
 
-  // Get canvas store for isolation operations
-  const canvasStore = useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const isolatedGroupId = useIsolatedGroupId();
+
+  // Get isolation actions using useShallow to prevent re-renders
+  const isolationActions = useCanvasStore(
+    useShallow((state) => ({
+      enterIsolationMode: state.enterIsolationMode,
+      exitIsolationMode: state.exitIsolationMode,
+    }))
+  );
+
+  // Get elements for isolation calculations
+  const elements = useElements();
 
   // Create isolation context
   const isolationContext: IsolationContext = {
-    isInIsolationMode: Boolean(canvasStore.isolatedGroupId),
-    isolatedGroupId: canvasStore.isolatedGroupId || undefined,
+    isInIsolationMode: Boolean(isolatedGroupId),
+    isolatedGroupId: isolatedGroupId || undefined,
   };
 
   // Get isolation UI helpers
   const isolationUI = createIsolationUIHelpers(element, isolationContext);
+
+  // Create a stable store wrapper for group interactions
+  const stableStoreWrapper = React.useMemo(
+    () => ({
+      getState: () => ({
+        elements: elements,
+      }),
+      enterIsolationMode: isolationActions.enterIsolationMode,
+      exitIsolationMode: isolationActions.exitIsolationMode,
+    }),
+    [
+      elements,
+      isolationActions.enterIsolationMode,
+      isolationActions.exitIsolationMode,
+    ]
+  );
 
   // Auto-resize text elements based on content
   useEffect(() => {
@@ -274,7 +303,7 @@ export default function CanvasElement({
 
   const groupInteractionHandlers = createGroupInteractionHandlers(
     element,
-    useCanvasStore
+    stableStoreWrapper
   );
 
   // Handle element selection and drag initiation

@@ -4,6 +4,7 @@ import ArtboardControlPoints from "./ArtboardControlPoints";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
 import MultiSelectionUI from "./MultiSelectionUI";
 import { useCanvasStore } from "../store/useCanvasStore";
+import { useShallow } from "zustand/react/shallow";
 
 interface ArtboardProps {
   artboardDimensions: { width: number; height: number };
@@ -86,8 +87,17 @@ const Artboard: React.FC<ArtboardProps> = ({
   onResizeArtboard,
   onAddToHistory,
 }) => {
-  const { isolatedGroupId, getElementDescendants, exitIsolationMode } =
-    useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const isolatedGroupId = useCanvasStore((state) => state.isolatedGroupId);
+
+  // Group related isolation functions using useShallow
+  const isolationActions = useCanvasStore(
+    useShallow((state) => ({
+      getElementDescendants: state.getElementDescendants,
+      exitIsolationMode: state.exitIsolationMode,
+    }))
+  );
+
   // Viewport virtualization - only render visible elements for better performance
   const visibleElements = useMemo(() => {
     // Filter elements based on isolation mode first
@@ -95,7 +105,8 @@ const Artboard: React.FC<ArtboardProps> = ({
 
     if (isolatedGroupId) {
       // In isolation mode, show all elements but mark them for different rendering
-      const isolatedDescendants = getElementDescendants(isolatedGroupId);
+      const isolatedDescendants =
+        isolationActions.getElementDescendants(isolatedGroupId);
       filteredElements = elements.map((el) => ({
         ...el,
         isolated: el.id === isolatedGroupId,
@@ -172,7 +183,7 @@ const Artboard: React.FC<ArtboardProps> = ({
     canvasPosition,
     zoom,
     isolatedGroupId,
-    getElementDescendants,
+    // Removed isolationActions.getElementDescendants from dependencies to prevent infinite re-renders
   ]);
 
   // Development logging for virtualization effectiveness
@@ -237,7 +248,7 @@ const Artboard: React.FC<ArtboardProps> = ({
         onDoubleClick={(e) => {
           if (isolatedGroupId) {
             e.stopPropagation();
-            exitIsolationMode();
+            isolationActions.exitIsolationMode();
           }
         }}
       >
