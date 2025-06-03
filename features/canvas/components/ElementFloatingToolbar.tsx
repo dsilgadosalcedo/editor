@@ -48,6 +48,11 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     }))
   );
 
+  // Get current element data to access dimensions
+  const currentElement = useCanvasStore(
+    useShallow((state) => state.elements.find((el) => el.id === elementId))
+  );
+
   // Check if we currently have multiple elements selected
   const currentlyHasMultipleSelection = selectedElements.length > 1;
 
@@ -84,22 +89,62 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
 
   // Apply inverse scaling to keep toolbar at consistent size regardless of zoom
   const toolbarScale = 1 / (zoom / 100);
-  // Scale the offset distance to maintain consistent visual spacing
-  // 24 is the height of the toolbar, 8 is the padding, 2+2=4 is the borders
-  const baseYOffset = (24 + 8 + 2 + 2 + 16) * (100 / zoom);
-  // Add extra offset when rotating to avoid overlapping with rotation indicator
-  const rotationExtraOffset = isRotating ? 20 * (100 / zoom) : 0;
-  const scaledYOffset = baseYOffset + rotationExtraOffset;
+
+  // Calculate smart positioning
+  const calculatePosition = () => {
+    const toolbarHeight = 32; // Approximate height of the toolbar
+    const gap = 16; // Gap between element and toolbar
+    const viewportHeight = window.innerHeight;
+
+    // Scale the gap based on zoom
+    const scaledGap = gap * (100 / zoom);
+    const scaledToolbarHeight = toolbarHeight * (100 / zoom);
+
+    // Add extra offset when rotating to avoid overlapping with rotation indicator
+    const rotationExtraOffset = isRotating ? 20 * (100 / zoom) : 0;
+
+    // Total space needed above the element
+    const spaceNeededAbove =
+      scaledToolbarHeight + scaledGap + rotationExtraOffset;
+
+    // Calculate distance from top of viewport to element position
+    const distanceFromTop = position.y;
+
+    // Get element height (scaled by zoom)
+    const elementHeight = currentElement
+      ? currentElement.height * (zoom / 100)
+      : 0;
+
+    let finalY = position.y;
+    let shouldPositionBelow = false;
+
+    if (distanceFromTop >= spaceNeededAbove) {
+      // Enough space above - position above the element (default behavior)
+      finalY = position.y - spaceNeededAbove;
+    } else {
+      // Not enough space above - position below the element's bottom edge
+      finalY = position.y + elementHeight + scaledGap;
+      shouldPositionBelow = true;
+    }
+
+    return {
+      x: position.x,
+      y: finalY,
+      isBelow: shouldPositionBelow,
+    };
+  };
+
+  const smartPosition = calculatePosition();
 
   return (
     <div
       data-toolbar="element-floating-toolbar"
       className="absolute pointer-events-auto z-50 transition-all duration-200 ease-out animate-[var(--animate-fade-up)]"
       style={{
-        left: position.x,
-        top: position.y - scaledYOffset,
+        left: smartPosition.x,
+        top: smartPosition.y,
         transform: `scale(${toolbarScale}) translate(-50%, 0)`,
-        transformOrigin: "top left",
+        transformOrigin: smartPosition.isBelow ? "top left" : "top left",
       }}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
