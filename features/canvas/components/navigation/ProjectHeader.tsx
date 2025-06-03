@@ -9,6 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, FolderOpen, ArrowLeft } from "lucide-react";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   useProjectName,
   useProjectId,
   useIsolatedGroupId,
@@ -88,14 +93,20 @@ export default function ProjectHeader() {
   return (
     <div className="absolute top-5 left-5 z-50 flex items-center gap-2">
       {/* Projects button */}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => router.push("/projects")}
-        title="Go to Projects"
-      >
-        <ChevronLeft />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.push("/projects")}
+          >
+            <ChevronLeft />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Go back to projects</p>
+        </TooltipContent>
+      </Tooltip>
 
       {/* Project name */}
       <div>

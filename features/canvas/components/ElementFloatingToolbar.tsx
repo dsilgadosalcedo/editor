@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 import { useColorPicker } from "./ColorPicker";
 import { useSelectedElements } from "../store/selectors";
 import { useShallow } from "zustand/react/shallow";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ElementFloatingToolbarProps {
   elementId: string;
@@ -148,79 +153,111 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
       >
         {/* Move Up Button - only show for single selections */}
         {!currentlyHasMultipleSelection && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleMoveUp}
-            title="Move up one layer"
-            aria-label="Move element up one layer"
-            className="h-6 w-6"
-          >
-            <ChevronUp className="w-4 h-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleMoveUp}
+                aria-label="Move element up one layer"
+                className="h-6 w-6"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Move up one layer</p>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* Move Down Button - only show for single selections */}
         {!currentlyHasMultipleSelection && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleMoveDown}
-            title="Move down one layer"
-            aria-label="Move element down one layer"
-            className="h-6 w-6"
-          >
-            <ChevronDown className="w-4 h-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleMoveDown}
+                aria-label="Move element down one layer"
+                className="h-6 w-6"
+              >
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Move down one layer</p>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* Color Picker - only show for single selections */}
         {!currentlyHasMultipleSelection &&
           (elementType === "rectangle" || elementType === "text") && (
-            <Button
-              variant="ghost"
-              size="icon"
-              data-color-picker-trigger
-              onClick={handleColorClick}
-              title={elementType === "text" ? "Text color" : "Background color"}
-              aria-label={`Change ${
-                elementType === "text" ? "text" : "background"
-              } color`}
-              className="h-6 w-6"
-            >
-              <div
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: elementColor }}
-              />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  data-color-picker-trigger
+                  onClick={handleColorClick}
+                  aria-label={`Change ${
+                    elementType === "text" ? "text" : "background"
+                  } color`}
+                  className="h-6 w-6"
+                >
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: elementColor }}
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {elementType === "text" ? "Text color" : "Background color"}
+                </p>
+              </TooltipContent>
+            </Tooltip>
           )}
 
         {/* Group Elements */}
         {currentlyHasMultipleSelection && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleGroupElements}
-            title="Group elements"
-            aria-label="Group selected elements"
-            className="h-6 w-6"
-          >
-            <Group className="w-4 h-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleGroupElements}
+                aria-label="Group selected elements"
+                className="h-6 w-6"
+              >
+                <Group className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Group selected elements</p>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* Ungroup Elements */}
         {elementType === "group" && !currentlyHasMultipleSelection && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleUngroupElements}
-            title="Ungroup group"
-            aria-label="Ungroup group elements"
-            className="h-6 w-6"
-          >
-            <Ungroup className="w-4 h-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleUngroupElements}
+                aria-label="Ungroup group elements"
+                className="h-6 w-6"
+              >
+                <Ungroup className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Ungroup group elements</p>
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
     </div>

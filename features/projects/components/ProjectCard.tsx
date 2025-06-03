@@ -19,6 +19,11 @@ import {
 } from "@/components/ui/collapsible";
 import { Trash2, Info } from "lucide-react";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ProjectCardProps {
   project: Project;
@@ -102,20 +107,33 @@ export default function ProjectCard({
           <div className="flex items-center gap-1">
             <Collapsible open={isInfoOpen} onOpenChange={setIsInfoOpen}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="icon" title="Project info">
-                  <Info />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Info />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>View project information</p>
+                  </TooltipContent>
+                </Tooltip>
               </CollapsibleTrigger>
             </Collapsible>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              title="Delete project"
-              className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400"
-            >
-              <Trash2 />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400"
+                >
+                  <Trash2 />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delete project</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </CardHeader>
         {isInfoOpen && (
