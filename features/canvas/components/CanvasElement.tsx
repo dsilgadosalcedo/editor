@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
-import { useCanvasStore } from "../store/useCanvasStore";
+import { useCanvasStore } from "../store/useCanvasStore.new";
 import { useIsolatedGroupId, useElements } from "../store/selectors";
 import { useShallow } from "zustand/react/shallow";
 import { CanvasElementProps } from "../types";

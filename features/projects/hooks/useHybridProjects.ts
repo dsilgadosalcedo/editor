@@ -18,7 +18,7 @@ import {
   type Project,
 } from "@/lib/project-storage";
 import { useProjectUpdate } from "@/hooks/useProjectUpdate";
-import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore.new";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";

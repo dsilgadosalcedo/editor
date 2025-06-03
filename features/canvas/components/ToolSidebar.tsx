@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import type { ToolType } from "../types/props";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
-import { useCanvasStore } from "../store/useCanvasStore";
+import { useCanvasStore } from "../store/useCanvasStore.new";
 import {
   useElements,
   useSelectedElements,

@@ -14,7 +14,7 @@ import ProjectHeader from "./navigation/ProjectHeader";
 import { AutoSave } from "./AutoSave";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
 import { useDragSelection } from "../hooks/useDragSelection";
-import { useCanvasStore } from "../store/useCanvasStore";
+import { useCanvasStore } from "../store/useCanvasStore.new";
 import {
   useElements,
   useSelectedElements,

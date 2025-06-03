@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import CanvasPage from "@/features/canvas/components/CanvasPage";
-import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore.new";
 import { useAuth } from "@clerk/nextjs";
 import { useConvexAuth, useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";

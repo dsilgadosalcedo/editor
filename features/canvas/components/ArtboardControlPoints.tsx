@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import React, { useState, useRef } from "react";
-import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore.new";
 import { useArtboardAspectRatio } from "../store/selectors";
 
 interface ArtboardControlPointsProps {

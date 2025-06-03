@@ -5,7 +5,7 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Trash2, Eye, EyeOff } from "lucide-react";
-import { useCanvasStore } from "../../store/useCanvasStore";
+import { useCanvasStore } from "../../store/useCanvasStore.new";
 import { cn } from "@/lib/utils";
 import { useDrag, useDrop } from "react-dnd";
 import { Separator } from "@/components/ui/separator";

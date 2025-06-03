@@ -3,7 +3,7 @@ import CanvasElement from "./CanvasElement";
 import ArtboardControlPoints from "./ArtboardControlPoints";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
 import MultiSelectionUI from "./MultiSelectionUI";
-import { useCanvasStore } from "../store/useCanvasStore";
+import { useCanvasStore } from "../store/useCanvasStore.new";
 import { useShallow } from "zustand/react/shallow";
 
 interface ArtboardProps {

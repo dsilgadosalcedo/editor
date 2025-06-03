@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { clearAllProjects } from "@/lib/project-storage";
-import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore.new";
 import { toast } from "sonner";
 
 /**

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useCanvasStore } from "../../store/useCanvasStore";
+import { useCanvasStore } from "../../store/useCanvasStore.new";
 import { useProjectUpdate } from "@/hooks/useProjectUpdate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

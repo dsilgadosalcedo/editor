@@ -1,5 +1,5 @@
 import { useShallow } from "zustand/react/shallow";
-import { useCanvasStore } from "./useCanvasStore";
+import { useCanvasStore } from "./useCanvasStore.new";
 import { CanvasElementData } from "../types";
 
 // Optimized selectors that prevent unnecessary re-renders
