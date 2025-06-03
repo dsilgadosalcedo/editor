@@ -5,20 +5,15 @@ import {
   Image as ImageIcon,
   Hand,
   MousePointer,
-  Layers,
   Keyboard,
   MoreHorizontal,
   Download,
-  Palette,
-  Settings,
-  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ToolType } from "../types/props";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
-import { useCanvasStore } from "../store/useCanvasStore";
 import {
   useElements,
   useSelectedElements,
@@ -59,7 +54,6 @@ export default function ToolSidebar({
   const canvasActions = useCanvasActions();
   const selectionActions = useSelectionActions();
 
-  const { theme, setTheme } = useTheme();
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   const handleDownloadAsSVG = () => {
@@ -278,7 +272,7 @@ const ToolButton = ({
         {children}
       </Button>
       {shortcut && (
-        <span className="absolute -bottom-2.5 w-full text-[8px] text-gray-400 select-none pointer-events-none text-center">
+        <span className="absolute bottom-1 -right-2.5 w-full text-[8px] text-secondary-foreground select-none pointer-events-none text-center">
           {shortcut}
         </span>
       )}
