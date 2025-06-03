@@ -225,23 +225,62 @@ export const getResizeHandleStyles = (
   let top = 0;
 
   // Calculate position based on direction
-  if (direction.includes("w")) {
-    left = -element.width / 2 - (offset + 1 / 2) * scaleFactor;
-  } else if (direction.includes("e")) {
-    left = element.width / 2 - (offset - 1 / 2) * scaleFactor;
-  }
+  switch (direction) {
+    // Corner handles
+    case "nw":
+      left = -element.width / 2 - (offset + 1 / 2) * scaleFactor;
+      top = -element.height / 2 - (offset + 1 / 2) * scaleFactor;
+      break;
+    case "ne":
+      left = element.width / 2 - (offset - 1 / 2) * scaleFactor;
+      top = -element.height / 2 - (offset + 1 / 2) * scaleFactor;
+      break;
+    case "sw":
+      left = -element.width / 2 - (offset + 1 / 2) * scaleFactor;
+      top = element.height / 2 - (offset - 1 / 2) * scaleFactor;
+      break;
+    case "se":
+      left = element.width / 2 - (offset - 1 / 2) * scaleFactor;
+      top = element.height / 2 - (offset - 1 / 2) * scaleFactor;
+      break;
+    // Edge handles
+    case "n":
+      left = 0; // Center horizontally
+      top = -element.height / 2 - (offset + 1) * scaleFactor;
+      break;
+    case "s":
+      left = 0; // Center horizontally
+      top = element.height / 2 - (offset - 1) * scaleFactor;
+      break;
+    case "e":
+      left = element.width / 2 - (offset - 1) * scaleFactor;
+      top = 0; // Center vertically
+      break;
+    case "w":
+      left = -element.width / 2 - (offset + 1) * scaleFactor;
+      top = 0; // Center vertically
+      break;
+    default:
+      // Fallback for old logic
+      if (direction.includes("w")) {
+        left = -element.width / 2 - (offset + 1 / 2) * scaleFactor;
+      } else if (direction.includes("e")) {
+        left = element.width / 2 - (offset - 1 / 2) * scaleFactor;
+      }
 
-  if (direction.includes("n")) {
-    top = -element.height / 2 - (offset + 1 / 2) * scaleFactor;
-  } else if (direction.includes("s")) {
-    top = element.height / 2 - (offset - 1 / 2) * scaleFactor;
+      if (direction.includes("n")) {
+        top = -element.height / 2 - (offset + 1 / 2) * scaleFactor;
+      } else if (direction.includes("s")) {
+        top = element.height / 2 - (offset - 1 / 2) * scaleFactor;
+      }
+      break;
   }
 
   return {
     left: `${left}px`,
     top: `${top}px`,
     transform: `scale(${scaleFactor})`,
-    transformOrigin: "top left",
+    transformOrigin: "center center",
     pointerEvents: "auto",
     zIndex: 9998,
   };

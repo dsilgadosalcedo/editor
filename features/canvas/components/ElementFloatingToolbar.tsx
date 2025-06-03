@@ -20,6 +20,8 @@ interface ElementFloatingToolbarProps {
   isRotating?: boolean;
   elementName?: string;
   isMultipleSelection?: boolean;
+  currentWidth?: number;
+  currentHeight?: number;
 }
 
 const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
@@ -31,6 +33,8 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
   isRotating = false,
   elementName,
   isMultipleSelection = false,
+  currentWidth,
+  currentHeight,
 }) => {
   // Use optimized selectors to prevent unnecessary re-renders
   const selectedElements = useSelectedElements();
@@ -110,10 +114,18 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     // Calculate distance from top of viewport to element position
     const distanceFromTop = position.y;
 
-    // Get element height (scaled by zoom)
-    const elementHeight = currentElement
-      ? currentElement.height * (zoom / 100)
-      : 0;
+    // Get element height - prioritize current dimensions over store data
+    // This ensures positioning works correctly during active resizing
+    const elementHeight =
+      currentHeight ?? (currentElement ? currentElement.height : 0);
+    const scaledElementHeight = elementHeight * (zoom / 100);
+
+    // Fallback: if elementHeight is 0 or seems invalid, estimate based on element type
+    const fallbackHeight =
+      elementHeight > 0 ? 0 : elementType === "text" ? 50 : 100;
+    const finalElementHeight =
+      elementHeight > 0 ? scaledElementHeight : fallbackHeight * (zoom / 100);
+    const finalBottomY = position.y + finalElementHeight;
 
     let finalY = position.y;
     let shouldPositionBelow = false;
@@ -123,7 +135,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
       finalY = position.y - spaceNeededAbove;
     } else {
       // Not enough space above - position below the element's bottom edge
-      finalY = position.y + elementHeight + scaledGap;
+      finalY = finalBottomY + scaledGap;
       shouldPositionBelow = true;
     }
 

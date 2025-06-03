@@ -61,6 +61,7 @@ export default function CanvasElement({
   onResize,
   onResizeNoHistory,
   onTextChange,
+  onTextResizingChange,
   isPanMode = false,
   zoom,
   onUpdateCornerRadius,
@@ -200,12 +201,23 @@ export default function CanvasElement({
     onResizeNoHistory,
   ]);
 
+  // Sync content when entering editing mode to prevent text disappearing
+  useEffect(() => {
+    if (isEditing && element.type === "text" && textRef.current) {
+      // Ensure the contentEditable div has the current content when entering edit mode
+      if (textRef.current.textContent !== element.content) {
+        textRef.current.textContent = element.content || "Text";
+      }
+    }
+  }, [isEditing, element.content, element.type]);
+
   // Real-time text input handlers for auto-width
   useEffect(() => {
     if (
       !isEditing ||
       element.type !== "text" ||
-      element.textResizing !== "auto-width"
+      (element.textResizing !== "auto-width" &&
+        element.textResizing !== "auto-height")
     ) {
       return;
     }
@@ -264,7 +276,8 @@ export default function CanvasElement({
     onAddToHistory,
     zoom,
     setResizeState,
-    transformRotatedResize
+    transformRotatedResize,
+    onTextResizingChange
   );
 
   const rotationHandlers = createElementRotationHandlers(
@@ -298,7 +311,8 @@ export default function CanvasElement({
     element,
     onTextChange,
     setIsEditing,
-    textRef
+    textRef,
+    onResizeNoHistory
   );
 
   const groupInteractionHandlers = createGroupInteractionHandlers(
@@ -381,11 +395,14 @@ export default function CanvasElement({
             className={cn(
               "w-full h-full flex outline-none overflow-hidden",
               getTextAlignmentClasses(element),
-              isEditing && "bg-blue-600/30"
+              isEditing ? "bg-transparent" : ""
             )}
-            style={getTextStyles(element)}
+            style={getTextStyles(element, isEditing)}
+            dangerouslySetInnerHTML={
+              isEditing ? undefined : { __html: element.content || "Text" }
+            }
           >
-            {!isEditing && element.content}
+            {isEditing && (element.content || "Text")}
           </div>
         )}
 
@@ -414,38 +431,144 @@ export default function CanvasElement({
             />
 
             {/* Resize handles */}
-            {!isMultipleSelected && element.type === "text" ? (
-              // Text elements: Font scale handle
-              <div
-                data-handle="font-scale"
-                className="absolute w-3 h-3 hover:scale-125 transition-all duration-100 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-nwse-resize"
-                style={getFontScaleHandleStyles(element, zoom)}
-                onMouseDown={fontScaleHandlers.handleFontScaleDragStart}
-                title="Drag to scale text size"
-              />
-            ) : !isMultipleSelected ? (
-              // Rectangle, Image, and Group elements: Corner handles
+            {!isMultipleSelected && (
               <>
-                {["nw", "ne", "sw", "se"].map((direction) => (
-                  <div
-                    key={direction}
-                    data-handle={`resize-${direction}`}
-                    className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
-                      direction,
-                      element.rotation || 0
-                    )}`}
-                    style={getResizeHandleStyles(element, zoom, direction)}
-                    onMouseDown={(e) =>
-                      resizeHandlers.handleResizeStart(direction, e)
-                    }
-                    onTouchStart={(e) =>
-                      resizeHandlers.handleResizeTouchStart(direction, e)
-                    }
-                    onDoubleClick={handleResizeDoubleClick}
-                  />
-                ))}
+                {element.type === "text" ? (
+                  // Text elements: Show appropriate resize handles based on text resizing mode
+                  <>
+                    {element.textResizing === "auto-width" && (
+                      // Auto-width: Only show top and bottom handles (height only)
+                      <>
+                        {["n", "s"].map((direction) => (
+                          <div
+                            key={direction}
+                            data-handle={`resize-${direction}`}
+                            className={`absolute w-4 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                              direction,
+                              element.rotation || 0
+                            )}`}
+                            style={getResizeHandleStyles(
+                              element,
+                              zoom,
+                              direction
+                            )}
+                            onMouseDown={(e) =>
+                              resizeHandlers.handleResizeStart(direction, e)
+                            }
+                            onTouchStart={(e) =>
+                              resizeHandlers.handleResizeTouchStart(
+                                direction,
+                                e
+                              )
+                            }
+                          />
+                        ))}
+                      </>
+                    )}
+
+                    {element.textResizing === "auto-height" && (
+                      // Auto-height: Only show left and right handles (width only)
+                      <>
+                        {["e", "w"].map((direction) => (
+                          <div
+                            key={direction}
+                            data-handle={`resize-${direction}`}
+                            className={`absolute w-2 h-4 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                              direction,
+                              element.rotation || 0
+                            )}`}
+                            style={getResizeHandleStyles(
+                              element,
+                              zoom,
+                              direction
+                            )}
+                            onMouseDown={(e) =>
+                              resizeHandlers.handleResizeStart(direction, e)
+                            }
+                            onTouchStart={(e) =>
+                              resizeHandlers.handleResizeTouchStart(
+                                direction,
+                                e
+                              )
+                            }
+                          />
+                        ))}
+                      </>
+                    )}
+
+                    {element.textResizing === "fixed" && (
+                      // Fixed size: Show all resize handles (corners and edges)
+                      <>
+                        {["nw", "ne", "sw", "se", "n", "s", "e", "w"].map(
+                          (direction) => (
+                            <div
+                              key={direction}
+                              data-handle={`resize-${direction}`}
+                              className={`absolute ${
+                                ["nw", "ne", "sw", "se"].includes(direction)
+                                  ? "w-2 h-2 rounded-full"
+                                  : direction === "n" || direction === "s"
+                                  ? "w-4 h-2 rounded-sm"
+                                  : "w-2 h-4 rounded-sm"
+                              } border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                                direction,
+                                element.rotation || 0
+                              )}`}
+                              style={getResizeHandleStyles(
+                                element,
+                                zoom,
+                                direction
+                              )}
+                              onMouseDown={(e) =>
+                                resizeHandlers.handleResizeStart(direction, e)
+                              }
+                              onTouchStart={(e) =>
+                                resizeHandlers.handleResizeTouchStart(
+                                  direction,
+                                  e
+                                )
+                              }
+                              onDoubleClick={handleResizeDoubleClick}
+                            />
+                          )
+                        )}
+                      </>
+                    )}
+
+                    {/* Font scale handle for text */}
+                    <div
+                      data-handle="font-scale"
+                      className="absolute w-3 h-3 hover:scale-125 transition-all duration-100 ease-out rounded-full bg-orange-200 border border-white inset-shadow-sm inset-shadow-orange-300 shadow-sm cursor-nwse-resize"
+                      style={getFontScaleHandleStyles(element, zoom)}
+                      onMouseDown={fontScaleHandlers.handleFontScaleDragStart}
+                      title="Drag to scale text size"
+                    />
+                  </>
+                ) : (
+                  // Rectangle, Image, and Group elements: Corner handles only
+                  <>
+                    {["nw", "ne", "sw", "se"].map((direction) => (
+                      <div
+                        key={direction}
+                        data-handle={`resize-${direction}`}
+                        className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                          direction,
+                          element.rotation || 0
+                        )}`}
+                        style={getResizeHandleStyles(element, zoom, direction)}
+                        onMouseDown={(e) =>
+                          resizeHandlers.handleResizeStart(direction, e)
+                        }
+                        onTouchStart={(e) =>
+                          resizeHandlers.handleResizeTouchStart(direction, e)
+                        }
+                        onDoubleClick={handleResizeDoubleClick}
+                      />
+                    ))}
+                  </>
+                )}
               </>
-            ) : null}
+            )}
 
             {/* Rotation handles */}
             {!isMultipleSelected &&
@@ -526,6 +649,8 @@ export default function CanvasElement({
             isRotating={rotationState.isRotating}
             elementName={element.name}
             isMultipleSelection={isMultipleSelected}
+            currentWidth={element.width}
+            currentHeight={element.height}
           />
         )}
     </>

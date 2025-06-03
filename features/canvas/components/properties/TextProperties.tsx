@@ -17,10 +17,10 @@ import {
   AlignEndVertical,
   Link,
   Unlink,
-  Expand,
-  ArrowRightLeft,
-  ArrowUpDown,
-  ArrowLeftRight,
+  Square,
+  MoveHorizontal,
+  AlignJustify,
+  RotateCcw,
 } from "lucide-react";
 import { TextContentSection, TextStyleSection } from "./text";
 
@@ -108,82 +108,85 @@ export function TextProperties({
       <PropertySection>
         <PropertyTitle>Dimensions</PropertyTitle>
         <PropertyStack distribution="column">
-          <PropertyField>
-            <PropertyLabel>Width</PropertyLabel>
-            <div className="flex items-center max-w-37 gap-1">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 flex-1">
+              <span className="text-xs text-gray-500 w-3">W</span>
               <PropertyInput
                 value={width}
                 onChange={(val) => onDimensionsChange(val, height)}
                 onInstantChange={(val) => onDimensionsChange(val, height)}
-                icon={<ArrowLeftRight className="h-3 w-3" />}
-                aria-label="Text width"
+                aria-label="Width"
+                className="text-xs"
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggleAspectRatioLock}
-                className={`${
-                  lockAspectRatio ? "text-blue-600" : "text-gray-400"
-                }`}
-                title={
-                  lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"
-                }
-                aria-label={
-                  lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"
-                }
-              >
-                {lockAspectRatio ? (
-                  <Link className="h-3 w-3" />
-                ) : (
-                  <Unlink className="h-3 w-3" />
-                )}
-              </Button>
             </div>
-          </PropertyField>
-          <PropertyField distribution="row">
-            <PropertyLabel>Height</PropertyLabel>
-            <PropertyInput
-              value={height}
-              onChange={(val) => onDimensionsChange(width, val)}
-              onInstantChange={(val) => onDimensionsChange(width, val)}
-              icon={<ArrowUpDown className="h-3 w-3" />}
-              aria-label="Text height"
-            />
-          </PropertyField>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleAspectRatioLock}
+              className={`p-1 h-6 w-6 ${
+                lockAspectRatio ? "text-blue-600" : "text-gray-400"
+              }`}
+              title={
+                lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"
+              }
+              aria-label={
+                lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"
+              }
+            >
+              {lockAspectRatio ? (
+                <Link className="h-3 w-3" />
+              ) : (
+                <Unlink className="h-3 w-3" />
+              )}
+            </Button>
+            <div className="flex items-center gap-1 flex-1">
+              <span className="text-xs text-gray-500 w-3">H</span>
+              <PropertyInput
+                value={height}
+                onChange={(val) => onDimensionsChange(width, val)}
+                onInstantChange={(val) => onDimensionsChange(width, val)}
+                aria-label="Height"
+                className="text-xs"
+              />
+            </div>
+          </div>
         </PropertyStack>
       </PropertySection>
 
-      {/* Text Resizing Section */}
+      {/* Resizing Section */}
       <PropertySection>
-        <PropertyTitle>Text Resizing</PropertyTitle>
+        <PropertyTitle>Resizing</PropertyTitle>
         <PropertyStack distribution="column">
-          <div className="grid grid-cols-3 gap-1">
+          <div className="flex gap-1">
             <Button
               variant={textResizing === "auto-width" ? "default" : "outline"}
               size="sm"
               onClick={() => onTextResizingChange("auto-width")}
-              className="text-xs p-1"
+              className="p-2 h-8 w-8 flex items-center justify-center"
+              aria-label="Auto width"
+              title="Auto width"
             >
-              <ArrowRightLeft className="h-3 w-3 mr-1" />
-              Auto Width
+              <MoveHorizontal className="h-4 w-4" />
             </Button>
             <Button
               variant={textResizing === "auto-height" ? "default" : "outline"}
               size="sm"
               onClick={() => onTextResizingChange("auto-height")}
-              className="text-xs p-1"
+              className="p-2 h-8 w-8 flex items-center justify-center"
+              aria-label="Auto height"
+              title="Auto height"
             >
-              <ArrowUpDown className="h-3 w-3 mr-1" />
-              Auto Height
+              <AlignJustify className="h-4 w-4" />
             </Button>
             <Button
               variant={textResizing === "fixed" ? "default" : "outline"}
               size="sm"
               onClick={() => onTextResizingChange("fixed")}
-              className="text-xs p-1"
+              className="p-2 h-8 w-8 flex items-center justify-center"
+              aria-label="Fixed size"
+              title="Fixed size"
             >
-              <Expand className="h-3 w-3 mr-1" />
-              Fixed
+              <Square className="h-4 w-4" />
             </Button>
           </div>
         </PropertyStack>

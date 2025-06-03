@@ -85,7 +85,8 @@ export const createTextEditingHandlers = (
   element: any,
   onTextChange: (content: string) => void,
   setIsEditing: (editing: boolean) => void,
-  textRef: React.RefObject<HTMLDivElement | null>
+  textRef: React.RefObject<HTMLDivElement | null>,
+  onResizeNoHistory?: (width: number, height: number) => void
 ) => {
   const handleTextDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -93,13 +94,71 @@ export const createTextEditingHandlers = (
     e.nativeEvent.stopImmediatePropagation();
     setIsEditing(true);
 
-    // Focus the text element and select all content
+    // Focus the text element and place cursor at click position (Figma behavior)
     setTimeout(() => {
       if (textRef.current) {
+        // Ensure the content is set before focusing
+        if (
+          !textRef.current.textContent ||
+          textRef.current.textContent.trim() === ""
+        ) {
+          textRef.current.textContent = element.content || "Text";
+        }
+
         textRef.current.focus();
+
+        // Don't select all text - just place cursor where clicked
         const range = document.createRange();
         const selection = window.getSelection();
-        range.selectNodeContents(textRef.current);
+
+        // Try to place cursor at the clicked position
+        try {
+          let clickRange: Range | null = null;
+
+          // Try modern approach first
+          if (document.caretRangeFromPoint && e.clientX && e.clientY) {
+            clickRange = document.caretRangeFromPoint(e.clientX, e.clientY);
+          }
+          // Fallback for browsers that don't support caretRangeFromPoint
+          else if (
+            (document as any).caretPositionFromPoint &&
+            e.clientX &&
+            e.clientY
+          ) {
+            const caretPos = (document as any).caretPositionFromPoint(
+              e.clientX,
+              e.clientY
+            );
+            if (caretPos) {
+              clickRange = document.createRange();
+              clickRange.setStart(caretPos.offsetNode, caretPos.offset);
+              clickRange.collapse(true);
+            }
+          }
+
+          if (
+            clickRange &&
+            textRef.current.contains(clickRange.startContainer)
+          ) {
+            selection?.removeAllRanges();
+            selection?.addRange(clickRange);
+            return;
+          }
+        } catch (error) {
+          console.warn("Could not position cursor at click location:", error);
+        }
+
+        // Fallback: place cursor at end of text
+        if (textRef.current.firstChild && textRef.current.textContent) {
+          range.setStart(
+            textRef.current.firstChild,
+            textRef.current.textContent.length
+          );
+          range.collapse(true);
+        } else {
+          range.selectNodeContents(textRef.current);
+          range.collapse(false);
+        }
         selection?.removeAllRanges();
         selection?.addRange(range);
       }
@@ -113,14 +172,76 @@ export const createTextEditingHandlers = (
   const handleTextChange = (e: React.FormEvent<HTMLDivElement>) => {
     const newContent = e.currentTarget.textContent || "Text";
     onTextChange(newContent);
+
+    // Handle auto-height resizing during editing (like Figma)
+    if (
+      element.textResizing === "auto-height" &&
+      onResizeNoHistory &&
+      textRef.current
+    ) {
+      setTimeout(() => {
+        if (!textRef.current) return;
+
+        const content = textRef.current.textContent || "Text";
+        const {
+          fontSize = 16,
+          fontWeight = 400,
+          letterSpacing = 0,
+          lineHeight = fontSize * 1.2,
+          width,
+        } = element;
+
+        // Create a measuring div with the same styles
+        const tempDiv = document.createElement("div");
+        tempDiv.style.position = "absolute";
+        tempDiv.style.visibility = "hidden";
+        tempDiv.style.width = `${width - 8}px`; // Account for padding
+        tempDiv.style.fontSize = `${fontSize}px`;
+        tempDiv.style.fontWeight = `${fontWeight}`;
+        tempDiv.style.fontFamily = "var(--font-geist-sans)";
+        tempDiv.style.letterSpacing = `${letterSpacing}px`;
+        tempDiv.style.lineHeight = `${lineHeight}px`;
+        tempDiv.style.overflowWrap = "break-word";
+        tempDiv.style.whiteSpace = "normal";
+        tempDiv.textContent = content;
+
+        document.body.appendChild(tempDiv);
+        const newHeight = Math.max(20, tempDiv.offsetHeight + 8);
+        document.body.removeChild(tempDiv);
+
+        if (Math.abs(newHeight - element.height) > 2) {
+          onResizeNoHistory(width, newHeight);
+        }
+      }, 0);
+    }
   };
 
   const handleTextKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Allow Enter to add line breaks
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      document.execCommand("insertLineBreak");
+    // Handle Enter key properly for auto-height text
+    if (e.key === "Enter") {
+      if (element.textResizing === "auto-height") {
+        // Allow natural line break for auto-height
+        return;
+      } else if (element.textResizing === "auto-width") {
+        // Only allow line break with Shift+Enter for auto-width
+        if (!e.shiftKey) {
+          e.preventDefault();
+          return;
+        }
+      }
+      // For fixed size, allow Enter normally
     }
+
+    // Handle Escape to exit editing
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (textRef.current) {
+        textRef.current.blur();
+      }
+      return;
+    }
+
     // Prevent other keyboard shortcuts from bubbling up
     e.stopPropagation();
   };
@@ -142,7 +263,7 @@ export const createTextInputHandlers = (
   textRef: React.RefObject<HTMLDivElement | null>
 ) => {
   const handleInput = () => {
-    if (!textRef.current || element.textResizing !== "auto-width") {
+    if (!textRef.current) {
       return;
     }
 
@@ -152,18 +273,43 @@ export const createTextInputHandlers = (
     const letterSpacing = element.letterSpacing || 0;
     const lineHeight = element.lineHeight || fontSize * 1.2;
 
-    const measured = measureText(
-      content,
-      fontSize,
-      fontWeight,
-      "var(--font-geist-sans)",
-      letterSpacing,
-      lineHeight
-    );
-    const newWidth = Math.max(20, measured.width + 8);
+    if (element.textResizing === "auto-width") {
+      // Auto-width: measure text width and update width
+      const measured = measureText(
+        content,
+        fontSize,
+        fontWeight,
+        "var(--font-geist-sans)",
+        letterSpacing,
+        lineHeight
+      );
+      const newWidth = Math.max(20, measured.width + 8);
 
-    if (Math.abs(newWidth - element.width) > 2) {
-      onResizeNoHistory(newWidth, element.height);
+      if (Math.abs(newWidth - element.width) > 2) {
+        onResizeNoHistory(newWidth, element.height);
+      }
+    } else if (element.textResizing === "auto-height") {
+      // Auto-height: measure text height with fixed width and update height
+      const tempDiv = document.createElement("div");
+      tempDiv.style.position = "absolute";
+      tempDiv.style.visibility = "hidden";
+      tempDiv.style.width = `${element.width - 8}px`; // Account for padding
+      tempDiv.style.fontSize = `${fontSize}px`;
+      tempDiv.style.fontWeight = `${fontWeight}`;
+      tempDiv.style.fontFamily = "var(--font-geist-sans)";
+      tempDiv.style.letterSpacing = `${letterSpacing}px`;
+      tempDiv.style.lineHeight = `${lineHeight}px`;
+      tempDiv.style.overflowWrap = "break-word";
+      tempDiv.style.whiteSpace = "normal";
+      tempDiv.textContent = content;
+
+      document.body.appendChild(tempDiv);
+      const newHeight = Math.max(20, tempDiv.offsetHeight + 8);
+      document.body.removeChild(tempDiv);
+
+      if (Math.abs(newHeight - element.height) > 2) {
+        onResizeNoHistory(element.width, newHeight);
+      }
     }
   };
 
@@ -221,8 +367,8 @@ export const handleTextFitContent = (
 /**
  * Get text style properties for rendering
  */
-export const getTextStyles = (element: any) => {
-  return {
+export const getTextStyles = (element: any, isEditing: boolean = false) => {
+  const baseStyles = {
     color: element.color,
     fontSize: element.fontSize ? `${element.fontSize}px` : undefined,
     fontWeight: element.fontWeight,
@@ -230,13 +376,32 @@ export const getTextStyles = (element: any) => {
       ? `${element.letterSpacing}px`
       : undefined,
     lineHeight: element.lineHeight ? `${element.lineHeight}px` : undefined,
-    whiteSpace: element.textResizing === "auto-width" ? "nowrap" : "normal",
-    overflowWrap:
-      element.textResizing === "auto-width"
-        ? "normal"
-        : ("break-word" as "normal" | "break-word"),
     padding: "4px", // Add some padding
   };
+
+  // Handle different text resizing modes
+  if (element.textResizing === "auto-width") {
+    return {
+      ...baseStyles,
+      whiteSpace: "nowrap" as const,
+      overflowWrap: "normal" as const,
+    };
+  } else if (element.textResizing === "auto-height") {
+    return {
+      ...baseStyles,
+      whiteSpace: "normal" as const,
+      overflowWrap: "break-word" as const,
+      wordWrap: "break-word" as const,
+    };
+  } else {
+    // Fixed size
+    return {
+      ...baseStyles,
+      whiteSpace: "normal" as const,
+      overflowWrap: "break-word" as const,
+      wordWrap: "break-word" as const,
+    };
+  }
 };
 
 /**

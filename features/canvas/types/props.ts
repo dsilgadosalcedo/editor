@@ -18,6 +18,7 @@ export interface CanvasElementProps {
     preserveAspectRatio?: boolean
   ) => void;
   onTextChange: (content: string) => void;
+  onTextResizingChange?: (mode: "auto-width" | "auto-height" | "fixed") => void;
   isPanMode?: boolean;
   zoom: number;
   onUpdateCornerRadius?: (id: string, cornerRadius: number) => void;
@@ -67,6 +68,10 @@ export interface ArtboardProps {
     preserveAspectRatio?: boolean
   ) => void;
   onTextChange: (id: string, content: string) => void;
+  onTextResizingChange?: (
+    id: string,
+    mode: "auto-width" | "auto-height" | "fixed"
+  ) => void;
   selectedTool: string | null;
   canvasPosition: { x: number; y: number };
   artboardRef: React.RefObject<HTMLDivElement | null>;

@@ -69,6 +69,7 @@ export default function CanvasViewport({
       resizeSelectedElements: state.resizeSelectedElements,
       resizeSelectedElementsNoHistory: state.resizeSelectedElementsNoHistory,
       updateTextContent: state.updateTextContent,
+      updateTextResizing: state.updateTextResizing,
       updateCornerRadius: state.updateCornerRadius,
       updateCornerRadiusNoHistory: state.updateCornerRadiusNoHistory,
       updateFontSize: state.updateFontSize,
@@ -151,6 +152,7 @@ export default function CanvasViewport({
             )
           }
           onTextChange={elementActions.updateTextContent}
+          onTextResizingChange={elementActions.updateTextResizing}
           selectedTool={selectedTool}
           canvasPosition={canvasPosition}
           artboardRef={artboardRef}

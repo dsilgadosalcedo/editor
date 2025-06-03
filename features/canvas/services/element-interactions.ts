@@ -205,7 +205,8 @@ export const createElementResizeHandlers = (
     dy: number,
     direction: string,
     rotation: number
-  ) => { dx: number; dy: number }
+  ) => { dx: number; dy: number },
+  onTextResizingChange?: (mode: "auto-width" | "auto-height" | "fixed") => void
 ) => {
   const handleResizeStart = (direction: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -314,6 +315,16 @@ export const createElementResizeHandlers = (
       }
 
       onResize(newWidth, newHeight, e.shiftKey);
+
+      // For text elements: automatically change to "fixed" when manually resized (Figma behavior)
+      if (
+        element.type === "text" &&
+        element.textResizing !== "fixed" &&
+        onTextResizingChange
+      ) {
+        onTextResizingChange("fixed");
+      }
+
       onAddToHistory?.();
       setResizeState((prev) => ({ ...prev, isResizing: false }));
 
@@ -402,6 +413,16 @@ export const createElementResizeHandlers = (
         newHeight = Math.max(10, startHeight - rawDy);
 
       onResize(newWidth, newHeight, false);
+
+      // For text elements: automatically change to "fixed" when manually resized (Figma behavior)
+      if (
+        element.type === "text" &&
+        element.textResizing !== "fixed" &&
+        onTextResizingChange
+      ) {
+        onTextResizingChange("fixed");
+      }
+
       onAddToHistory?.();
       setResizeState((prev) => ({ ...prev, isResizing: false }));
 

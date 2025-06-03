@@ -43,6 +43,10 @@ interface ArtboardProps {
     preserveAspectRatio?: boolean
   ) => void;
   onTextChange: (id: string, content: string) => void;
+  onTextResizingChange?: (
+    id: string,
+    mode: "auto-width" | "auto-height" | "fixed"
+  ) => void;
   selectedTool: string | null;
   canvasPosition: { x: number; y: number };
   artboardRef: React.RefObject<HTMLDivElement | null>;
@@ -74,6 +78,7 @@ const Artboard: React.FC<ArtboardProps> = ({
   onResizeSelectedElements,
   onResizeSelectedElementsNoHistory,
   onTextChange,
+  onTextResizingChange,
   selectedTool,
   canvasPosition,
   artboardRef,
@@ -323,6 +328,9 @@ const Artboard: React.FC<ArtboardProps> = ({
               }
             }}
             onTextChange={(content) => onTextChange(element.id, content)}
+            onTextResizingChange={(mode) =>
+              onTextResizingChange?.(element.id, mode)
+            }
             isPanMode={selectedTool === "hand"}
             zoom={zoom}
             onUpdateCornerRadius={onUpdateCornerRadius}
