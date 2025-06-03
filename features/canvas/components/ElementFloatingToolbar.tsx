@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronUp, ChevronDown, Group, Ungroup, Eye } from "lucide-react";
-import { useCanvasStore } from "../store/useCanvasStore.new";
+import { useCanvasStore } from "../store/useCanvasStore";
 import { Button } from "@/components/ui/button";
 import { useColorPicker } from "./ColorPicker";
 import { useSelectedElements } from "../store/selectors";

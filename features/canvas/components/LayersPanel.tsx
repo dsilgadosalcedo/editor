@@ -1,6 +1,6 @@
 import React from "react";
 import { ArrowLeft } from "lucide-react";
-import { useCanvasStore } from "../store/useCanvasStore.new";
+import { useCanvasStore } from "../store/useCanvasStore";
 import {
   useSelectedElements,
   useIsolatedGroupId,

@@ -6,7 +6,7 @@ import {
   PropertyField,
   PropertyLabel,
 } from "@/components/ui/property";
-import { useCanvasStore } from "@/features/canvas/store/useCanvasStore.new";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { AspectRatioSelector } from "../AspectRatioSelector";

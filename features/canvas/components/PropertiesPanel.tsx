@@ -1,6 +1,6 @@
 import React from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useCanvasStore } from "../store/useCanvasStore.new";
+import { useCanvasStore } from "../store/useCanvasStore";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArtboardProperties,

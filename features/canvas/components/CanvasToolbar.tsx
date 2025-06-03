@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCanvasStore } from "../store/useCanvasStore.new";
+import { useCanvasStore } from "../store/useCanvasStore";
 import {
   useSelectedElements,
   useHistoryState,

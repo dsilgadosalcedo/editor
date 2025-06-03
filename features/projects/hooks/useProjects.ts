@@ -8,7 +8,7 @@ import {
   createProjectInLocal,
   type Project,
 } from "@/lib/project-storage";
-import { useCanvasStore } from "@/features/canvas/store/useCanvasStore.new";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
 
 export const useProjects = () => {
   const router = useRouter();

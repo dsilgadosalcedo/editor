@@ -1,6 +1,6 @@
 import React from "react";
 import type { ToolType } from "../types/props";
-import { useCanvasStore } from "../store/useCanvasStore.new";
+import { useCanvasStore } from "../store/useCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 import Artboard from "./Artboard";
 import {

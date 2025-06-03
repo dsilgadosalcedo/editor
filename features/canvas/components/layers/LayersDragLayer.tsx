@@ -1,7 +1,7 @@
 import React from "react";
 import { useDragLayer } from "react-dnd";
 import { cn } from "@/lib/utils";
-import { useCanvasStore } from "../../store/useCanvasStore.new";
+import { useCanvasStore } from "../../store/useCanvasStore";
 import { useElements } from "../../store/selectors";
 import { LAYER_ITEM_TYPE } from "./types";
 

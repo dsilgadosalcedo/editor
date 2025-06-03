@@ -18,7 +18,7 @@ import { Authenticated, Unauthenticated } from "convex/react";
 import { useGlobalKeyboardShortcuts } from "@/hooks/useGlobalKeyboardShortcuts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { clearAllProjects } from "@/lib/project-storage";
-import { useCanvasStore } from "@/features/canvas/store/useCanvasStore.new";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
 import { toast } from "sonner";
 
 interface ProjectLimitBadgeProps {

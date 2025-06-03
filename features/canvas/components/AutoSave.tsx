@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useCanvasStore } from "@/features/canvas/store/useCanvasStore.new";
+import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
 import { useProjectUpdate } from "@/hooks/useProjectUpdate";
 import { useAuth } from "@clerk/nextjs";
 import { useConvexAuth } from "convex/react";
