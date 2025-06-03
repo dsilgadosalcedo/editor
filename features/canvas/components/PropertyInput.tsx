@@ -27,17 +27,22 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
   icon,
   ...rest
 }) => {
-  const [internalValue, setInternalValue] = useState<string>(value.toString());
+  // Always ensure value is an integer
+  const integerValue = Math.round(value);
+  const [internalValue, setInternalValue] = useState<string>(
+    integerValue.toString()
+  );
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const lastPropValue = useRef<number>(value);
+  const lastPropValue = useRef<number>(integerValue);
   const dragStartX = useRef<number>(0);
   const dragStartValue = useRef<number>(0);
 
   // Sync internal value if prop changes from outside
   React.useEffect(() => {
-    if (value !== lastPropValue.current) {
-      setInternalValue(value.toString());
-      lastPropValue.current = value;
+    const roundedValue = Math.round(value);
+    if (roundedValue !== lastPropValue.current) {
+      setInternalValue(roundedValue.toString());
+      lastPropValue.current = roundedValue;
     }
   }, [value]);
 
@@ -46,38 +51,35 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
   };
 
   const handleBlur = () => {
-    const num = Number(internalValue);
-    if (!isNaN(num) && num !== value) {
+    const num = Math.round(Number(internalValue));
+    if (!isNaN(num) && num !== integerValue) {
       onChange(num);
     } else {
-      setInternalValue(value.toString()); // Reset if invalid
+      setInternalValue(integerValue.toString()); // Reset if invalid
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
-      let newValue = Number(internalValue);
-      if (isNaN(newValue)) newValue = value;
-      if (e.key === "ArrowUp") newValue += step;
-      if (e.key === "ArrowDown") newValue -= step;
-      if (typeof min === "number" && newValue < min) newValue = min;
-      if (typeof max === "number" && newValue > max) newValue = max;
+      let newValue = Math.round(Number(internalValue));
+      if (isNaN(newValue)) newValue = integerValue;
+      if (e.key === "ArrowUp") newValue += Math.round(step);
+      if (e.key === "ArrowDown") newValue -= Math.round(step);
+      if (typeof min === "number" && newValue < min) newValue = Math.round(min);
+      if (typeof max === "number" && newValue > max) newValue = Math.round(max);
 
-      // Fix floating point precision issues by rounding to appropriate decimal places
-      const decimalPlaces = step.toString().split(".")[1]?.length || 0;
-      newValue =
-        Math.round(newValue * Math.pow(10, decimalPlaces)) /
-        Math.pow(10, decimalPlaces);
+      // Ensure the result is always an integer
+      newValue = Math.round(newValue);
 
       setInternalValue(newValue.toString());
       onInstantChange(newValue);
     } else if (e.key === "Enter") {
-      const num = Number(internalValue);
-      if (!isNaN(num) && num !== value) {
+      const num = Math.round(Number(internalValue));
+      if (!isNaN(num) && num !== integerValue) {
         onChange(num);
       } else {
-        setInternalValue(value.toString());
+        setInternalValue(integerValue.toString());
       }
       (e.target as HTMLInputElement).blur();
     }
@@ -87,7 +89,7 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
     e.preventDefault();
     setIsDragging(true);
     dragStartX.current = e.clientX;
-    dragStartValue.current = Number(internalValue) || value;
+    dragStartValue.current = Math.round(Number(internalValue)) || integerValue;
 
     // Add cursor style to body during drag
     document.body.style.cursor = "ew-resize";
@@ -97,18 +99,15 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
       const deltaX = e.clientX - dragStartX.current;
       // Sensitivity: 1 pixel = 0.1 steps, adjust as needed
       const sensitivity = 0.1;
-      const valueChange = deltaX * sensitivity * step;
+      const valueChange = deltaX * sensitivity * Math.round(step);
       let newValue = dragStartValue.current + valueChange;
 
       // Apply min/max constraints
-      if (typeof min === "number" && newValue < min) newValue = min;
-      if (typeof max === "number" && newValue > max) newValue = max;
+      if (typeof min === "number" && newValue < min) newValue = Math.round(min);
+      if (typeof max === "number" && newValue > max) newValue = Math.round(max);
 
-      // Fix floating point precision issues
-      const decimalPlaces = step.toString().split(".")[1]?.length || 0;
-      newValue =
-        Math.round(newValue * Math.pow(10, decimalPlaces)) /
-        Math.pow(10, decimalPlaces);
+      // Always ensure the result is an integer
+      newValue = Math.round(newValue);
 
       setInternalValue(newValue.toString());
       onInstantChange(newValue);
@@ -120,8 +119,8 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
       document.body.style.userSelect = "";
 
       // Trigger onChange on drag end
-      const finalValue = Number(internalValue);
-      if (!isNaN(finalValue) && finalValue !== value) {
+      const finalValue = Math.round(Number(internalValue));
+      if (!isNaN(finalValue) && finalValue !== integerValue) {
         onChange(finalValue);
       }
 
