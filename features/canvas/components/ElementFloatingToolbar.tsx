@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { ChevronUp, ChevronDown, Group, Ungroup, Eye } from "lucide-react";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Button } from "@/components/ui/button";
-import { useColorPicker } from "./ColorPicker";
 import { useSelectedElements } from "../store/selectors";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -10,6 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ColorPicker } from "./ColorPicker";
 
 interface ElementFloatingToolbarProps {
   elementId: string;
@@ -48,8 +48,6 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     }))
   );
 
-  const { openColorPicker } = useColorPicker();
-
   // Check if we currently have multiple elements selected
   const currentlyHasMultipleSelection = selectedElements.length > 1;
 
@@ -63,47 +61,8 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     elementActions.moveElementDown(elementId);
   };
 
-  const handleColorClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    // Account for the toolbar scaling and position
-    const scaledOffset = 52 * (100 / zoom); // Account for toolbar scaling
-    const scaledYOffset = (24 + 8 + 2 + 2 + 16) * (100 / zoom);
-
-    const colorPickerWidth = 280;
-    const colorPickerHeight = 360;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // Calculate initial position
-    let x = position.x + scaledOffset;
-    let y = position.y - scaledYOffset + 30;
-
-    // Adjust if off-screen horizontally
-    if (x + colorPickerWidth > viewportWidth) {
-      x = position.x - colorPickerWidth;
-    }
-
-    // Adjust if off-screen vertically
-    if (y + colorPickerHeight > viewportHeight) {
-      y = position.y - scaledYOffset - colorPickerHeight - 8;
-    }
-
-    const handleColorChange = (newColor: string) => {
-      elementActions.updateFillColor(elementId, newColor);
-    };
-
-    const layerName =
-      elementName || elementType.charAt(0).toUpperCase() + elementType.slice(1);
-    const propertyName = elementType === "text" ? "Text Color" : "Background";
-
-    openColorPicker(
-      elementColor,
-      handleColorChange,
-      { x, y },
-      layerName,
-      propertyName
-    );
+  const handleColorChange = (newColor: string) => {
+    elementActions.updateFillColor(elementId, newColor);
   };
 
   const handleGroupElements = (e: React.MouseEvent) => {
@@ -196,21 +155,25 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
           (elementType === "rectangle" || elementType === "text") && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  data-color-picker-trigger
-                  onClick={handleColorClick}
-                  aria-label={`Change ${
-                    elementType === "text" ? "text" : "background"
-                  } color`}
-                  className="h-6 w-6"
-                >
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: elementColor }}
+                <div className="h-6 w-6 flex items-center justify-center">
+                  <ColorPicker
+                    value={elementColor}
+                    onChange={handleColorChange}
+                    layerName={
+                      elementName ||
+                      elementType.charAt(0).toUpperCase() + elementType.slice(1)
+                    }
+                    propertyName={
+                      elementType === "text" ? "Text Color" : "Background"
+                    }
+                    aria-label={`Change ${
+                      elementType === "text" ? "text" : "background"
+                    } color`}
+                    className="h-6 w-6 p-0 min-w-6"
+                    showHex={false}
+                    showOpacity={false}
                   />
-                </Button>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>
