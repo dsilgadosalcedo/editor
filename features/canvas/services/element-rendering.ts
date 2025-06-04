@@ -147,9 +147,11 @@ export const getElementContainerStyles = (
             ? "#3b82f6"
             : "transparent")
         : undefined,
-    boxShadow: element.shadowBlur
-      ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
-      : undefined,
+    // Only apply shadow to non-image elements (images get shadow applied directly)
+    boxShadow:
+      element.type !== "image" && element.shadowBlur
+        ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
+        : undefined,
     transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
     transformOrigin: "center center",
   };
@@ -192,6 +194,10 @@ export const getImageStyles = (element: any): React.CSSProperties => {
     borderStyle: element.borderWidth ? "solid" : undefined,
     borderColor: element.borderColor ?? "transparent",
     boxSizing: "border-box",
+    // Apply shadow to image elements so it follows the border radius
+    boxShadow: element.shadowBlur
+      ? `0px 0px ${element.shadowBlur}px ${element.shadowColor}`
+      : undefined,
   };
 };
 

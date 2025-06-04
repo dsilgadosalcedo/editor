@@ -462,12 +462,20 @@ export const useCanvasStore = create<CanvasStore>()(
 
       updateShadowBlur: (id, blur) => {
         const state = get();
-        const updatedElements = updateElementProperty(
-          state.elements,
-          id,
-          "shadowBlur",
-          blur
-        );
+
+        // Update shadow blur and automatically set shadow color if blur > 0
+        const updatedElements = state.elements.map((el) => {
+          if (el.id === id) {
+            const updatedElement = { ...el, shadowBlur: blur };
+            // If blur is being set to a value > 0 and no shadow color exists, set it to black
+            if (blur > 0 && !el.shadowColor) {
+              updatedElement.shadowColor = "#000000";
+            }
+            return updatedElement;
+          }
+          return el;
+        });
+
         set({
           ...state.getHistoryUpdate(),
           elements: updatedElements,
