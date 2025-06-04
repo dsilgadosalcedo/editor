@@ -223,6 +223,8 @@ interface ColorPickerProps {
   "aria-label"?: string;
   layerName?: string;
   propertyName?: string;
+  showHex?: boolean;
+  showOpacity?: boolean;
 }
 
 export const ColorPicker: React.FC<ColorPickerProps> = ({
@@ -232,6 +234,8 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   "aria-label": ariaLabel,
   layerName,
   propertyName,
+  showHex = true,
+  showOpacity = true,
 }) => {
   const { openColorPicker, openOpacityPicker } = useColorPicker();
   const colorButtonRef = useRef<HTMLButtonElement>(null);
@@ -362,20 +366,24 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
         aria-label={ariaLabel}
         style={{ backgroundColor: value }}
       >
-        <span className="text-white text-ellipsis overflow-hidden font-mono text-sm">
-          {getHexDisplay(value)}
-        </span>
+        {showHex && (
+          <span className="text-white text-ellipsis overflow-hidden font-mono text-sm">
+            {getHexDisplay(value)}
+          </span>
+        )}
       </Button>
-      <Button
-        ref={opacityButtonRef}
-        data-color-picker-trigger
-        onClick={handleOpacityClick}
-        size="icon"
-        variant="ghost"
-        aria-label="Adjust opacity"
-      >
-        <Blend />
-      </Button>
+      {showOpacity && (
+        <Button
+          ref={opacityButtonRef}
+          data-color-picker-trigger
+          onClick={handleOpacityClick}
+          size="icon"
+          variant="ghost"
+          aria-label="Adjust opacity"
+        >
+          <Blend />
+        </Button>
+      )}
     </div>
   );
 };

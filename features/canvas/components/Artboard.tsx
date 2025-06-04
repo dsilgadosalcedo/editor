@@ -4,8 +4,7 @@ import ArtboardControlPoints from "./ArtboardControlPoints";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
 import MultiSelectionUI from "./MultiSelectionUI";
 import { useCanvasStore } from "../store/useCanvasStore";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 
 interface ArtboardProps {
   artboardDimensions: { width: number; height: number };
@@ -44,6 +43,10 @@ interface ArtboardProps {
     preserveAspectRatio?: boolean
   ) => void;
   onTextChange: (id: string, content: string) => void;
+  onTextResizingChange?: (
+    id: string,
+    mode: "auto-width" | "auto-height" | "fixed"
+  ) => void;
   selectedTool: string | null;
   canvasPosition: { x: number; y: number };
   artboardRef: React.RefObject<HTMLDivElement | null>;
@@ -75,6 +78,7 @@ const Artboard: React.FC<ArtboardProps> = ({
   onResizeSelectedElements,
   onResizeSelectedElementsNoHistory,
   onTextChange,
+  onTextResizingChange,
   selectedTool,
   canvasPosition,
   artboardRef,
@@ -88,8 +92,17 @@ const Artboard: React.FC<ArtboardProps> = ({
   onResizeArtboard,
   onAddToHistory,
 }) => {
-  const { isolatedGroupId, getElementDescendants, exitIsolationMode } =
-    useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const isolatedGroupId = useCanvasStore((state) => state.isolatedGroupId);
+
+  // Group related isolation functions using useShallow
+  const isolationActions = useCanvasStore(
+    useShallow((state) => ({
+      getElementDescendants: state.getElementDescendants,
+      exitIsolationMode: state.exitIsolationMode,
+    }))
+  );
+
   // Viewport virtualization - only render visible elements for better performance
   const visibleElements = useMemo(() => {
     // Filter elements based on isolation mode first
@@ -97,7 +110,8 @@ const Artboard: React.FC<ArtboardProps> = ({
 
     if (isolatedGroupId) {
       // In isolation mode, show all elements but mark them for different rendering
-      const isolatedDescendants = getElementDescendants(isolatedGroupId);
+      const isolatedDescendants =
+        isolationActions.getElementDescendants(isolatedGroupId);
       filteredElements = elements.map((el) => ({
         ...el,
         isolated: el.id === isolatedGroupId,
@@ -174,7 +188,7 @@ const Artboard: React.FC<ArtboardProps> = ({
     canvasPosition,
     zoom,
     isolatedGroupId,
-    getElementDescendants,
+    // Removed isolationActions.getElementDescendants from dependencies to prevent infinite re-renders
   ]);
 
   // Development logging for virtualization effectiveness
@@ -216,40 +230,33 @@ const Artboard: React.FC<ArtboardProps> = ({
           marginTop: `-${artboardDimensions.height / 2}px`,
         }}
         onMouseDown={(e) => {
-          onSelectElement(null);
-          // if (selectedTool !== "hand") onSelectElement(null);
+          // Only clear selection if clicking directly on the artboard background
+          // Don't clear if clicking on an element or its controls
+          const target = e.target as HTMLElement;
+          if (target === e.currentTarget) {
+            // Don't clear selection when in isolation mode to prevent accidental exit
+            if (!isolatedGroupId) {
+              onSelectElement(null);
+            }
+          }
         }}
         onTouchStart={(e) => {
-          onSelectElement(null);
-          // if (selectedTool !== "hand") onSelectElement(null);
+          // Only clear selection if touching directly on the artboard background
+          const target = e.target as HTMLElement;
+          if (target === e.currentTarget) {
+            // Don't clear selection when in isolation mode to prevent accidental exit
+            if (!isolatedGroupId) {
+              onSelectElement(null);
+            }
+          }
         }}
         onDoubleClick={(e) => {
           if (isolatedGroupId) {
             e.stopPropagation();
-            exitIsolationMode();
+            isolationActions.exitIsolationMode();
           }
         }}
       >
-        {/* Exit Isolation Mode Button */}
-        {isolatedGroupId && (
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              exitIsolationMode();
-            }}
-            variant="secondary"
-            size="sm"
-            className="absolute top-4 left-4 z-50 bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 text-amber-800 shadow-md"
-            style={{
-              transform: `scale(${100 / zoom})`,
-              transformOrigin: "top left",
-            }}
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Exit Isolation
-          </Button>
-        )}
-
         {showGuides && (
           <div
             className="absolute inset-0 pointer-events-none"
@@ -321,6 +328,9 @@ const Artboard: React.FC<ArtboardProps> = ({
               }
             }}
             onTextChange={(content) => onTextChange(element.id, content)}
+            onTextResizingChange={(mode) =>
+              onTextResizingChange?.(element.id, mode)
+            }
             isPanMode={selectedTool === "hand"}
             zoom={zoom}
             onUpdateCornerRadius={onUpdateCornerRadius}
@@ -362,44 +372,8 @@ const Artboard: React.FC<ArtboardProps> = ({
           zoom={zoom}
         />
 
-        {/* Floating Toolbar for Multiple Selections */}
-        {(() => {
-          const selectedElementsData = elements.filter((el) =>
-            selectedElements.includes(el.id)
-          );
-
-          // Show toolbar only for multiple selections
-          if (selectedElementsData.length <= 1) return null;
-
-          // Calculate the center position of the selection
-          let minX = Infinity,
-            minY = Infinity,
-            maxX = -Infinity,
-            maxY = -Infinity;
-
-          selectedElementsData.forEach((el) => {
-            minX = Math.min(minX, el.x);
-            minY = Math.min(minY, el.y);
-            maxX = Math.max(maxX, el.x + el.width);
-            maxY = Math.max(maxY, el.y + el.height);
-          });
-
-          const centerX = (minX + maxX) / 2;
-          const centerY = minY; // Position at the top of the selection
-
-          return (
-            <ElementFloatingToolbar
-              elementId={selectedElementsData[0].id} // Use first element's ID
-              elementType="rectangle" // Dummy type for multiple selections
-              elementColor="transparent" // No color picker for multiple selections
-              position={{ x: centerX, y: centerY }}
-              zoom={zoom}
-              isRotating={false}
-              elementName="Multiple Elements"
-              isMultipleSelection={true}
-            />
-          );
-        })()}
+        {/* Floating Toolbar for Multiple Selections - Temporarily disabled to prevent infinite loops */}
+        {/* TODO: Re-implement with better ref handling */}
       </div>
     </div>
   );

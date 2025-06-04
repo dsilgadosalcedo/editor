@@ -1,8 +1,9 @@
 import React from "react";
 import { useDragLayer } from "react-dnd";
 import { cn } from "@/lib/utils";
-import { useCanvasStore } from "../store/useCanvasStore";
-import { LAYER_ITEM_TYPE } from "./LayersPanel";
+import { useCanvasStore } from "../../store/useCanvasStore";
+import { useElements } from "../../store/selectors";
+import { LAYER_ITEM_TYPE } from "./types";
 
 const layerStyles: React.CSSProperties = {
   position: "fixed",
@@ -42,7 +43,7 @@ export default function LayersDragLayer() {
     return null;
   }
 
-  const { elements } = useCanvasStore();
+  const elements = useElements();
   const element = elements.find((el) => el.id === item.id);
   const name =
     element?.name ||

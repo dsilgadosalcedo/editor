@@ -38,8 +38,20 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Show shortcuts on ? or F1 (only if not externally controlled)
-      if ((e.key === "?" || e.key === "F1") && externalIsOpen === undefined) {
+      // Check if user is typing in an input field or contentEditable element
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA");
+
+      // Show shortcuts on ? or F1 (only if not externally controlled and not typing)
+      if (
+        (e.key === "?" || e.key === "F1") &&
+        externalIsOpen === undefined &&
+        !isTyping
+      ) {
         e.preventDefault();
         setInternalIsVisible(true);
       }

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { CanvasElementData } from "../store/useCanvasStore";
+import type { CanvasElementData } from "../types";
 
 interface DragSelectionState {
   isSelecting: boolean;
@@ -34,7 +34,9 @@ export const useDragSelection = (
       const target = e.target as HTMLElement;
       const isEmptySpace =
         target.classList.contains("canvas-background") ||
-        target.closest(".canvas-background");
+        target.closest(".canvas-background") ||
+        target === e.currentTarget ||
+        target.classList.contains("bg-card/50"); // artboard background
 
       if (!isEmptySpace) return false;
 
@@ -82,6 +84,24 @@ export const useDragSelection = (
     const maxX = Math.max(dragSelection.startX, dragSelection.currentX);
     const minY = Math.min(dragSelection.startY, dragSelection.currentY);
     const maxY = Math.max(dragSelection.startY, dragSelection.currentY);
+
+    // Check if this was just a click (small movement) vs a drag
+    const selectionWidth = maxX - minX;
+    const selectionHeight = maxY - minY;
+    const isClick = selectionWidth <= 5 && selectionHeight <= 5;
+
+    // If it's just a click on empty space, clear selection
+    if (isClick) {
+      onSelectMultiple([]);
+      setDragSelection({
+        isSelecting: false,
+        startX: 0,
+        startY: 0,
+        currentX: 0,
+        currentY: 0,
+      });
+      return;
+    }
 
     // Convert screen coordinates to artboard coordinates
     // We need to reverse the transformations applied to the artboard:
@@ -131,15 +151,8 @@ export const useDragSelection = (
       })
       .map((element) => element.id);
 
-    // Only select if we have a meaningful selection area (minimum 5px)
-    const selectionWidth = maxX - minX;
-    const selectionHeight = maxY - minY;
-
-    if (
-      selectionWidth > 5 &&
-      selectionHeight > 5 &&
-      selectedElementIds.length > 0
-    ) {
+    // Only select if we have a meaningful selection area (minimum 5px) and found elements
+    if (selectedElementIds.length > 0) {
       onSelectMultiple(selectedElementIds);
     }
 

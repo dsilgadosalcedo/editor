@@ -7,12 +7,36 @@ import { useProjectUpdate } from "@/hooks/useProjectUpdate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, FolderOpen } from "lucide-react";
+import { ChevronLeft, FolderOpen, ArrowLeft } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  useProjectName,
+  useProjectId,
+  useIsolatedGroupId,
+} from "../../store/selectors";
+import { useShallow } from "zustand/react/shallow";
 
 export default function ProjectHeader() {
   const router = useRouter();
-  const { projectName, projectId, setProjectName, setProjectData } =
-    useCanvasStore();
+
+  // Use optimized selectors to prevent unnecessary re-renders
+  const projectName = useProjectName();
+  const projectId = useProjectId();
+  const isolatedGroupId = useIsolatedGroupId();
+
+  // Group related project actions using useShallow
+  const projectActions = useCanvasStore(
+    useShallow((state) => ({
+      setProjectName: state.setProjectName,
+      setProjectData: state.setProjectData,
+      exitIsolationMode: state.exitIsolationMode,
+    }))
+  );
+
   const { updateProjectName } = useProjectUpdate();
   const [editName, setEditName] = useState(projectName);
 
@@ -27,7 +51,7 @@ export default function ProjectHeader() {
         const result = await updateProjectName(projectId, editName.trim());
         if (result.success && result.updatedProject) {
           // Only update the project name in the store
-          setProjectName(result.updatedProject.name);
+          projectActions.setProjectName(result.updatedProject.name);
           // The project data (elements, dimensions) remains unchanged, so no need to call setProjectData here.
           // If updateProjectName also returned full data, and we wanted to refresh it, then call setProjectData.
         } else {
@@ -35,7 +59,7 @@ export default function ProjectHeader() {
           // the local name is already updated by useProjectUpdate's call to updateLocalProjectNameOnly.
           // The store's projectName would reflect the new name from local storage if we set it here too.
           if (result.error === "cloud_update_failed" && result.updatedProject) {
-            setProjectName(result.updatedProject.name); // Reflect successful local update
+            projectActions.setProjectName(result.updatedProject.name); // Reflect successful local update
           } else {
             setEditName(projectName); // Revert UI editName if local save also failed or other error
           }
@@ -62,17 +86,27 @@ export default function ProjectHeader() {
     }
   };
 
+  const handleExitIsolation = () => {
+    projectActions.exitIsolationMode();
+  };
+
   return (
     <div className="absolute top-5 left-5 z-50 flex items-center gap-2">
       {/* Projects button */}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => router.push("/projects")}
-        title="Go to Projects"
-      >
-        <ChevronLeft />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.push("/projects")}
+          >
+            <ChevronLeft />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Go back to projects</p>
+        </TooltipContent>
+      </Tooltip>
 
       {/* Project name */}
       <div>
@@ -85,6 +119,19 @@ export default function ProjectHeader() {
           maxLength={50}
         />
       </div>
+
+      {/* Exit Isolation Mode Button */}
+      {isolatedGroupId && (
+        <Button
+          onClick={handleExitIsolation}
+          variant="secondary"
+          size="sm"
+          className="bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 text-amber-800 shadow-md"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Exit Isolation
+        </Button>
+      )}
     </div>
   );
 }

@@ -12,14 +12,33 @@ import KeyboardShortcuts from "./KeyboardShortcuts";
 import DragDropOverlay from "./DragDropOverlay";
 import ProjectHeader from "./navigation/ProjectHeader";
 import { AutoSave } from "./AutoSave";
+import ImportProjectDialog, { ImportChoice } from "./ImportProjectDialog";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
 import { useDragSelection } from "../hooks/useDragSelection";
 import { useCanvasStore } from "../store/useCanvasStore";
-import type { ToolType } from "../store/useCanvasStore";
+import {
+  useElements,
+  useSelectedElements,
+  useArtboardDimensions,
+  usePanSensitivity,
+  useZoomSensitivity,
+  useRightSidebarDocked,
+  useCanvasActions,
+  useSelectionActions,
+  useHistoryActions,
+} from "../store/selectors";
+import type { ToolType } from "../types/props";
 import { ColorPickerProvider } from "./ColorPicker";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
-import { useGlobalKeyboardShortcuts } from "@/hooks/useGlobalKeyboardShortcuts";
+import { useShallow } from "zustand/react/shallow";
+import { generateRandomImage } from "../services/image-service";
+import { importCanvasFromFile } from "../services/file-operations";
+import {
+  isProjectLimitReached,
+  createProjectWithLimitCheck,
+} from "@/lib/project-storage";
+import { useRouter } from "next/navigation";
 
 export default function CanvasPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -28,36 +47,42 @@ export default function CanvasPage() {
   const [showGuides, setShowGuides] = useState(true);
   const [selectedTool, setSelectedTool] = useState<ToolType>(null);
   const [layersOpen, setLayersOpen] = useState(true);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importData, setImportData] = useState<any>(null);
+  const router = useRouter();
 
-  // Zustand store
-  const {
-    elements,
-    selectedElements,
-    artboardDimensions,
-    panSensitivity,
-    zoomSensitivity,
-    deleteElement,
-    undo,
-    redo,
-    copySelection,
-    pasteClipboard,
-    saveCanvas,
-    loadCanvas,
-    clearSelection,
-    moveElementUp,
-    moveElementDown,
-    moveElement,
-    importCanvas,
-    addImageElement,
-    rightSidebarDocked,
-    selectMultipleElements,
-    addElement,
-  } = useCanvasStore();
+  // Use optimized selectors to prevent unnecessary re-renders
+  const elements = useElements();
+  const selectedElements = useSelectedElements();
+  const artboardDimensions = useArtboardDimensions();
+  const panSensitivity = usePanSensitivity();
+  const zoomSensitivity = useZoomSensitivity();
+  const rightSidebarDocked = useRightSidebarDocked();
+
+  // Group related actions using optimized selectors
+  const canvasActions = useCanvasActions();
+  const selectionActions = useSelectionActions();
+  const historyActions = useHistoryActions();
+
+  // Additional actions that need individual selectors
+  const layerActions = useCanvasStore(
+    useShallow((state) => ({
+      moveElementUp: state.moveElementUp,
+      moveElementDown: state.moveElementDown,
+      moveElement: state.moveElement,
+    }))
+  );
+
+  const fileActions = useCanvasStore(
+    useShallow((state) => ({
+      importElements: state.importElements,
+      importCanvas: state.importCanvas,
+      saveCanvas: state.saveCanvas,
+      loadCanvas: state.loadCanvas,
+    }))
+  );
 
   const { setTheme, theme } = useTheme();
-
-  // Global keyboard shortcuts (including theme toggle)
-  useGlobalKeyboardShortcuts();
 
   // Keyboard shortcuts: Full professional shortcuts support
   useEffect(() => {
@@ -95,9 +120,7 @@ export default function CanvasPage() {
           // Select all elements
           const allElementIds = elements.map((el) => el.id);
           if (allElementIds.length > 0) {
-            // Use selectMultipleElements to select all
-            const { selectMultipleElements } = useCanvasStore.getState();
-            selectMultipleElements(allElementIds);
+            selectionActions.selectMultipleElements(allElementIds);
           }
           return;
         }
@@ -106,9 +129,9 @@ export default function CanvasPage() {
         if (key === "z" && !isTyping) {
           e.preventDefault();
           if (e.shiftKey) {
-            redo();
+            historyActions.redo();
           } else {
-            undo();
+            historyActions.undo();
           }
           return;
         }
@@ -116,28 +139,35 @@ export default function CanvasPage() {
         // Copy with Ctrl/Cmd+C (only when not typing in inputs and element is selected)
         if (key === "c" && selectedElements.length > 0 && !isTyping) {
           e.preventDefault();
-          copySelection();
+          selectionActions.copySelection();
           return;
         }
 
         // Paste with Ctrl/Cmd+V (only when not typing in inputs)
         if (key === "v" && !isTyping) {
           e.preventDefault();
-          pasteClipboard();
+          selectionActions.pasteClipboard();
           return;
         }
 
         // Move element up one layer with Ctrl/Cmd+ArrowUp (only when not typing and single element is selected)
         if (key === "arrowup" && selectedElements.length === 1 && !isTyping) {
           e.preventDefault();
-          moveElementUp(selectedElements[0]);
+          layerActions.moveElementUp(selectedElements[0]);
           return;
         }
 
         // Move element down one layer with Ctrl/Cmd+ArrowDown (only when not typing and single element is selected)
         if (key === "arrowdown" && selectedElements.length === 1 && !isTyping) {
           e.preventDefault();
-          moveElementDown(selectedElements[0]);
+          layerActions.moveElementDown(selectedElements[0]);
+          return;
+        }
+
+        // Toggle theme with Ctrl/Cmd+Shift+L (only when not typing in inputs)
+        if (key === "l" && e.shiftKey && !isTyping) {
+          e.preventDefault();
+          setTheme(theme === "dark" ? "light" : "dark");
           return;
         }
 
@@ -159,7 +189,7 @@ export default function CanvasPage() {
       ) {
         e.preventDefault();
         // Delete all selected elements
-        selectedElements.forEach((id) => deleteElement(id));
+        selectedElements.forEach((id) => canvasActions.deleteElement(id));
         return;
       }
 
@@ -171,7 +201,7 @@ export default function CanvasPage() {
         );
         if (!isShortcutsVisible) {
           e.preventDefault();
-          clearSelection();
+          selectionActions.clearSelection();
         }
         return;
       }
@@ -215,7 +245,7 @@ export default function CanvasPage() {
 
         // Move all selected elements
         selectedElements.forEach((id) => {
-          moveElement(id, dx, dy);
+          layerActions.moveElement(id, dx, dy);
         });
 
         return;
@@ -225,17 +255,19 @@ export default function CanvasPage() {
       if (!isTyping && !modifier && !e.altKey && !e.shiftKey) {
         if (e.key === "1") {
           e.preventDefault();
-          addElement("text");
+          canvasActions.addElement("text");
           return;
         }
         if (e.key === "2") {
           e.preventDefault();
-          addElement("rectangle");
+          canvasActions.addElement("rectangle");
           return;
         }
         if (e.key === "3") {
           e.preventDefault();
-          addElement("image");
+          // Generate a random image automatically instead of prompting
+          const imageUrl = generateRandomImage({ width: 300, height: 200 });
+          canvasActions.addImageElement(imageUrl);
           return;
         }
       }
@@ -244,20 +276,14 @@ export default function CanvasPage() {
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [
-    undo,
-    redo,
-    deleteElement,
-    selectedElements,
-    copySelection,
-    pasteClipboard,
-    saveCanvas,
-    loadCanvas,
-    clearSelection,
-    moveElementUp,
-    moveElementDown,
-    moveElement,
     elements,
-    addElement,
+    selectedElements,
+    canvasActions,
+    selectionActions,
+    historyActions,
+    layerActions,
+    setTheme,
+    theme,
   ]);
 
   // Pan/zoom logic
@@ -298,7 +324,7 @@ export default function CanvasPage() {
     canvasPosition,
     zoom,
     elements,
-    selectMultipleElements,
+    selectionActions.selectMultipleElements,
     artboardDimensions
   );
 
@@ -360,7 +386,7 @@ export default function CanvasPage() {
 
     if (selectedElementsData.length === 0) return;
 
-    // Calculate bounding box of all selected elements
+    // Calculate bounding box of all selected elements (in artboard coordinates)
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
@@ -379,34 +405,48 @@ export default function CanvasPage() {
     const selectionCenterX = minX + selectionWidth / 2;
     const selectionCenterY = minY + selectionHeight / 2;
 
-    // Get artboard dimensions
-    const artboardW = artboardDimensions.width;
-    const artboardH = artboardDimensions.height;
-    const padding = 40; // px margin around selection
+    // Get viewport dimensions
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    const padding = 60; // px margin around selection
 
     // Calculate zoom to fit selection with padding
-    const scaleX = (artboardW - padding * 2) / selectionWidth;
-    const scaleY = (artboardH - padding * 2) / selectionHeight;
+    const scaleX = (viewportW - padding * 2) / selectionWidth;
+    const scaleY = (viewportH - padding * 2) / selectionHeight;
     const newZoom = Math.round(
       Math.min(
-        800, // Extended max zoom (was 400)
-        Math.max(10, Math.min(scaleX, scaleY) * 100) // Extended min zoom (was 50)
+        800, // Max zoom
+        Math.max(10, Math.min(scaleX, scaleY) * 100) // Min zoom
       )
     );
 
     setZoom(newZoom);
 
-    // Center the selection in the artboard
+    // Calculate where the artboard center should be in viewport to center the selection
+    // Account for artboard offset: the artboard is positioned at calc(50% - 90px) left and calc(50% - 40px) top
+    const artboardOffsetX = viewportW / 2 - 90; // matches artboard positioning
+    const artboardOffsetY = viewportH / 2 - 40; // matches artboard positioning
+
+    // Calculate canvas position to center the selection in viewport
+    // We want: viewportCenter = artboardOffset + artboardCenter + (selectionCenter - artboardCenter) * zoom
+    // Solving for canvasPosition: canvasPosition = viewportCenter - (artboardOffset + selectionCenter * zoom)
+    const targetCanvasX =
+      viewportW / 2 - (artboardOffsetX + selectionCenterX * (newZoom / 100));
+    const targetCanvasY =
+      viewportH / 2 - (artboardOffsetY + selectionCenterY * (newZoom / 100));
+
     setCanvasPosition({
-      x: artboardW / 2 - selectionCenterX * (newZoom / 100),
-      y: artboardH / 2 - selectionCenterY * (newZoom / 100),
+      x: targetCanvasX,
+      y: targetCanvasY,
     });
   };
 
   // Helper: Reset view to artboard at 75% zoom
   const handleResetView = () => {
     setZoom(75);
-    // Center the artboard in the viewport
+    // Center the artboard in the viewport accounting for its offset positioning
+    // The artboard is positioned at calc(50% - 90px) left and calc(50% - 40px) top
+    // So to center it, we need to account for these offsets
     setCanvasPosition({
       x: 0,
       y: 0,
@@ -428,7 +468,7 @@ export default function CanvasPage() {
         });
 
         // Create image element from dropped file
-        addImageElement(dataURL);
+        canvasActions.addImageElement(dataURL);
       } catch (error) {
         console.error("Error processing image file:", error);
         toast.error("Failed to process image file.");
@@ -436,19 +476,125 @@ export default function CanvasPage() {
       return;
     }
 
-    // Handle JSON canvas files
-    try {
-      const result = await importCanvas(file);
-      if (!result.success) {
+    // Handle JSON canvas/project files
+    if (file.type.includes("json")) {
+      try {
+        const result = await importCanvasFromFile(file);
+        if (result.success && result.elements) {
+          // Check if this looks like a project file (has project metadata or artboard settings)
+          const hasProjectMetadata = result.projectName || result.artboard;
+
+          if (hasProjectMetadata) {
+            // Show import dialog for project files
+            setImportData({
+              elements: result.elements,
+              artboardDimensions: result.artboardDimensions,
+              version: result.version,
+              timestamp: result.timestamp,
+              projectName: result.projectName,
+              artboard: result.artboard,
+            });
+            setShowImportDialog(true);
+          } else {
+            // For basic canvas files without project metadata, import as elements directly
+            const importResult = await fileActions.importCanvas(file);
+            if (!importResult.success) {
+              toast.error("Failed to import canvas elements.");
+            }
+          }
+        } else {
+          toast.error(
+            "Failed to import file. Please make sure it's a valid canvas or project file."
+          );
+        }
+      } catch (error) {
+        console.error("Error importing file:", error);
         toast.error(
-          "Failed to import canvas. Please make sure it's a valid canvas file."
+          "Failed to import file. Please make sure it's a valid canvas or project file."
         );
       }
-    } catch (error) {
-      console.error("Error importing canvas:", error);
-      toast.error(
-        "Failed to import canvas. Please make sure it's a valid canvas file."
-      );
+      return;
+    }
+
+    // Unsupported file type
+    toast.error(
+      "Unsupported file type. Please drop an image or JSON project file."
+    );
+  };
+
+  // Handle import choice from dialog
+  const handleImportChoice = async (choice: ImportChoice) => {
+    if (choice.type === "elements") {
+      // Import as elements to current canvas using a safer approach
+      try {
+        // Add a small delay to prevent rapid state changes
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Use the safe importElements action from the store
+        const result = fileActions.importElements(choice.data.elements);
+
+        if (!result.success) {
+          toast.error("Failed to import elements");
+        }
+      } catch (error) {
+        console.error("Error importing elements:", error);
+        toast.error("Failed to import elements");
+      }
+    } else if (choice.type === "project") {
+      // Create new project
+      const projectLimitReached = isProjectLimitReached();
+
+      // Prepare project data
+      const projectData = {
+        elements: choice.data.elements,
+        artboardDimensions: choice.data.artboardDimensions,
+      };
+
+      if (projectLimitReached) {
+        // Auto-remove oldest project and create new one
+        const result = createProjectWithLimitCheck(
+          undefined,
+          choice.data.projectName || `Imported Project`,
+          projectData
+        );
+
+        if (result.project) {
+          if (result.autoRemoved && result.removedProjects) {
+            toast.info(
+              `Removed oldest project "${result.removedProjects[0].name}" to make room`
+            );
+          }
+          // Store artboard settings for the canvas page to apply
+          if (choice.data.artboard) {
+            sessionStorage.setItem(
+              `import-artboard-${result.project.id}`,
+              JSON.stringify(choice.data.artboard)
+            );
+          }
+          router.push(`/canvas/${result.project.id}`);
+        } else {
+          toast.error("Failed to create project");
+        }
+      } else {
+        const result = createProjectWithLimitCheck(
+          undefined,
+          choice.data.projectName || `Imported Project`,
+          projectData
+        );
+
+        if (result.project) {
+          // Store artboard settings for the canvas page to apply
+          if (choice.data.artboard) {
+            sessionStorage.setItem(
+              `import-artboard-${result.project.id}`,
+              JSON.stringify(choice.data.artboard)
+            );
+          }
+          router.push(`/canvas/${result.project.id}`);
+        } else {
+          toast.error("Failed to create project");
+        }
+      }
     }
   };
 
@@ -476,7 +622,7 @@ export default function CanvasPage() {
         />
 
         {/* Layers Panel */}
-        {layersOpen && <LayersPanel />}
+        {/* {layersOpen && <LayersPanel />} */}
 
         {/* Canvas Toolbar */}
         <CanvasToolbar
@@ -509,6 +655,15 @@ export default function CanvasPage() {
 
       {/* Auto Save */}
       <AutoSave />
+
+      {/* Import Project Dialog */}
+      <ImportProjectDialog
+        isOpen={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        onChoice={handleImportChoice}
+        projectData={importData}
+        isProjectLimitReached={isProjectLimitReached()}
+      />
     </ColorPickerProvider>
   );
 }

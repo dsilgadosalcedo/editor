@@ -2,16 +2,14 @@ import React from "react";
 import {
   Minus,
   Plus,
-  Eraser,
   RotateCcw,
   RotateCw,
   Copy,
   Clipboard,
-  Save,
-  FolderOpen,
+  Trash2,
+  Home,
   Download,
   Upload,
-  Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,9 +20,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCanvasStore } from "../store/useCanvasStore";
+import {
+  useSelectedElements,
+  useHistoryState,
+  useHistoryActions,
+  useSelectionActions,
+} from "../store/selectors";
 import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useShallow } from "zustand/react/shallow";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CanvasToolbarProps {
   zoom: number;
@@ -39,25 +49,25 @@ export default function CanvasToolbar({
   onZoomToSelection,
   onResetView,
 }: CanvasToolbarProps) {
-  const {
-    selectedElements,
-    past,
-    future,
-    undo,
-    redo,
-    resetCanvas,
-    copySelection,
-    pasteClipboard,
-    clipboard,
-    exportCanvas,
-    importCanvas,
-  } = useCanvasStore();
+  // Use optimized selectors
+  const selectedElements = useSelectedElements();
+  const historyState = useHistoryState();
+  const historyActions = useHistoryActions();
+  const selectionActions = useSelectionActions();
 
-  const canUndo = past.length > 0;
-  const canRedo = future.length > 0;
+  // Group file and canvas actions
+  const fileActions = useCanvasStore(
+    useShallow((state) => ({
+      resetCanvas: state.resetCanvas,
+      exportCanvas: state.exportCanvas,
+      importCanvas: state.importCanvas,
+    }))
+  );
+
+  const clipboard = useCanvasStore((state) => state.clipboard);
 
   const handleExport = () => {
-    exportCanvas();
+    fileActions.exportCanvas();
   };
 
   const handleImport = () => {
@@ -67,8 +77,8 @@ export default function CanvasToolbar({
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        const success = await importCanvas(file);
-        if (!success) {
+        const result = await fileActions.importCanvas(file);
+        if (!result.success) {
           toast.error(
             "Failed to import canvas. Please make sure it's a valid canvas file."
           );
@@ -80,53 +90,74 @@ export default function CanvasToolbar({
 
   return (
     <div
-      className="fixed bottom-1 left-1/2 -translate-x-1/2 z-50 grid place-items-center"
+      className="fixed bottom-1 left-4 z-50 grid place-items-center"
       style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}
     >
       <Card className="flex flex-row items-center gap-2 backdrop-blur-sm p-2 bg-sidebar/70 border-card/80">
         {/* Export/Import Controls */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleExport}
-          className="h-8 w-8"
-          aria-label="Export Canvas"
-        >
-          <Download className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleImport}
-          className="h-8 w-8"
-          aria-label="Import Canvas"
-        >
-          <Upload className="h-4 w-4" />
-        </Button>
+        {/* <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleExport}
+              className="h-8 w-8"
+              aria-label="Export Canvas"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Export canvas as JSON file</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleImport}
+              className="h-8 w-8"
+              aria-label="Import Canvas"
+            >
+              <Upload className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Import canvas from JSON file</p>
+          </TooltipContent>
+        </Tooltip> */}
 
         {/* Separator */}
-        <div className="h-6">
+        {/* <div className="h-6">
           <Separator orientation="vertical" />
-        </div>
+        </div> */}
 
         {/* Zoom Controls */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() =>
-            setZoom((prev) => {
-              const levels = [
-                10, 25, 50, 75, 100, 125, 150, 200, 300, 400, 600, 800,
-              ];
-              const idx = levels.findIndex((z) => z >= prev);
-              return levels[Math.max(0, idx - 1)];
-            })
-          }
-          className="h-8 w-8"
-          aria-label="Zoom Out"
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                setZoom((prev) => {
+                  const levels = [
+                    10, 25, 50, 75, 100, 125, 150, 200, 300, 400, 600, 800,
+                  ];
+                  const idx = levels.findIndex((z) => z >= prev);
+                  return levels[Math.max(0, idx - 1)];
+                })
+              }
+              className="h-8 w-8"
+              aria-label="Zoom Out"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom out</p>
+          </TooltipContent>
+        </Tooltip>
         <Select
           value={String(zoom)}
           onValueChange={(val) => {
@@ -137,7 +168,7 @@ export default function CanvasToolbar({
             }
           }}
         >
-          <SelectTrigger className="w-[90px] bg-transparent text-sm rounded-md border-none hover:border-blue-400 transition-colors">
+          <SelectTrigger className="w-[90px] bg-transparent text-sm rounded-md border-none shadow-none transition-colors">
             <SelectValue placeholder="Zoom">{zoom}%</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -161,66 +192,155 @@ export default function CanvasToolbar({
             </SelectItem>
           </SelectContent>
         </Select>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() =>
-            setZoom((prev) => {
-              const levels = [
-                10, 25, 50, 75, 100, 125, 150, 200, 300, 400, 600, 800,
-              ];
-              const idx = levels.findIndex((z) => z > prev);
-              return levels[
-                Math.min(
-                  levels.length - 1,
-                  idx === -1 ? levels.length - 1 : idx
-                )
-              ];
-            })
-          }
-          className="h-8 w-8"
-          aria-label="Zoom In"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                setZoom((prev) => {
+                  const levels = [
+                    10, 25, 50, 75, 100, 125, 150, 200, 300, 400, 600, 800,
+                  ];
+                  const idx = levels.findIndex((z) => z > prev);
+                  return levels[
+                    Math.min(
+                      levels.length - 1,
+                      idx === -1 ? levels.length - 1 : idx
+                    )
+                  ];
+                })
+              }
+              className="h-8 w-8"
+              aria-label="Zoom In"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom in</p>
+          </TooltipContent>
+        </Tooltip>
 
         {/* Reset View */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onResetView}
-          className="h-8 w-8"
-          aria-label="Reset View to Artboard"
-          title="Reset view to artboard at 100% zoom"
-        >
-          <Home className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onResetView}
+              className="h-8 w-8"
+              aria-label="Reset View to Artboard"
+            >
+              <Home className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Reset view to artboard at 100% zoom</p>
+          </TooltipContent>
+        </Tooltip>
 
         {/* Undo/Redo Controls */}
+        {/* <div className="h-6">
+          <Separator orientation="vertical" />
+        </div>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={historyActions.undo}
+              disabled={!historyState.canUndo}
+              className="h-8 w-8"
+              aria-label="Undo"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Undo last action</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={historyActions.redo}
+              disabled={!historyState.canRedo}
+              className="h-8 w-8"
+              aria-label="Redo"
+            >
+              <RotateCw className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Redo last action</p>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Copy/Paste Controls 
         <div className="h-6">
           <Separator orientation="vertical" />
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={undo}
-          disabled={!canUndo}
-          className="h-8 w-8"
-          aria-label="Undo"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={redo}
-          disabled={!canRedo}
-          className="h-8 w-8"
-          aria-label="Redo"
-        >
-          <RotateCw className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={selectionActions.copySelection}
+              disabled={selectedElements.length === 0}
+              className="h-8 w-8"
+              aria-label="Copy"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Copy selected elements</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={selectionActions.pasteClipboard}
+              disabled={!clipboard || clipboard.length === 0}
+              className="h-8 w-8"
+              aria-label="Paste"
+            >
+              <Clipboard className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Paste copied elements</p>
+          </TooltipContent>
+        </Tooltip> */}
+
+        {/* Reset Canvas */}
+        {/* <div className="h-6">
+          <Separator orientation="vertical" />
+        </div> */}
+
+        {/* <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={fileActions.resetCanvas}
+              className="h-8 w-8"
+              aria-label="Reset Canvas"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Clear all elements from canvas</p>
+          </TooltipContent>
+        </Tooltip> */}
       </Card>
     </div>
   );

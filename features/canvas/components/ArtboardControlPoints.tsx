@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import React, { useState, useRef } from "react";
 import { useCanvasStore } from "@/features/canvas/store/useCanvasStore";
+import { useArtboardAspectRatio } from "../store/selectors";
 
 interface ArtboardControlPointsProps {
   artboardDimensions: { width: number; height: number };
@@ -23,7 +24,8 @@ const ArtboardControlPoints: React.FC<ArtboardControlPointsProps> = ({
   onResizeArtboard,
   zoom,
 }) => {
-  const { artboardAspectRatio } = useCanvasStore();
+  // Use optimized selector to prevent unnecessary re-renders
+  const artboardAspectRatio = useArtboardAspectRatio();
   const [isDragging, setIsDragging] = useState(false);
   const [activeHandle, setActiveHandle] = useState<ResizeHandle | null>(null);
   const startDimensions = useRef({ width: 0, height: 0 });

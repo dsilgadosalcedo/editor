@@ -1,4 +1,4 @@
-import { CanvasElementData } from "@/features/canvas/store/useCanvasStore";
+import { CanvasElementData } from "@/features/canvas/types";
 
 /**
  * Utility functions for copying canvas elements to Figma-compatible formats
