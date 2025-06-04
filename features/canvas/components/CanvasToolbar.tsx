@@ -236,7 +236,7 @@ export default function CanvasToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Reset view to artboard at 100% zoom</p>
+            <p>Reset view to artboard</p>
           </TooltipContent>
         </Tooltip>
 
