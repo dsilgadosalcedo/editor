@@ -116,8 +116,8 @@ export const createTextEditingHandlers = (
   textRef: React.RefObject<HTMLDivElement | null>,
   onResizeNoHistory?: (width: number, height: number) => void
 ) => {
-  // Track composition state to handle accented characters properly
   let isComposing = false;
+  let resizeTimeout: NodeJS.Timeout | null = null;
 
   const handleCompositionStart = () => {
     isComposing = true;
@@ -125,104 +125,59 @@ export const createTextEditingHandlers = (
 
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLDivElement>) => {
     isComposing = false;
-    // Process the composed text after composition ends
-    handleTextChange(e as any);
+    // Process text change after composition ends
+    const newContent = e.currentTarget.textContent || "";
+    onTextChange(newContent);
   };
 
   const handleTextDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
     e.preventDefault();
-    e.nativeEvent.stopImmediatePropagation();
+    e.stopPropagation();
+
+    const target = e.currentTarget as HTMLDivElement;
     setIsEditing(true);
 
-    // Focus the text element and place cursor at click position (Figma behavior)
+    // Use a small timeout to ensure the element is properly focused
     setTimeout(() => {
-      if (textRef.current) {
-        // Ensure the content is set before focusing
-        if (
-          !textRef.current.textContent ||
-          textRef.current.textContent.trim() === ""
-        ) {
-          textRef.current.textContent = element.content || "";
-        }
+      target.focus();
 
-        textRef.current.focus();
-
-        // Don't select all text - just place cursor where clicked
+      // Automatically select all text when entering edit mode
+      const selection = window.getSelection();
+      if (selection && target.textContent) {
         const range = document.createRange();
-        const selection = window.getSelection();
-
-        // Try to place cursor at the clicked position
-        try {
-          let clickRange: Range | null = null;
-
-          // Try modern approach first
-          if (document.caretRangeFromPoint && e.clientX && e.clientY) {
-            clickRange = document.caretRangeFromPoint(e.clientX, e.clientY);
-          }
-          // Fallback for browsers that don't support caretRangeFromPoint
-          else if (
-            (document as any).caretPositionFromPoint &&
-            e.clientX &&
-            e.clientY
-          ) {
-            const caretPos = (document as any).caretPositionFromPoint(
-              e.clientX,
-              e.clientY
-            );
-            if (caretPos) {
-              clickRange = document.createRange();
-              clickRange.setStart(caretPos.offsetNode, caretPos.offset);
-              clickRange.collapse(true);
-            }
-          }
-
-          if (
-            clickRange &&
-            textRef.current.contains(clickRange.startContainer)
-          ) {
-            selection?.removeAllRanges();
-            selection?.addRange(clickRange);
-            return;
-          }
-        } catch (error) {
-          console.warn("Could not position cursor at click location:", error);
-        }
-
-        // Fallback: place cursor at end of text
-        if (textRef.current.firstChild && textRef.current.textContent) {
-          range.setStart(
-            textRef.current.firstChild,
-            textRef.current.textContent.length
-          );
-          range.collapse(true);
-        } else {
-          range.selectNodeContents(textRef.current);
-          range.collapse(false);
-        }
-        selection?.removeAllRanges();
-        selection?.addRange(range);
+        range.selectNodeContents(target);
+        selection.removeAllRanges();
+        selection.addRange(range);
       }
     }, 10);
   };
 
   const handleTextBlur = () => {
     setIsEditing(false);
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
+    }
   };
 
   const handleTextChange = (e: React.FormEvent<HTMLDivElement>) => {
-    // Skip processing during composition to avoid breaking accented characters
+    // Get the current text content
+    const newContent = e.currentTarget.textContent || "";
+
+    // Update text content immediately for responsive typing
+    onTextChange(newContent);
+
+    // Skip auto-resize processing during composition to avoid interfering with accented characters
     if (isComposing) {
       return;
     }
 
-    // Check if this is a composition-related input event
+    // Additional check for InputEvent composition state
     const nativeEvent = e.nativeEvent as InputEvent;
     if (nativeEvent && nativeEvent.isComposing) {
       return;
     }
 
-    // Save cursor position before making changes
+    // Save cursor position more efficiently - only when needed
     const saveSelection = () => {
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0 || !textRef.current)
@@ -242,88 +197,93 @@ export const createTextEditingHandlers = (
     const restoreSelection = (offset: number) => {
       if (!textRef.current || typeof offset !== "number") return;
 
-      const range = document.createRange();
-      const selection = window.getSelection();
+      try {
+        const range = document.createRange();
+        const selection = window.getSelection();
 
-      let currentOffset = 0;
-      const walker = document.createTreeWalker(
-        textRef.current,
-        NodeFilter.SHOW_TEXT,
-        null
-      );
+        let currentOffset = 0;
+        const walker = document.createTreeWalker(
+          textRef.current,
+          NodeFilter.SHOW_TEXT,
+          null
+        );
 
-      let node = walker.nextNode();
-      while (node) {
-        const nodeLength = node.textContent?.length || 0;
-        if (currentOffset + nodeLength >= offset) {
-          range.setStart(node, Math.min(offset - currentOffset, nodeLength));
-          range.setEnd(node, Math.min(offset - currentOffset, nodeLength));
-          break;
+        let node = walker.nextNode();
+        while (node) {
+          const nodeLength = node.textContent?.length || 0;
+          if (currentOffset + nodeLength >= offset) {
+            range.setStart(node, Math.min(offset - currentOffset, nodeLength));
+            range.setEnd(node, Math.min(offset - currentOffset, nodeLength));
+            break;
+          }
+          currentOffset += nodeLength;
+          node = walker.nextNode();
         }
-        currentOffset += nodeLength;
-        node = walker.nextNode();
-      }
 
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(range);
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } catch (error) {
+        // If cursor restoration fails, don't break the typing experience
+        console.warn("Failed to restore cursor position:", error);
       }
     };
 
-    const cursorPosition = saveSelection();
-    const newContent = e.currentTarget.textContent || "";
-    onTextChange(newContent);
+    // Only handle auto-resize if we have a resize handler
+    if (onResizeNoHistory && textRef.current) {
+      // Clear any pending resize operation
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
 
-    // Handle auto-height resizing during editing (like Figma)
-    if (
-      element.textResizing === "auto-height" &&
-      onResizeNoHistory &&
-      textRef.current
-    ) {
-      setTimeout(() => {
+      // Save cursor position only when we're about to do auto-resize
+      const cursorPosition =
+        element.textResizing === "auto-height" ? saveSelection() : null;
+
+      // Debounce auto-resize operations with shorter timeout for better responsiveness
+      resizeTimeout = setTimeout(() => {
         if (!textRef.current) return;
 
-        const content = textRef.current.textContent || "";
-        const {
-          fontSize = 16,
-          fontWeight = 400,
-          letterSpacing = 0,
-          lineHeight = fontSize * 1.2,
-          width,
-        } = element;
+        // Handle auto-height resizing during editing (like Figma)
+        if (element.textResizing === "auto-height") {
+          const content = textRef.current.textContent || "";
+          const {
+            fontSize = 16,
+            fontWeight = 400,
+            letterSpacing = 0,
+            lineHeight = fontSize * 1.2,
+            width,
+          } = element;
 
-        // Create a measuring div with the same styles
-        const tempDiv = document.createElement("div");
-        tempDiv.style.position = "absolute";
-        tempDiv.style.visibility = "hidden";
-        tempDiv.style.width = `${width - 8}px`; // Account for padding
-        tempDiv.style.fontSize = `${fontSize}px`;
-        tempDiv.style.fontWeight = `${fontWeight}`;
-        tempDiv.style.fontFamily = "var(--font-geist-sans)";
-        tempDiv.style.letterSpacing = `${letterSpacing}px`;
-        tempDiv.style.lineHeight = `${lineHeight}px`;
-        tempDiv.style.overflowWrap = "break-word";
-        tempDiv.style.whiteSpace = "normal";
-        tempDiv.textContent = content;
+          // Create a measuring div with the same styles
+          const tempDiv = document.createElement("div");
+          tempDiv.style.position = "absolute";
+          tempDiv.style.visibility = "hidden";
+          tempDiv.style.width = `${width - 8}px`; // Account for padding
+          tempDiv.style.fontSize = `${fontSize}px`;
+          tempDiv.style.fontWeight = `${fontWeight}`;
+          tempDiv.style.fontFamily = "var(--font-geist-sans)";
+          tempDiv.style.letterSpacing = `${letterSpacing}px`;
+          tempDiv.style.lineHeight = `${lineHeight}px`;
+          tempDiv.style.overflowWrap = "break-word";
+          tempDiv.style.whiteSpace = "normal";
+          tempDiv.textContent = content;
 
-        document.body.appendChild(tempDiv);
-        const newHeight = Math.max(20, tempDiv.offsetHeight + 8);
-        document.body.removeChild(tempDiv);
+          document.body.appendChild(tempDiv);
+          const newHeight = Math.max(20, tempDiv.offsetHeight + 8);
+          document.body.removeChild(tempDiv);
 
-        if (Math.abs(newHeight - element.height) > 2) {
-          onResizeNoHistory(width, newHeight);
+          if (Math.abs(newHeight - element.height) > 2) {
+            onResizeNoHistory(width, newHeight);
+
+            // Restore cursor position after resize with minimal delay
+            if (cursorPosition !== null) {
+              setTimeout(() => restoreSelection(cursorPosition), 0);
+            }
+          }
         }
-
-        // Restore cursor position after any DOM changes
-        if (cursorPosition !== null) {
-          setTimeout(() => restoreSelection(cursorPosition), 0);
-        }
-      }, 0);
-    } else {
-      // For non-auto-height elements, restore cursor position immediately
-      if (cursorPosition !== null) {
-        setTimeout(() => restoreSelection(cursorPosition), 0);
-      }
+      }, 50); // Reduced timeout for better responsiveness
     }
   };
 
@@ -377,6 +337,7 @@ export const createTextInputHandlers = (
 ) => {
   let resizeTimeout: NodeJS.Timeout | null = null;
   let isComposing = false;
+  let lastInputTime = 0;
 
   const handleCompositionStart = () => {
     isComposing = true;
@@ -384,8 +345,8 @@ export const createTextInputHandlers = (
 
   const handleCompositionEnd = () => {
     isComposing = false;
-    // Process resize after composition ends
-    handleInput();
+    // Process resize after composition ends with minimal delay
+    setTimeout(() => handleInput(), 10);
   };
 
   const handleInput = (e?: Event) => {
@@ -403,13 +364,20 @@ export const createTextInputHandlers = (
       return;
     }
 
+    // Track input timing to detect fast typing
+    const now = Date.now();
+    const timeSinceLastInput = now - lastInputTime;
+    lastInputTime = now;
+
     // Clear any pending resize timeout
     if (resizeTimeout) {
       clearTimeout(resizeTimeout);
     }
 
+    // Use shorter timeouts for better responsiveness
+    const debounceTime = timeSinceLastInput < 100 ? 100 : 50;
+
     // Debounce resize to avoid interfering with fast typing and composition events
-    // Longer timeout for better composition event handling (accents, tildes, etc.)
     resizeTimeout = setTimeout(() => {
       if (!textRef.current) return;
 
@@ -487,7 +455,7 @@ export const createTextInputHandlers = (
           onResizeNoHistory(element.width, newHeight);
         }
       }
-    }, 100); // Increased delay to better handle composition events (accents, tildes, IME)
+    }, debounceTime); // Dynamic timeout based on typing speed
   };
 
   const attachInputListeners = () => {
