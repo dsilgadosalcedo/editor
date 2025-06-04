@@ -31,6 +31,7 @@ import { ColorPickerProvider } from "./ColorPicker";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { useShallow } from "zustand/react/shallow";
+import { generateRandomImage } from "../services/image-service";
 
 export default function CanvasPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -253,11 +254,9 @@ export default function CanvasPage() {
         }
         if (e.key === "3") {
           e.preventDefault();
-          // For image, we need to prompt for URL or use a default
-          const imageUrl = prompt("Enter image URL:");
-          if (imageUrl) {
-            canvasActions.addImageElement(imageUrl);
-          }
+          // Generate a random image automatically instead of prompting
+          const imageUrl = generateRandomImage({ width: 300, height: 200 });
+          canvasActions.addImageElement(imageUrl);
           return;
         }
       }

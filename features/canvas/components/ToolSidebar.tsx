@@ -33,6 +33,7 @@ import {
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import KeyboardShortcuts from "./KeyboardShortcuts";
+import { generateRandomImage } from "../services/image-service";
 
 interface ToolSidebarProps {
   selectedTool: ToolType;
@@ -90,10 +91,9 @@ export default function ToolSidebar({
   // Handle click for immediate element creation (fallback)
   const handleElementClick = (elementType: ElementType) => {
     if (elementType === "image") {
-      const imageUrl = prompt("Enter image URL:");
-      if (imageUrl) {
-        canvasActions.addImageElement(imageUrl);
-      }
+      // Generate a random image automatically instead of prompting
+      const imageUrl = generateRandomImage({ width: 300, height: 200 });
+      canvasActions.addImageElement(imageUrl);
     } else {
       canvasActions.addElement(elementType);
     }
