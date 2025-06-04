@@ -204,9 +204,16 @@ export interface AlignmentActions {
 
 export interface FileActions {
   exportCanvas: (filename?: string) => void;
+  exportProject: (filename?: string) => void;
   importCanvas: (
     file: File
   ) => Promise<{ success: boolean; importedCount?: number }>;
+  importProject: (file: File) => Promise<{
+    success: boolean;
+    importedCount?: number;
+    projectCreated?: boolean;
+    projectId?: string;
+  }>;
   saveCanvas: (title?: string) => Promise<string | null>;
   loadCanvas: (id: string) => Promise<boolean>;
   listCanvases: () => Promise<SavedCanvasData[]>;

@@ -240,3 +240,17 @@ export const useAlignmentActions = () =>
       alignToArtboardCenterVertical: state.alignToArtboardCenterVertical,
     }))
   );
+
+// File actions
+export const useFileActions = () =>
+  useCanvasStore(
+    useShallow((state) => ({
+      exportCanvas: state.exportCanvas,
+      exportProject: state.exportProject,
+      importCanvas: state.importCanvas,
+      importProject: state.importProject,
+      saveCanvas: state.saveCanvas,
+      loadCanvas: state.loadCanvas,
+      listCanvases: state.listCanvases,
+    }))
+  );

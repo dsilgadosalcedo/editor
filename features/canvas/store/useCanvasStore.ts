@@ -48,8 +48,13 @@ import {
 } from "../services/grouping";
 import {
   exportCanvasToJSON,
+  exportProjectToJSON,
   importCanvasFromFile,
 } from "../services/file-operations";
+import {
+  createProjectWithLimitCheck,
+  isProjectLimitReached,
+} from "@/lib/project-storage";
 import {
   alignElementToArtboardLeft,
   alignElementToArtboardRight,
@@ -1362,6 +1367,16 @@ export const useCanvasStore = create<CanvasStore>()(
         );
       },
 
+      exportProject: (filename?: string) => {
+        const state = get();
+        exportProjectToJSON(
+          state.elements,
+          state.artboardDimensions,
+          state.projectName,
+          filename
+        );
+      },
+
       importCanvas: async (file: File) => {
         const state = get();
 
@@ -1396,6 +1411,22 @@ export const useCanvasStore = create<CanvasStore>()(
           });
 
           return { success: true, importedCount: importedElements.length };
+        }
+
+        return { success: false };
+      },
+
+      importProject: async (file: File) => {
+        const result = await importCanvasFromFile(file);
+
+        if (result.success && result.elements) {
+          // This function will be called from the ToolSidebar with user choice handling
+          // For now, just return the result - the UI component will handle the choice
+          return {
+            success: true,
+            importedCount: result.elements.length,
+            projectCreated: false, // Will be set by the UI component
+          };
         }
 
         return { success: false };

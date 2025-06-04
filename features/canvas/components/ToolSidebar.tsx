@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Type,
   Square,
@@ -8,6 +8,7 @@ import {
   Keyboard,
   MoreHorizontal,
   Download,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ import {
   useArtboardDimensions,
   useCanvasActions,
   useSelectionActions,
+  useFileActions,
 } from "../store/selectors";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -34,6 +36,13 @@ import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 import { generateRandomImage } from "../services/image-service";
+import ImportProjectDialog, { ImportChoice } from "./ImportProjectDialog";
+import {
+  isProjectLimitReached,
+  createProjectWithLimitCheck,
+} from "@/lib/project-storage";
+import { importCanvasFromFile } from "../services/file-operations";
+import { useRouter } from "next/navigation";
 
 interface ToolSidebarProps {
   selectedTool: ToolType;
@@ -61,10 +70,15 @@ export default function ToolSidebar({
   const artboardDimensions = useArtboardDimensions();
   const canvasActions = useCanvasActions();
   const selectionActions = useSelectionActions();
+  const fileActions = useFileActions();
+  const router = useRouter();
 
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [draggedElementType, setDraggedElementType] =
     useState<ElementType | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importData, setImportData] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle drag start for element creation
   const handleDragStart = (e: React.DragEvent, elementType: ElementType) => {
@@ -151,6 +165,97 @@ export default function ToolSidebar({
     } catch (error) {
       console.error("Error downloading SVG:", error);
       toast.error("Failed to download SVG. Please try again.");
+    }
+  };
+
+  const handleDownloadAsProject = () => {
+    try {
+      fileActions.exportProject();
+      toast.success("Project exported successfully");
+    } catch (error) {
+      console.error("Error downloading project:", error);
+      toast.error("Failed to export project. Please try again.");
+    }
+  };
+
+  const handleImportProject = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await importCanvasFromFile(file);
+      if (result.success && result.elements) {
+        setImportData(result);
+        setShowImportDialog(true);
+      } else {
+        toast.error(result.error || "Failed to import project");
+      }
+    } catch (error) {
+      console.error("Error importing project:", error);
+      toast.error("Failed to import project. Please try again.");
+    }
+
+    // Clear the input
+    event.target.value = "";
+  };
+
+  const handleImportChoice = async (choice: ImportChoice) => {
+    try {
+      if (choice.type === "project") {
+        // Create new project
+        const projectLimitReached = isProjectLimitReached();
+        if (projectLimitReached) {
+          // Auto-remove oldest project and create new one
+          const result = createProjectWithLimitCheck(
+            undefined,
+            `Imported Project`,
+            choice.data
+          );
+
+          if (result.project) {
+            if (result.autoRemoved && result.removedProjects) {
+              toast.info(
+                `Removed oldest project "${result.removedProjects[0].name}" to make room`
+              );
+            }
+            router.push(`/canvas/${result.project.id}`);
+          } else {
+            toast.error("Failed to create project");
+          }
+        } else {
+          const result = createProjectWithLimitCheck(
+            undefined,
+            `Imported Project`,
+            choice.data
+          );
+
+          if (result.project) {
+            router.push(`/canvas/${result.project.id}`);
+          } else {
+            toast.error("Failed to create project");
+          }
+        }
+      } else {
+        // Import as elements to current canvas
+        const importResult = await fileActions.importCanvas(
+          new File([JSON.stringify(choice.data)], "import.json", {
+            type: "application/json",
+          })
+        );
+
+        if (!importResult.success) {
+          toast.error("Failed to import elements");
+        }
+      }
+    } catch (error) {
+      console.error("Error handling import choice:", error);
+      toast.error("Failed to import project. Please try again.");
     }
   };
 
@@ -273,10 +378,36 @@ export default function ToolSidebar({
                 <Download className="mr-2 h-4 w-4" />
                 Download as SVG
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDownloadAsProject}>
+                <Download className="mr-2 h-4 w-4" />
+                Download as Project
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleImportProject}>
+                <Upload className="mr-2 h-4 w-4" />
+                Import Project
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </section>
+
+      {/* Hidden file input for importing projects */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+      />
+
+      {/* Import Project Dialog */}
+      <ImportProjectDialog
+        isOpen={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        onChoice={handleImportChoice}
+        projectData={importData}
+        isProjectLimitReached={isProjectLimitReached()}
+      />
 
       {/* Keyboard Shortcuts Modal */}
       {showShortcuts && (

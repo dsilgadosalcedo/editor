@@ -123,6 +123,41 @@ export const importCanvasFromFile = async (
 };
 
 /**
+ * Export project data to JSON format (full project data including metadata)
+ */
+export const exportProjectToJSON = (
+  elements: CanvasElementData[],
+  artboardDimensions: { width: number; height: number },
+  projectName: string,
+  filename?: string
+): void => {
+  try {
+    const exportData: CanvasExportData = {
+      elements,
+      artboardDimensions,
+      version: "1.0.0",
+      timestamp: Date.now(),
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = filename || `${projectName || "project"}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clean up
+    URL.revokeObjectURL(link.href);
+  } catch (error) {
+    console.error("Error exporting project:", error);
+    throw new Error("Failed to export project");
+  }
+};
+
+/**
  * Convert canvas to SVG format
  */
 export const exportCanvasToSVG = (

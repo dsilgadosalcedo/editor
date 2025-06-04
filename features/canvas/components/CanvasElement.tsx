@@ -448,7 +448,7 @@ export default function CanvasElement({
             )}
             style={getTextStyles(element, isEditing)}
           >
-            {element.content || ""}
+            {!isEditing ? element.content || "" : ""}
           </div>
         )}
 

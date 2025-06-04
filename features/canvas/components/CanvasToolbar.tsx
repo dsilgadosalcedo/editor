@@ -90,12 +90,12 @@ export default function CanvasToolbar({
 
   return (
     <div
-      className="fixed bottom-1 left-1/2 -translate-x-1/2 z-50 grid place-items-center"
+      className="fixed bottom-1 left-4 z-50 grid place-items-center"
       style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}
     >
       <Card className="flex flex-row items-center gap-2 backdrop-blur-sm p-2 bg-sidebar/70 border-card/80">
         {/* Export/Import Controls */}
-        <Tooltip>
+        {/* <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
@@ -126,12 +126,12 @@ export default function CanvasToolbar({
           <TooltipContent>
             <p>Import canvas from JSON file</p>
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
 
         {/* Separator */}
-        <div className="h-6">
+        {/* <div className="h-6">
           <Separator orientation="vertical" />
-        </div>
+        </div> */}
 
         {/* Zoom Controls */}
         <Tooltip>
@@ -168,7 +168,7 @@ export default function CanvasToolbar({
             }
           }}
         >
-          <SelectTrigger className="w-[90px] bg-transparent text-sm rounded-md border-none hover:border-blue-400 transition-colors">
+          <SelectTrigger className="w-[90px] bg-transparent text-sm rounded-md border-none shadow-none transition-colors">
             <SelectValue placeholder="Zoom">{zoom}%</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -321,11 +321,11 @@ export default function CanvasToolbar({
         </Tooltip> */}
 
         {/* Reset Canvas */}
-        <div className="h-6">
+        {/* <div className="h-6">
           <Separator orientation="vertical" />
-        </div>
+        </div> */}
 
-        <Tooltip>
+        {/* <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
@@ -340,7 +340,7 @@ export default function CanvasToolbar({
           <TooltipContent>
             <p>Clear all elements from canvas</p>
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
       </Card>
     </div>
   );
