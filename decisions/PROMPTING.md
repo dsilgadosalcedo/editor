@@ -1,3 +1,4 @@
+<docs>
 # Canvas Properties Documentation
 
 This document outlines all available properties that can be set for elements and the artboard in the canvas system.
@@ -197,24 +198,6 @@ When exporting a project, all the above properties are preserved in this structu
 - Line breaks are preserved with `\n`
 - Empty strings are allowed
 
-## Import/Export Behavior
-
-### Drag & Drop Support
-
-- **Image files**: Automatically added as image elements at drop position
-- **JSON project files**: Shows dialog to import as new project or elements
-- **JSON canvas files**: Imported directly as elements (backward compatibility)
-
-### Import Options
-
-1. **Import as Project**: Creates new project with all artboard settings preserved
-2. **Import as Elements**: Adds elements to current canvas, preserving element properties
-
-### Project Limits
-
-- When importing as project and limit is reached, oldest project is automatically removed
-- User is notified when projects are auto-removed
-
 ## Usage Notes
 
 1. **Aspect Ratio Lock**: When `artboardAspectRatio` is not null, changing width automatically adjusts height and vice versa
@@ -222,4 +205,8 @@ When exporting a project, all the above properties are preserved in this structu
 3. **Selection State**: Only used for UI, not persisted in saved projects
 4. **Loading State**: Temporary state for images, not persisted
 5. **Isolation Mode**: Temporary view state, not persisted in exports
-6. **Drag & Drop**: Project files with artboard metadata trigger import dialog, canvas files import directly
+   </docs>
+
+<rules>
+For any subsequent user prompts requesting a canvas project, please act as follows: Immediately infer all necessary visual design and structural properties (including overall dimensions & layout, key components, visual style & aesthetic, text styling, arrangement & spacing, and any specific complex element details) based solely on the user's simple prompt. Do not ask any clarifying questions to the user. Always aim to create a modern, clean, and intuitive aesthetic by default, unless the user's prompt explicitly indicates a different style. Then, proceed directly to generating the complete JSON output based on these inferences.
+</rules>
