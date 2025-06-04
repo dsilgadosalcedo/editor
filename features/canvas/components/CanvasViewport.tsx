@@ -1,14 +1,18 @@
 import React, { useState } from "react";
 import type { ToolType } from "../types/props";
 import type { ElementType } from "../types";
-import { useCanvasStore } from "../store/useCanvasStore";
-import { useShallow } from "zustand/react/shallow";
 import Artboard from "./Artboard";
+import { generateRandomImage } from "../services/image-service";
 import {
   useElements,
   useSelectedElements,
   useArtboardDimensions,
   useCanvasActions,
+  useElementActions,
+  useSelectionActions,
+  useTextActions,
+  useStyleActions,
+  useHistoryActions,
 } from "../store/selectors";
 
 // Drag data interface for element creation
@@ -64,36 +68,15 @@ export default function CanvasViewport({
   const elements = useElements();
   const selectedElements = useSelectedElements();
   const canvasActions = useCanvasActions();
+  const elementActions = useElementActions();
+  const selectionActions = useSelectionActions();
+  const textActions = useTextActions();
+  const styleActions = useStyleActions();
+  const historyActions = useHistoryActions();
 
   // State for drag and drop
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragOverArtboard, setDragOverArtboard] = useState(false);
-
-  // Group related element actions using useShallow
-  const elementActions = useCanvasStore(
-    useShallow((state) => ({
-      selectElement: state.selectElement,
-      moveElement: state.moveElement,
-      moveElementNoHistory: state.moveElementNoHistory,
-      moveSelectedElements: state.moveSelectedElements,
-      moveSelectedElementsNoHistory: state.moveSelectedElementsNoHistory,
-      resizeElement: state.resizeElement,
-      resizeElementNoHistory: state.resizeElementNoHistory,
-      resizeSelectedElements: state.resizeSelectedElements,
-      resizeSelectedElementsNoHistory: state.resizeSelectedElementsNoHistory,
-      updateTextContent: state.updateTextContent,
-      updateTextResizing: state.updateTextResizing,
-      updateCornerRadius: state.updateCornerRadius,
-      updateCornerRadiusNoHistory: state.updateCornerRadiusNoHistory,
-      updateFontSize: state.updateFontSize,
-      updateLineHeight: state.updateLineHeight,
-      updateRotation: state.updateRotation,
-      updateRotationNoHistory: state.updateRotationNoHistory,
-      clearSelection: state.clearSelection,
-      setArtboardDimensions: state.setArtboardDimensions,
-      addToHistory: state.addToHistory,
-    }))
-  );
 
   // Calculate position relative to artboard accounting for zoom
   const getArtboardPosition = (clientX: number, clientY: number) => {
@@ -176,10 +159,9 @@ export default function CanvasViewport({
 
       // Create element at drop position
       if (dragData.type === "image") {
-        const imageUrl = prompt("Enter image URL:");
-        if (imageUrl) {
-          canvasActions.addImageElement(imageUrl, artboardPos.x, artboardPos.y);
-        }
+        // Generate a random image automatically instead of prompting
+        const imageUrl = generateRandomImage({ width: 300, height: 200 });
+        canvasActions.addImageElement(imageUrl, artboardPos.x, artboardPos.y);
       } else {
         // Create element directly at the drop position
         canvasActions.addElementAtPosition(
@@ -230,8 +212,8 @@ export default function CanvasViewport({
           elements={elements}
           selectedElements={selectedElements}
           onSelectElement={(id, addToSelection) => {
-            if (id === null) elementActions.clearSelection();
-            else elementActions.selectElement(id, addToSelection);
+            if (id === null) selectionActions.clearSelection();
+            else selectionActions.selectElement(id, addToSelection);
           }}
           onMoveElement={elementActions.moveElement}
           onMoveElementNoHistory={elementActions.moveElementNoHistory}
@@ -245,45 +227,28 @@ export default function CanvasViewport({
           onResizeElementNoHistory={(id, w, h, preserveAspectRatio) =>
             elementActions.resizeElementNoHistory(id, w, h, preserveAspectRatio)
           }
-          onResizeSelectedElements={(baseId, w, h, preserveAspectRatio) =>
-            elementActions.resizeSelectedElements(
-              baseId,
-              w,
-              h,
-              preserveAspectRatio
-            )
+          onResizeSelectedElements={elementActions.resizeSelectedElements}
+          onResizeSelectedElementsNoHistory={
+            elementActions.resizeSelectedElementsNoHistory
           }
-          onResizeSelectedElementsNoHistory={(
-            baseId,
-            w,
-            h,
-            preserveAspectRatio
-          ) =>
-            elementActions.resizeSelectedElementsNoHistory(
-              baseId,
-              w,
-              h,
-              preserveAspectRatio
-            )
-          }
-          onTextChange={elementActions.updateTextContent}
-          onTextResizingChange={elementActions.updateTextResizing}
+          onTextChange={textActions.updateTextContent}
+          onTextResizingChange={textActions.updateTextResizing}
           selectedTool={selectedTool}
           canvasPosition={canvasPosition}
           artboardRef={artboardRef}
           canvasContainerRef={canvasContainerRef}
-          onUpdateCornerRadius={elementActions.updateCornerRadius}
+          onUpdateCornerRadius={styleActions.updateCornerRadius}
           onUpdateCornerRadiusNoHistory={
-            elementActions.updateCornerRadiusNoHistory
+            styleActions.updateCornerRadiusNoHistory
           }
-          onUpdateFontSize={elementActions.updateFontSize}
-          onUpdateLineHeight={elementActions.updateLineHeight}
-          onUpdateRotation={elementActions.updateRotation}
-          onUpdateRotationNoHistory={elementActions.updateRotationNoHistory}
+          onUpdateFontSize={textActions.updateFontSize}
+          onUpdateLineHeight={textActions.updateLineHeight}
+          onUpdateRotation={styleActions.updateRotation}
+          onUpdateRotationNoHistory={styleActions.updateRotationNoHistory}
           onResizeArtboard={(width, height) =>
             elementActions.setArtboardDimensions({ width, height })
           }
-          onAddToHistory={elementActions.addToHistory}
+          onAddToHistory={historyActions.addToHistory}
         />
 
         {/* Drop Zone Visual Feedback */}

@@ -131,10 +131,15 @@ export const useElementActions = () =>
     useShallow((state) => ({
       moveElement: state.moveElement,
       moveElementNoHistory: state.moveElementNoHistory,
+      moveSelectedElements: state.moveSelectedElements,
+      moveSelectedElementsNoHistory: state.moveSelectedElementsNoHistory,
       resizeElement: state.resizeElement,
       resizeElementNoHistory: state.resizeElementNoHistory,
+      resizeSelectedElements: state.resizeSelectedElements,
+      resizeSelectedElementsNoHistory: state.resizeSelectedElementsNoHistory,
       updateName: state.updateName,
       updateFillColor: state.updateFillColor,
+      setArtboardDimensions: state.setArtboardDimensions,
     }))
   );
 

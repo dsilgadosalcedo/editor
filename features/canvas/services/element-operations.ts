@@ -1,4 +1,5 @@
 import { CanvasElementData, ElementType } from "../types";
+import { generateRandomImage } from "./image-service";
 
 /**
  * Service for element creation and basic operations
@@ -94,7 +95,7 @@ export const createElement = (
           : Math.round(artboardHeight / 2 - height / 2),
         width,
         height,
-        src: "https://picsum.photos/150/112?random=" + Date.now(),
+        src: generateRandomImage({ width, height }),
         color: "transparent",
       };
     }

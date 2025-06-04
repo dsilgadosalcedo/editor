@@ -3,13 +3,12 @@
 import React, { useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import ElementFloatingToolbar from "./ElementFloatingToolbar";
-import { useCanvasStore } from "../store/useCanvasStore";
 import { useIsolatedGroupId, useElements } from "../store/selectors";
 import { useShallow } from "zustand/react/shallow";
 import { CanvasElementProps } from "../types";
 import { calculateRotatedResize, transformRotatedResize } from "../utils";
 
-// Import services
+// Import services from index
 import {
   createElementDragHandlers,
   createElementResizeHandlers,
@@ -21,18 +20,12 @@ import {
   type RotationState,
   type FontScaleState,
   type CornerRadiusState,
-} from "../services/element-interactions";
-
-import {
   calculateTextAutoResize,
   createTextEditingHandlers,
   createTextInputHandlers,
   handleTextFitContent,
   getTextStyles,
   getTextAlignmentClasses,
-} from "../services/text-operations";
-
-import {
   getRotatedCursor,
   getElementContainerStyles,
   getElementContainerClasses,
@@ -45,13 +38,12 @@ import {
   getSelectionContainerStyles,
   getSelectionBorderStyles,
   getRotationIndicatorStyles,
-} from "../services/element-rendering";
-
-import {
   createGroupInteractionHandlers,
   createIsolationUIHelpers,
   type IsolationContext,
-} from "../services/isolation-operations";
+} from "../services";
+
+import { useCanvasStore } from "../store/useCanvasStore";
 
 export default function CanvasElement({
   element,
