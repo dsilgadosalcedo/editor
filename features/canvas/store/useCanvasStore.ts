@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { CanvasStore } from "./types/store-types";
-import { CanvasElementData } from "../types";
+import { CanvasElementData, ElementType } from "../types";
 
 // Import services
 import {
@@ -105,6 +105,27 @@ export const useCanvasStore = create<CanvasStore>()(
         const options: CreateElementOptions = {
           artboardWidth: artboardDimensions.width,
           artboardHeight: artboardDimensions.height,
+        };
+        const newElement = createElement(type, options);
+
+        set((state) => ({
+          ...get().getHistoryUpdate(),
+          elements: [
+            ...state.elements.map((el: CanvasElementData) => ({
+              ...el,
+              selected: false,
+            })),
+            newElement,
+          ],
+        }));
+      },
+
+      addElementAtPosition: (type, x, y) => {
+        const { artboardDimensions } = get();
+        const options: CreateElementOptions = {
+          artboardWidth: artboardDimensions.width,
+          artboardHeight: artboardDimensions.height,
+          position: { x, y },
         };
         const newElement = createElement(type, options);
 

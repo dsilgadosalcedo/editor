@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ToolType } from "../types/props";
+import type { ElementType } from "../types";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
 import {
@@ -40,6 +41,12 @@ interface ToolSidebarProps {
   layersOpen: boolean;
 }
 
+// Drag data interface for element creation
+interface DragElementData {
+  type: ElementType;
+  isCreatingElement: boolean;
+}
+
 export default function ToolSidebar({
   selectedTool,
   onSelectTool,
@@ -55,6 +62,42 @@ export default function ToolSidebar({
   const selectionActions = useSelectionActions();
 
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [draggedElementType, setDraggedElementType] =
+    useState<ElementType | null>(null);
+
+  // Handle drag start for element creation
+  const handleDragStart = (e: React.DragEvent, elementType: ElementType) => {
+    setDraggedElementType(elementType);
+
+    // Set drag data
+    const dragData: DragElementData = {
+      type: elementType,
+      isCreatingElement: true,
+    };
+
+    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = "copy";
+
+    // Add visual feedback
+    e.dataTransfer.setDragImage(e.currentTarget as HTMLElement, 24, 24);
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    setDraggedElementType(null);
+  };
+
+  // Handle click for immediate element creation (fallback)
+  const handleElementClick = (elementType: ElementType) => {
+    if (elementType === "image") {
+      const imageUrl = prompt("Enter image URL:");
+      if (imageUrl) {
+        canvasActions.addImageElement(imageUrl);
+      }
+    } else {
+      canvasActions.addElement(elementType);
+    }
+  };
 
   const handleDownloadAsSVG = () => {
     try {
@@ -144,34 +187,38 @@ export default function ToolSidebar({
       <section className="p-1 bg-sidebar/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm">
         <div className="flex-1 bg-card/50 dark:bg-card/50 border rounded-xl flex flex-col p-4 w-16 items-center gap-2 shadow-sm">
           <ToolButton
-            onClick={() => canvasActions.addElement("text")}
+            onClick={() => handleElementClick("text")}
+            onDragStart={(e) => handleDragStart(e, "text")}
+            onDragEnd={handleDragEnd}
             aria-label="Add text (Shortcut: 1)"
             tabIndex={0}
             shortcut="1"
+            draggable={true}
+            isDragging={draggedElementType === "text"}
           >
             <ToolIcon icon={Type} />
           </ToolButton>
           <ToolButton
-            onClick={() => {
-              canvasActions.addElement("rectangle");
-            }}
+            onClick={() => handleElementClick("rectangle")}
+            onDragStart={(e) => handleDragStart(e, "rectangle")}
+            onDragEnd={handleDragEnd}
             aria-label="Add rectangle (Shortcut: 2)"
             tabIndex={0}
             shortcut="2"
+            draggable={true}
+            isDragging={draggedElementType === "rectangle"}
           >
             <ToolIcon icon={Square} />
           </ToolButton>
           <ToolButton
-            onClick={() => {
-              // For image, we need to prompt for URL or use a default
-              const imageUrl = prompt("Enter image URL:");
-              if (imageUrl) {
-                canvasActions.addImageElement(imageUrl);
-              }
-            }}
+            onClick={() => handleElementClick("image")}
+            onDragStart={(e) => handleDragStart(e, "image")}
+            onDragEnd={handleDragEnd}
             aria-label="Add image (Shortcut: 3)"
             tabIndex={0}
             shortcut="3"
+            draggable={true}
+            isDragging={draggedElementType === "image"}
           >
             <ToolIcon icon={ImageIcon} />
           </ToolButton>
@@ -239,14 +286,13 @@ export default function ToolSidebar({
   );
 }
 
-type ToolButtonProps = {
-  onClick: () => void;
-  children: React.ReactNode;
-  className?: string;
-  tabIndex?: number;
-  "aria-label"?: string;
+interface ToolButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   shortcut?: string;
-};
+  isDragging?: boolean;
+  onDragStart?: (e: React.DragEvent<HTMLButtonElement>) => void;
+  onDragEnd?: () => void;
+}
 
 const ToolButton = ({
   onClick,
@@ -255,28 +301,35 @@ const ToolButton = ({
   children,
   tabIndex,
   "aria-label": ariaLabel,
+  isDragging = false,
+  onDragStart,
+  onDragEnd,
+  ...props
 }: ToolButtonProps) => {
   return (
-    <div className="relative flex flex-col items-center">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onClick}
-        className={cn(
-          "group active:text-properties-gold dark:active:text-properties-gold active:scale-90 transition-all duration-200",
-          className
-        )}
-        tabIndex={tabIndex}
-        aria-label={ariaLabel}
-      >
-        {children}
-      </Button>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onClick}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "group active:text-properties-gold dark:active:text-properties-gold active:scale-90 transition-all duration-200 relative",
+        isDragging && "opacity-50 scale-95",
+        className
+      )}
+      tabIndex={tabIndex}
+      aria-label={ariaLabel}
+      {...props}
+    >
+      {children}
+
       {shortcut && (
-        <span className="absolute bottom-1 -right-2.5 w-full text-[8px] text-secondary-foreground select-none pointer-events-none text-center">
+        <span className="absolute bottom-0.5 -right-2.5 w-full text-[8px] text-secondary-foreground select-none pointer-events-none text-center">
           {shortcut}
         </span>
       )}
-    </div>
+    </Button>
   );
 };
 

@@ -36,25 +36,38 @@ export const createElement = (
   };
 
   switch (type) {
-    case "rectangle":
+    case "rectangle": {
+      const width = 150;
+      const height = 75;
       return {
         ...baseElement,
         type: "rectangle",
-        x: position?.x ?? Math.round(artboardWidth / 2 - 75),
-        y: position?.y ?? Math.round(artboardHeight / 2 - 37.5),
-        width: 150,
-        height: 75,
+        x: position
+          ? Math.round(position.x - width / 2)
+          : Math.round(artboardWidth / 2 - width / 2),
+        y: position
+          ? Math.round(position.y - height / 2)
+          : Math.round(artboardHeight / 2 - height / 2),
+        width,
+        height,
         color: "#3b82f6",
       };
+    }
 
-    case "text":
+    case "text": {
+      const width = 100;
+      const height = 20;
       return {
         ...baseElement,
         type: "text",
-        x: position?.x ?? Math.round(artboardWidth / 2 - 50),
-        y: position?.y ?? Math.round(artboardHeight / 2 - 10),
-        width: 100,
-        height: 20,
+        x: position
+          ? Math.round(position.x - width / 2)
+          : Math.round(artboardWidth / 2 - width / 2),
+        y: position
+          ? Math.round(position.y - height / 2)
+          : Math.round(artboardHeight / 2 - height / 2),
+        width,
+        height,
         content: "Text",
         color: "#000000",
         fontSize: 16,
@@ -65,33 +78,48 @@ export const createElement = (
         verticalAlign: "top" as const,
         textResizing: "auto-width" as const,
       };
+    }
 
-    case "image":
+    case "image": {
+      const width = 150;
+      const height = 112;
       return {
         ...baseElement,
         type: "image",
-        x: position?.x ?? Math.round(artboardWidth / 2 - 75),
-        y: position?.y ?? Math.round(artboardHeight / 2 - 56),
-        width: 150,
-        height: 112,
+        x: position
+          ? Math.round(position.x - width / 2)
+          : Math.round(artboardWidth / 2 - width / 2),
+        y: position
+          ? Math.round(position.y - height / 2)
+          : Math.round(artboardHeight / 2 - height / 2),
+        width,
+        height,
         src: "https://picsum.photos/150/112?random=" + Date.now(),
         color: "transparent",
       };
+    }
 
-    case "group":
+    case "group": {
+      const width = 200;
+      const height = 150;
       return {
         ...baseElement,
         type: "group",
-        x: position?.x ?? Math.round(artboardWidth / 2 - 100),
-        y: position?.y ?? Math.round(artboardHeight / 2 - 75),
-        width: 200,
-        height: 150,
+        x: position
+          ? Math.round(position.x - width / 2)
+          : Math.round(artboardWidth / 2 - width / 2),
+        y: position
+          ? Math.round(position.y - height / 2)
+          : Math.round(artboardHeight / 2 - height / 2),
+        width,
+        height,
         color: "transparent",
         borderWidth: 1,
         borderColor: "#3b82f6",
         children: [],
         name: "Group",
       };
+    }
 
     default:
       throw new Error(`Invalid element type: ${type}`);
@@ -130,8 +158,12 @@ export const createImageElement = (
       const element: CanvasElementData = {
         id: `image-${Date.now()}`,
         type: "image",
-        x: position?.x ?? Math.round(artboardWidth / 2 - width / 2),
-        y: position?.y ?? Math.round(artboardHeight / 2 - height / 2),
+        x: position
+          ? Math.round(position.x - width / 2)
+          : Math.round(artboardWidth / 2 - width / 2),
+        y: position
+          ? Math.round(position.y - height / 2)
+          : Math.round(artboardHeight / 2 - height / 2),
         width,
         height,
         src,
@@ -146,13 +178,19 @@ export const createImageElement = (
 
     img.onerror = () => {
       // Fallback if image fails to load
+      const fallbackWidth = 150;
+      const fallbackHeight = 112;
       const fallbackElement: CanvasElementData = {
         id: `image-${Date.now()}`,
         type: "image",
-        x: position?.x ?? Math.round(artboardWidth / 2 - 75),
-        y: position?.y ?? Math.round(artboardHeight / 2 - 56),
-        width: 150,
-        height: 112,
+        x: position
+          ? Math.round(position.x - fallbackWidth / 2)
+          : Math.round(artboardWidth / 2 - fallbackWidth / 2),
+        y: position
+          ? Math.round(position.y - fallbackHeight / 2)
+          : Math.round(artboardHeight / 2 - fallbackHeight / 2),
+        width: fallbackWidth,
+        height: fallbackHeight,
         src,
         color: "transparent",
         selected: true,

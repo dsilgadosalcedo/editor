@@ -1,5 +1,6 @@
 import { StateCreator } from "zustand";
 import { CanvasState, CanvasActions } from "../types/store-types";
+import { ElementType } from "../../types";
 import {
   createElement,
   createImageElement,
@@ -52,6 +53,24 @@ export const createCanvasSlice: StateCreator<
     const options: CreateElementOptions = {
       artboardWidth: artboardDimensions.width,
       artboardHeight: artboardDimensions.height,
+    };
+    const newElement = createElement(type, options);
+
+    set((state) => ({
+      ...getHistoryUpdate(),
+      elements: [
+        ...state.elements.map((el) => ({ ...el, selected: false })),
+        newElement,
+      ],
+    }));
+  },
+
+  addElementAtPosition: (type: ElementType, x: number, y: number) => {
+    const { artboardDimensions, getHistoryUpdate } = get();
+    const options: CreateElementOptions = {
+      artboardWidth: artboardDimensions.width,
+      artboardHeight: artboardDimensions.height,
+      position: { x, y },
     };
     const newElement = createElement(type, options);
 

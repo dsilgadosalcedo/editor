@@ -119,6 +119,7 @@ export const useCanvasActions = () =>
   useCanvasStore(
     useShallow((state) => ({
       addElement: state.addElement,
+      addElementAtPosition: state.addElementAtPosition,
       addImageElement: state.addImageElement,
       deleteElement: state.deleteElement,
       resetCanvas: state.resetCanvas,

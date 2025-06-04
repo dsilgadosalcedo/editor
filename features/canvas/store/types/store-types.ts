@@ -38,6 +38,7 @@ export interface IsolationState {
 export interface CanvasActions {
   // Element management
   addElement: (type: ElementType) => void;
+  addElementAtPosition: (type: ElementType, x: number, y: number) => void;
   addImageElement: (src: string, x?: number, y?: number) => void;
   deleteElement: (id: string) => void;
 
