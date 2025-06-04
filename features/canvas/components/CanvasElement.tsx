@@ -207,8 +207,33 @@ export default function CanvasElement({
   useEffect(() => {
     if (isEditing && element.type === "text" && textRef.current) {
       // Ensure the contentEditable div has the current content when entering edit mode
-      if (textRef.current.textContent !== element.content) {
-        textRef.current.textContent = element.content || "";
+      const currentContent = textRef.current.textContent || "";
+      const elementContent = element.content || "";
+
+      if (currentContent !== elementContent) {
+        textRef.current.textContent = elementContent;
+
+        // Ensure cursor is positioned correctly after content update
+        setTimeout(() => {
+          if (textRef.current && document.activeElement === textRef.current) {
+            const selection = window.getSelection();
+            if (selection) {
+              const range = document.createRange();
+              if (textRef.current.firstChild) {
+                range.setStart(
+                  textRef.current.firstChild,
+                  elementContent.length
+                );
+                range.setEnd(textRef.current.firstChild, elementContent.length);
+              } else {
+                range.setStart(textRef.current, 0);
+                range.setEnd(textRef.current, 0);
+              }
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          }
+        }, 0);
       }
     }
   }, [isEditing, element.content, element.type]);
@@ -420,7 +445,7 @@ export default function CanvasElement({
         onTouchStart={handleElementTouchStart}
         onDoubleClick={
           element.type === "text"
-            ? textEditingHandlers.handleTextDoubleClick
+            ? undefined
             : groupInteractionHandlers.handleGeneralDoubleClick
         }
       >
@@ -460,10 +485,11 @@ export default function CanvasElement({
             onKeyDown={textEditingHandlers.handleTextKeyDown}
             onCompositionStart={textEditingHandlers.handleCompositionStart}
             onCompositionEnd={textEditingHandlers.handleCompositionEnd}
+            onDoubleClick={textEditingHandlers.handleTextDoubleClick}
             className={cn(
               "w-full h-full flex outline-none overflow-hidden",
               getTextAlignmentClasses(element),
-              isEditing ? "bg-transparent" : ""
+              isEditing ? "bg-transparent" : "cursor-text"
             )}
             style={getTextStyles(element, isEditing)}
           >

@@ -137,19 +137,74 @@ export const createTextEditingHandlers = (
     const target = e.currentTarget as HTMLDivElement;
     setIsEditing(true);
 
-    // Use a small timeout to ensure the element is properly focused
-    setTimeout(() => {
+    // Use requestAnimationFrame to ensure the element is properly updated
+    requestAnimationFrame(() => {
+      // Ensure contentEditable is set and element is focusable
+      target.setAttribute("contentEditable", "true");
       target.focus();
 
-      // Automatically select all text when entering edit mode
-      const selection = window.getSelection();
-      if (selection && target.textContent) {
-        const range = document.createRange();
-        range.selectNodeContents(target);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }, 10);
+      // Place cursor at click position or select all text
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (selection) {
+          if (target.textContent) {
+            // Try to place cursor at the click position first
+            const range = document.createRange();
+            let node = target.firstChild;
+
+            if (node && node.nodeType === Node.TEXT_NODE) {
+              // Find the click position within the text
+              const rect = target.getBoundingClientRect();
+              const clickX = e.clientX - rect.left;
+              const clickY = e.clientY - rect.top;
+
+              // Use document.caretRangeFromPoint (WebKit) or caretPositionFromPoint (Firefox)
+              if (document.caretRangeFromPoint) {
+                const caretRange = document.caretRangeFromPoint(
+                  e.clientX,
+                  e.clientY
+                );
+                if (caretRange && target.contains(caretRange.startContainer)) {
+                  selection.removeAllRanges();
+                  selection.addRange(caretRange);
+                  return;
+                }
+              } else if ((document as any).caretPositionFromPoint) {
+                const caretPos = (document as any).caretPositionFromPoint(
+                  e.clientX,
+                  e.clientY
+                );
+                if (caretPos && target.contains(caretPos.offsetNode)) {
+                  range.setStart(caretPos.offsetNode, caretPos.offset);
+                  range.setEnd(caretPos.offsetNode, caretPos.offset);
+                  selection.removeAllRanges();
+                  selection.addRange(range);
+                  return;
+                }
+              }
+
+              // Fallback: select all text
+              range.selectNodeContents(target);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            } else {
+              // No text content, just set cursor at the beginning
+              range.setStart(target, 0);
+              range.setEnd(target, 0);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          } else {
+            // Empty text, set cursor at the beginning
+            const range = document.createRange();
+            range.setStart(target, 0);
+            range.setEnd(target, 0);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      }, 0);
+    });
   };
 
   const handleTextBlur = () => {
@@ -531,6 +586,7 @@ export const getTextStyles = (element: any, isEditing: boolean = false) => {
       : undefined,
     lineHeight: element.lineHeight ? `${element.lineHeight}px` : undefined,
     padding: "4px", // Add some padding
+    caretColor: isEditing ? element.color || "currentColor" : "transparent", // Ensure cursor is visible when editing
   };
 
   // Handle different text resizing modes
