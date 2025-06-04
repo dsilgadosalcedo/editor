@@ -307,6 +307,47 @@ export default function CanvasElement({
     onResizeNoHistory
   );
 
+  // Auto-start editing for newly created text elements
+  useEffect(() => {
+    if (
+      element.type === "text" &&
+      element.selected &&
+      element.content === "Text" &&
+      !isEditing &&
+      !isMultipleSelected // Don't auto-edit when multiple elements are selected
+    ) {
+      // Delay to ensure element is fully rendered
+      const timer = setTimeout(() => {
+        setIsEditing(true);
+
+        // Focus and select all content
+        setTimeout(() => {
+          if (textRef.current) {
+            textRef.current.focus();
+
+            // Select all text content when auto-starting edit mode
+            const range = document.createRange();
+            const selection = window.getSelection();
+
+            if (selection && textRef.current.firstChild) {
+              range.selectNodeContents(textRef.current);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          }
+        }, 10);
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [
+    element.type,
+    element.selected,
+    element.content,
+    isEditing,
+    isMultipleSelected,
+  ]);
+
   const groupInteractionHandlers = createGroupInteractionHandlers(
     element,
     stableStoreWrapper
@@ -398,6 +439,8 @@ export default function CanvasElement({
             onBlur={textEditingHandlers.handleTextBlur}
             onInput={textEditingHandlers.handleTextChange}
             onKeyDown={textEditingHandlers.handleTextKeyDown}
+            onCompositionStart={textEditingHandlers.handleCompositionStart}
+            onCompositionEnd={textEditingHandlers.handleCompositionEnd}
             className={cn(
               "w-full h-full flex outline-none overflow-hidden",
               getTextAlignmentClasses(element),
