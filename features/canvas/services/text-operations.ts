@@ -372,6 +372,17 @@ export const createTextEditingHandlers = (
     e.stopPropagation();
   };
 
+  const handleTextClick = (e: React.MouseEvent) => {
+    // Stop propagation to prevent parent handlers from running
+    // The browser will naturally handle cursor positioning for contentEditable elements
+    e.stopPropagation();
+  };
+
+  const handleTextMouseDown = (e: React.MouseEvent) => {
+    // Stop propagation to prevent parent drag handlers from running while editing
+    e.stopPropagation();
+  };
+
   return {
     handleTextDoubleClick,
     handleTextBlur,
@@ -379,6 +390,8 @@ export const createTextEditingHandlers = (
     handleTextKeyDown,
     handleCompositionStart,
     handleCompositionEnd,
+    handleTextClick,
+    handleTextMouseDown,
   };
 };
 

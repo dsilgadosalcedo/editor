@@ -396,6 +396,11 @@ export default function CanvasElement({
       return;
     }
 
+    // Don't handle drag when text is being edited
+    if (isEditing && element.type === "text") {
+      return;
+    }
+
     // Clear any existing text selection to prevent browser text selection during canvas interactions
     if (!isEditing) {
       clearTextSelection();
@@ -486,10 +491,16 @@ export default function CanvasElement({
             onCompositionStart={textEditingHandlers.handleCompositionStart}
             onCompositionEnd={textEditingHandlers.handleCompositionEnd}
             onDoubleClick={textEditingHandlers.handleTextDoubleClick}
+            onClick={
+              isEditing ? textEditingHandlers.handleTextClick : undefined
+            }
+            onMouseDown={
+              isEditing ? textEditingHandlers.handleTextMouseDown : undefined
+            }
             className={cn(
               "w-full h-full flex outline-none overflow-hidden",
               getTextAlignmentClasses(element),
-              isEditing ? "bg-transparent" : "cursor-text"
+              isEditing ? "bg-transparent cursor-text" : "cursor-move"
             )}
             style={getTextStyles(element, isEditing)}
           >
