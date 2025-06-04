@@ -141,7 +141,7 @@ When exporting a project, all the above properties are preserved in this structu
       "y": 100,
       "width": 200,
       "height": 150,
-      "color": "#3b82f6",
+      "color": "#121268",
       "cornerRadius": 8,
       "borderWidth": 2,
       "borderColor": "#1e40af",

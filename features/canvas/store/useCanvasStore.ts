@@ -445,12 +445,20 @@ export const useCanvasStore = create<CanvasStore>()(
 
       updateBorderWidth: (id, width) => {
         const state = get();
-        const updatedElements = updateElementProperty(
-          state.elements,
-          id,
-          "borderWidth",
-          width
-        );
+
+        // Update border width and automatically set border color if width > 0
+        const updatedElements = state.elements.map((el) => {
+          if (el.id === id) {
+            const updatedElement = { ...el, borderWidth: width };
+            // If width is being set to a value > 0 and no border color exists, set it to professional gray
+            if (width > 0 && !el.borderColor) {
+              updatedElement.borderColor = "#374151";
+            }
+            return updatedElement;
+          }
+          return el;
+        });
+
         set({
           ...state.getHistoryUpdate(),
           elements: updatedElements,
@@ -478,9 +486,9 @@ export const useCanvasStore = create<CanvasStore>()(
         const updatedElements = state.elements.map((el) => {
           if (el.id === id) {
             const updatedElement = { ...el, shadowBlur: blur };
-            // If blur is being set to a value > 0 and no shadow color exists, set it to black
+            // If blur is being set to a value > 0 and no shadow color exists, set it to professional gray
             if (blur > 0 && !el.shadowColor) {
-              updatedElement.shadowColor = "#000000";
+              updatedElement.shadowColor = "#374151";
             }
             return updatedElement;
           }

@@ -539,33 +539,8 @@ export default function CanvasElement({
                   // Text elements: Show appropriate resize handles based on text resizing mode
                   <>
                     {element.textResizing === "auto-width" && (
-                      // Auto-width: Only show top and bottom handles (height only)
-                      <>
-                        {["n", "s"].map((direction) => (
-                          <div
-                            key={direction}
-                            data-handle={`resize-${direction}`}
-                            className={`absolute w-4 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs canvas-resize-handle ${getRotatedCursor(
-                              direction,
-                              element.rotation || 0
-                            )}`}
-                            style={getResizeHandleStyles(
-                              element,
-                              zoom,
-                              direction
-                            )}
-                            onMouseDown={(e) =>
-                              resizeHandlers.handleResizeStart(direction, e)
-                            }
-                            onTouchStart={(e) =>
-                              resizeHandlers.handleResizeTouchStart(
-                                direction,
-                                e
-                              )
-                            }
-                          />
-                        ))}
-                      </>
+                      // Auto-width: No resize handles (both width and height are automatic)
+                      <></>
                     )}
 
                     {element.textResizing === "auto-height" && (
