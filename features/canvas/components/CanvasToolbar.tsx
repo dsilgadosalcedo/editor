@@ -241,7 +241,7 @@ export default function CanvasToolbar({
         </Tooltip>
 
         {/* Undo/Redo Controls */}
-        <div className="h-6">
+        {/* <div className="h-6">
           <Separator orientation="vertical" />
         </div>
 
@@ -280,7 +280,7 @@ export default function CanvasToolbar({
           </TooltipContent>
         </Tooltip>
 
-        {/* Copy/Paste Controls */}
+        {/* Copy/Paste Controls 
         <div className="h-6">
           <Separator orientation="vertical" />
         </div>
@@ -318,7 +318,7 @@ export default function CanvasToolbar({
           <TooltipContent>
             <p>Paste copied elements</p>
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
 
         {/* Reset Canvas */}
         <div className="h-6">
