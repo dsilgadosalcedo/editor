@@ -69,7 +69,7 @@ export const createElement = (
           : Math.round(artboardHeight / 2 - height / 2),
         width,
         height,
-        content: "Text",
+        content: "",
         color: "#000000",
         fontSize: 16,
         fontWeight: 400,

@@ -156,8 +156,8 @@ export default function CanvasElement({
     if (element.type === "text" && element.textResizing) {
       const content =
         isEditing && textRef.current
-          ? textRef.current.textContent || "Text"
-          : element.content || "Text";
+          ? textRef.current.textContent || ""
+          : element.content || "";
 
       const newDimensions = calculateTextAutoResize(
         content,
@@ -198,7 +198,7 @@ export default function CanvasElement({
     if (isEditing && element.type === "text" && textRef.current) {
       // Ensure the contentEditable div has the current content when entering edit mode
       if (textRef.current.textContent !== element.content) {
-        textRef.current.textContent = element.content || "Text";
+        textRef.current.textContent = element.content || "";
       }
     }
   }, [isEditing, element.content, element.type]);
@@ -312,7 +312,7 @@ export default function CanvasElement({
     if (
       element.type === "text" &&
       element.selected &&
-      element.content === "Text" &&
+      (!element.content || element.content.trim() === "") &&
       !isEditing &&
       !isMultipleSelected // Don't auto-edit when multiple elements are selected
     ) {
@@ -448,7 +448,7 @@ export default function CanvasElement({
             )}
             style={getTextStyles(element, isEditing)}
           >
-            {element.content || "Text"}
+            {element.content || ""}
           </div>
         )}
 

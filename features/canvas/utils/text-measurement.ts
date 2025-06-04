@@ -20,7 +20,7 @@ export const measureText = (
   tempDiv.style.fontFamily = fontFamily;
   tempDiv.style.letterSpacing = `${letterSpacing}px`;
   tempDiv.style.lineHeight = `${lineHeight}px`;
-  tempDiv.textContent = text || "Text";
+  tempDiv.textContent = text || "";
 
   document.body.appendChild(tempDiv);
   const width = tempDiv.offsetWidth;

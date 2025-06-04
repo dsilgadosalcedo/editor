@@ -143,7 +143,7 @@ export const createTextEditingHandlers = (
           !textRef.current.textContent ||
           textRef.current.textContent.trim() === ""
         ) {
-          textRef.current.textContent = element.content || "Text";
+          textRef.current.textContent = element.content || "";
         }
 
         textRef.current.focus();
@@ -271,7 +271,7 @@ export const createTextEditingHandlers = (
     };
 
     const cursorPosition = saveSelection();
-    const newContent = e.currentTarget.textContent || "Text";
+    const newContent = e.currentTarget.textContent || "";
     onTextChange(newContent);
 
     // Handle auto-height resizing during editing (like Figma)
@@ -283,7 +283,7 @@ export const createTextEditingHandlers = (
       setTimeout(() => {
         if (!textRef.current) return;
 
-        const content = textRef.current.textContent || "Text";
+        const content = textRef.current.textContent || "";
         const {
           fontSize = 16,
           fontWeight = 400,
@@ -413,7 +413,7 @@ export const createTextInputHandlers = (
     resizeTimeout = setTimeout(() => {
       if (!textRef.current) return;
 
-      const content = textRef.current.textContent || "Text";
+      const content = textRef.current.textContent || "";
       const fontSize = element.fontSize || 16;
       const fontWeight = element.fontWeight || 400;
       const letterSpacing = element.letterSpacing || 0;
@@ -569,14 +569,16 @@ export const getTextStyles = (element: any, isEditing: boolean = false) => {
   if (element.textResizing === "auto-width") {
     return {
       ...baseStyles,
-      whiteSpace: "normal" as const,
-      overflowWrap: "break-word" as const,
-      wordWrap: "break-word" as const,
+      // For auto-width: prevent wrapping during editing to avoid composition issues
+      // The auto-resize algorithm will handle width expansion and wrapping when needed
+      whiteSpace: isEditing ? ("nowrap" as const) : ("pre-wrap" as const),
+      overflowWrap: "normal" as const,
+      wordWrap: "normal" as const,
     };
   } else if (element.textResizing === "auto-height") {
     return {
       ...baseStyles,
-      whiteSpace: "normal" as const,
+      whiteSpace: "pre-wrap" as const,
       overflowWrap: "break-word" as const,
       wordWrap: "break-word" as const,
     };
@@ -584,7 +586,7 @@ export const getTextStyles = (element: any, isEditing: boolean = false) => {
     // Fixed size
     return {
       ...baseStyles,
-      whiteSpace: "normal" as const,
+      whiteSpace: "pre-wrap" as const,
       overflowWrap: "break-word" as const,
       wordWrap: "break-word" as const,
     };

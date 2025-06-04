@@ -41,8 +41,8 @@ export const useTextEditing = ({
     if (element.type === "text" && element.textResizing) {
       const content =
         isEditing && textRef.current
-          ? textRef.current.textContent || "Text"
-          : element.content || "Text";
+          ? textRef.current.textContent || ""
+          : element.content || "";
 
       const newDimensions = calculateTextAutoResize(
         content,
