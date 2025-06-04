@@ -360,7 +360,7 @@ export const createCanvasSlice: StateCreator<
         if (el.id === id) {
           const updatedElement = { ...el, borderWidth };
           if (borderWidth > 0 && !el.borderColor) {
-            updatedElement.borderColor = "#000000";
+            updatedElement.borderColor = "#374151"; // Professional gray color
           }
           return updatedElement;
         }
@@ -387,7 +387,7 @@ export const createCanvasSlice: StateCreator<
         if (el.id === id) {
           const updatedElement = { ...el, shadowBlur };
           if (shadowBlur > 0 && !el.shadowColor) {
-            updatedElement.shadowColor = "#000000";
+            updatedElement.shadowColor = "#374151"; // Professional gray color
           }
           return updatedElement;
         }
