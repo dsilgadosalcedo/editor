@@ -986,6 +986,28 @@ export const useCanvasStore = create<CanvasStore>()(
         });
       },
 
+      setProjectDataWithArtboard: (
+        projectId,
+        projectName,
+        projectData,
+        artboardSettings
+      ) => {
+        set({
+          projectId,
+          projectName,
+          elements: projectData.elements,
+          artboardDimensions: projectData.artboardDimensions,
+          artboardAspectRatio: artboardSettings?.artboardAspectRatio ?? null,
+          isCustomAspectRatio: artboardSettings?.isCustomAspectRatio ?? false,
+          panSensitivity: artboardSettings?.panSensitivity ?? 1.6,
+          zoomSensitivity: artboardSettings?.zoomSensitivity ?? 0.6,
+          past: [],
+          future: [],
+          isolatedGroupId: null,
+          isolationBreadcrumb: [],
+        });
+      },
+
       validateProjectState: () => {
         const state = get();
         const validationState: ProjectValidationState = {
@@ -1373,8 +1395,60 @@ export const useCanvasStore = create<CanvasStore>()(
           state.elements,
           state.artboardDimensions,
           state.projectName,
+          {
+            artboardAspectRatio: state.artboardAspectRatio,
+            isCustomAspectRatio: state.isCustomAspectRatio,
+            panSensitivity: state.panSensitivity,
+            zoomSensitivity: state.zoomSensitivity,
+          },
           filename
         );
+      },
+
+      importElements: (elements: any[]) => {
+        try {
+          // Generate new IDs for imported elements to avoid conflicts
+          const importedElements = elements.map((el, index) => {
+            // Use a more reliable ID generation to prevent conflicts
+            const timestamp = Date.now();
+            const newId = `${el.type}-${timestamp}-${index}-${Math.random()
+              .toString(36)
+              .substr(2, 5)}`;
+            return {
+              ...el,
+              id: newId,
+              selected: true, // Auto-select imported elements
+              rotation: el.rotation || 0, // Preserve original rotation
+              // Ensure all required properties exist
+              visible: el.visible !== false,
+            };
+          });
+
+          const importedElementIds = importedElements.map((el) => el.id);
+
+          // Use safer state update with proper history handling
+          set((state) => {
+            const historyUpdate = state.getHistoryUpdate();
+
+            return {
+              ...state,
+              elements: [
+                // Clear selection from existing elements
+                ...state.elements.map((el) => ({ ...el, selected: false })),
+                // Add imported elements
+                ...importedElements,
+              ],
+              selectedElements: importedElementIds,
+              past: historyUpdate.past,
+              future: historyUpdate.future,
+            };
+          });
+
+          return { success: true, importedCount: importedElements.length };
+        } catch (error) {
+          console.error("Error importing elements:", error);
+          return { success: false };
+        }
       },
 
       importCanvas: async (file: File) => {
@@ -1383,34 +1457,8 @@ export const useCanvasStore = create<CanvasStore>()(
         const result = await importCanvasFromFile(file);
 
         if (result.success && result.elements) {
-          // Generate new IDs for imported elements to avoid conflicts
-          const importedElements = result.elements.map((el) => {
-            const newId = `${el.type}-${Date.now()}-${Math.random()
-              .toString(36)
-              .substr(2, 9)}`;
-            return {
-              ...el,
-              id: newId,
-              selected: true, // Auto-select imported elements
-              rotation: 0,
-            };
-          });
-
-          const importedElementIds = importedElements.map((el) => el.id);
-
-          // Add imported elements to existing elements
-          const updatedElements = [
-            ...state.elements.map((el) => ({ ...el, selected: false })),
-            ...importedElements,
-          ];
-
-          set({
-            ...state.getHistoryUpdate(),
-            elements: updatedElements,
-            selectedElements: importedElementIds,
-          });
-
-          return { success: true, importedCount: importedElements.length };
+          // Use the new importElements method
+          return get().importElements(result.elements);
         }
 
         return { success: false };

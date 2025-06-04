@@ -372,44 +372,8 @@ const Artboard: React.FC<ArtboardProps> = ({
           zoom={zoom}
         />
 
-        {/* Floating Toolbar for Multiple Selections */}
-        {(() => {
-          const selectedElementsData = elements.filter((el) =>
-            selectedElements.includes(el.id)
-          );
-
-          // Show toolbar only for multiple selections
-          if (selectedElementsData.length <= 1) return null;
-
-          // Calculate the center position of the selection
-          let minX = Infinity,
-            minY = Infinity,
-            maxX = -Infinity,
-            maxY = -Infinity;
-
-          selectedElementsData.forEach((el) => {
-            minX = Math.min(minX, el.x);
-            minY = Math.min(minY, el.y);
-            maxX = Math.max(maxX, el.x + el.width);
-            maxY = Math.max(maxY, el.y + el.height);
-          });
-
-          const centerX = (minX + maxX) / 2;
-          const centerY = minY; // Position at the top of the selection
-
-          return (
-            <ElementFloatingToolbar
-              elementId={selectedElementsData[0].id} // Use first element's ID
-              elementType="rectangle" // Dummy type for multiple selections
-              elementColor="transparent" // No color picker for multiple selections
-              position={{ x: centerX, y: centerY }}
-              zoom={zoom}
-              isRotating={false}
-              elementName="Multiple Elements"
-              isMultipleSelection={true}
-            />
-          );
-        })()}
+        {/* Floating Toolbar for Multiple Selections - Temporarily disabled to prevent infinite loops */}
+        {/* TODO: Re-implement with better ref handling */}
       </div>
     </div>
   );

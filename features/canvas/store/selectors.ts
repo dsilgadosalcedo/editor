@@ -171,6 +171,7 @@ export const useProjectActions = () =>
     useShallow((state) => ({
       setProjectName: state.setProjectName,
       setProjectData: state.setProjectData,
+      setProjectDataWithArtboard: state.setProjectDataWithArtboard,
       clearCurrentProject: state.clearCurrentProject,
       validateProjectState: state.validateProjectState,
     }))

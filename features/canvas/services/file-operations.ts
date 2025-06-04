@@ -10,6 +10,15 @@ export interface CanvasExportData {
   artboardDimensions: { width: number; height: number };
   version: string;
   timestamp: number;
+  projectName?: string;
+  artboard?: {
+    width: number;
+    height: number;
+    artboardAspectRatio: number | null;
+    isCustomAspectRatio: boolean;
+    panSensitivity: number;
+    zoomSensitivity: number;
+  };
 }
 
 export interface ImportResult {
@@ -20,6 +29,15 @@ export interface ImportResult {
   artboardDimensions?: { width: number; height: number };
   version?: string;
   timestamp?: number;
+  projectName?: string;
+  artboard?: {
+    width: number;
+    height: number;
+    artboardAspectRatio: number | null;
+    isCustomAspectRatio: boolean;
+    panSensitivity: number;
+    zoomSensitivity: number;
+  };
 }
 
 /**
@@ -81,10 +99,9 @@ export const importCanvasFromFile = async (
       };
     }
 
-    if (
-      !data.artboardDimensions ||
-      typeof data.artboardDimensions !== "object"
-    ) {
+    // Handle both old format (artboardDimensions) and new format (artboard)
+    const artboardDimensions = data.artboardDimensions || data.artboard;
+    if (!artboardDimensions || typeof artboardDimensions !== "object") {
       return {
         success: false,
         error: "Invalid canvas file format - missing artboard dimensions",
@@ -109,9 +126,11 @@ export const importCanvasFromFile = async (
       success: true,
       importedCount: elementsWithNewIds.length,
       elements: elementsWithNewIds,
-      artboardDimensions: data.artboardDimensions,
+      artboardDimensions,
       version: data.version,
       timestamp: data.timestamp,
+      projectName: data.projectName,
+      artboard: data.artboard,
     };
   } catch (error) {
     console.error("Error importing canvas:", error);
@@ -129,14 +148,29 @@ export const exportProjectToJSON = (
   elements: CanvasElementData[],
   artboardDimensions: { width: number; height: number },
   projectName: string,
+  artboardSettings: {
+    artboardAspectRatio: number | null;
+    isCustomAspectRatio: boolean;
+    panSensitivity: number;
+    zoomSensitivity: number;
+  },
   filename?: string
 ): void => {
   try {
     const exportData: CanvasExportData = {
       elements,
-      artboardDimensions,
+      artboardDimensions, // Keep for backward compatibility
       version: "1.0.0",
       timestamp: Date.now(),
+      projectName,
+      artboard: {
+        width: artboardDimensions.width,
+        height: artboardDimensions.height,
+        artboardAspectRatio: artboardSettings.artboardAspectRatio,
+        isCustomAspectRatio: artboardSettings.isCustomAspectRatio,
+        panSensitivity: artboardSettings.panSensitivity,
+        zoomSensitivity: artboardSettings.zoomSensitivity,
+      },
     };
 
     const dataStr = JSON.stringify(exportData, null, 2);

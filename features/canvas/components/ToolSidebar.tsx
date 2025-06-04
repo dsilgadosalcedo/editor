@@ -210,18 +210,32 @@ export default function ToolSidebar({
       if (choice.type === "project") {
         // Create new project
         const projectLimitReached = isProjectLimitReached();
+
+        // Prepare project data with artboard settings
+        const projectData = {
+          elements: choice.data.elements,
+          artboardDimensions: choice.data.artboardDimensions,
+        };
+
         if (projectLimitReached) {
           // Auto-remove oldest project and create new one
           const result = createProjectWithLimitCheck(
             undefined,
-            `Imported Project`,
-            choice.data
+            choice.data.projectName || `Imported Project`,
+            projectData
           );
 
           if (result.project) {
             if (result.autoRemoved && result.removedProjects) {
               toast.info(
                 `Removed oldest project "${result.removedProjects[0].name}" to make room`
+              );
+            }
+            // Store artboard settings for the canvas page to apply
+            if (choice.data.artboard) {
+              sessionStorage.setItem(
+                `import-artboard-${result.project.id}`,
+                JSON.stringify(choice.data.artboard)
               );
             }
             router.push(`/canvas/${result.project.id}`);
@@ -231,11 +245,18 @@ export default function ToolSidebar({
         } else {
           const result = createProjectWithLimitCheck(
             undefined,
-            `Imported Project`,
-            choice.data
+            choice.data.projectName || `Imported Project`,
+            projectData
           );
 
           if (result.project) {
+            // Store artboard settings for the canvas page to apply
+            if (choice.data.artboard) {
+              sessionStorage.setItem(
+                `import-artboard-${result.project.id}`,
+                JSON.stringify(choice.data.artboard)
+              );
+            }
             router.push(`/canvas/${result.project.id}`);
           } else {
             toast.error("Failed to create project");

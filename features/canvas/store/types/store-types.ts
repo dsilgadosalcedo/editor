@@ -155,6 +155,20 @@ export interface ProjectActions {
       artboardDimensions: { width: number; height: number };
     }
   ) => void;
+  setProjectDataWithArtboard: (
+    projectId: string,
+    projectName: string,
+    projectData: {
+      elements: CanvasElementData[];
+      artboardDimensions: { width: number; height: number };
+    },
+    artboardSettings?: {
+      artboardAspectRatio: number | null;
+      isCustomAspectRatio: boolean;
+      panSensitivity: number;
+      zoomSensitivity: number;
+    }
+  ) => void;
   validateProjectState: () => { isValid: boolean; issues: string[] };
   reloadCurrentProject: () => boolean;
   loadProjectById: (id: string) => boolean;
@@ -205,6 +219,10 @@ export interface AlignmentActions {
 export interface FileActions {
   exportCanvas: (filename?: string) => void;
   exportProject: (filename?: string) => void;
+  importElements: (elements: any[]) => {
+    success: boolean;
+    importedCount?: number;
+  };
   importCanvas: (
     file: File
   ) => Promise<{ success: boolean; importedCount?: number }>;

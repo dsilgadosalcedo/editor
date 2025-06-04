@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ChevronUp, ChevronDown, Group, Ungroup, Eye } from "lucide-react";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
   // Use optimized selectors to prevent unnecessary re-renders
   const selectedElements = useSelectedElements();
 
-  // Group related actions using useShallow
+  // Group related actions using useShallow and memoize
   const elementActions = useCanvasStore(
     useShallow((state) => ({
       moveElementUp: state.moveElementUp,
@@ -52,13 +52,16 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     }))
   );
 
-  // Get current element data to access dimensions
+  // Get current element data to access dimensions - memoized
   const currentElement = useCanvasStore(
     useShallow((state) => state.elements.find((el) => el.id === elementId))
   );
 
-  // Check if we currently have multiple elements selected
-  const currentlyHasMultipleSelection = selectedElements.length > 1;
+  // Check if we currently have multiple elements selected - memoized
+  const currentlyHasMultipleSelection = useMemo(
+    () => selectedElements.length > 1,
+    [selectedElements.length]
+  );
 
   const handleMoveUp = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,14 +94,13 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
     }
   };
 
-  // Apply inverse scaling to keep toolbar at consistent size regardless of zoom
-  const toolbarScale = 1 / (zoom / 100);
+  // Apply inverse scaling to keep toolbar at consistent size regardless of zoom - memoized
+  const toolbarScale = useMemo(() => 1 / (zoom / 100), [zoom]);
 
-  // Calculate smart positioning
-  const calculatePosition = () => {
+  // Calculate smart positioning - memoized to prevent infinite re-renders
+  const smartPosition = useMemo(() => {
     const toolbarHeight = 32; // Approximate height of the toolbar
     const gap = 16; // Gap between element and toolbar
-    const viewportHeight = window.innerHeight;
 
     // Scale the gap based on zoom
     const scaledGap = gap * (100 / zoom);
@@ -144,9 +146,15 @@ const ElementFloatingToolbar: React.FC<ElementFloatingToolbarProps> = ({
       y: finalY,
       isBelow: shouldPositionBelow,
     };
-  };
-
-  const smartPosition = calculatePosition();
+  }, [
+    position.x,
+    position.y,
+    zoom,
+    isRotating,
+    currentHeight,
+    currentElement?.height,
+    elementType,
+  ]);
 
   return (
     <div

@@ -21,6 +21,15 @@ export default function CanvasIdPage() {
   const loadCloudProjectIntoStore = useCanvasStore(
     (state) => state.loadCloudProject
   );
+  const setProjectDataWithArtboard = useCanvasStore(
+    (state) => state.setProjectDataWithArtboard
+  );
+  const projectId = useCanvasStore((state) => state.projectId);
+  const projectName = useCanvasStore((state) => state.projectName);
+  const elements = useCanvasStore((state) => state.elements);
+  const artboardDimensions = useCanvasStore(
+    (state) => state.artboardDimensions
+  );
   const { isSignedIn } = useAuth();
   const { isAuthenticated, isLoading: convexAuthLoading } = useConvexAuth();
   const [isLoadingPage, setIsLoadingPage] = useState(true);
@@ -142,6 +151,37 @@ export default function CanvasIdPage() {
     router,
     isIdForCloudProject,
     skipCloudQuery,
+  ]);
+
+  // Check for imported artboard settings and apply them
+  useEffect(() => {
+    if (projectId && typeof window !== "undefined") {
+      const savedArtboardKey = `import-artboard-${projectId}`;
+      const savedArtboardSettings = sessionStorage.getItem(savedArtboardKey);
+
+      if (savedArtboardSettings) {
+        try {
+          const artboardSettings = JSON.parse(savedArtboardSettings);
+          // Apply the artboard settings to the current project
+          setProjectDataWithArtboard(
+            projectId,
+            projectName,
+            { elements, artboardDimensions },
+            artboardSettings
+          );
+          // Clean up the saved settings
+          sessionStorage.removeItem(savedArtboardKey);
+        } catch (error) {
+          console.error("Error applying imported artboard settings:", error);
+        }
+      }
+    }
+  }, [
+    projectId,
+    projectName,
+    elements,
+    artboardDimensions,
+    setProjectDataWithArtboard,
   ]);
 
   const isEffectivelyLoading =

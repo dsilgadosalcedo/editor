@@ -17,6 +17,15 @@ export interface ImportChoice {
     artboardDimensions: { width: number; height: number };
     version?: string;
     timestamp?: number;
+    projectName?: string;
+    artboard?: {
+      width: number;
+      height: number;
+      artboardAspectRatio: number | null;
+      isCustomAspectRatio: boolean;
+      panSensitivity: number;
+      zoomSensitivity: number;
+    };
   };
 }
 
@@ -29,6 +38,15 @@ interface ImportProjectDialogProps {
     artboardDimensions: { width: number; height: number };
     version?: string;
     timestamp?: number;
+    projectName?: string;
+    artboard?: {
+      width: number;
+      height: number;
+      artboardAspectRatio: number | null;
+      isCustomAspectRatio: boolean;
+      panSensitivity: number;
+      zoomSensitivity: number;
+    };
   } | null;
   isProjectLimitReached: boolean;
 }

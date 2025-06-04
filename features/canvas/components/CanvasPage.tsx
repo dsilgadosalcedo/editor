@@ -12,6 +12,7 @@ import KeyboardShortcuts from "./KeyboardShortcuts";
 import DragDropOverlay from "./DragDropOverlay";
 import ProjectHeader from "./navigation/ProjectHeader";
 import { AutoSave } from "./AutoSave";
+import ImportProjectDialog, { ImportChoice } from "./ImportProjectDialog";
 import { useCanvasPanZoom } from "../hooks/useCanvasPanZoom";
 import { useDragSelection } from "../hooks/useDragSelection";
 import { useCanvasStore } from "../store/useCanvasStore";
@@ -32,6 +33,12 @@ import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { useShallow } from "zustand/react/shallow";
 import { generateRandomImage } from "../services/image-service";
+import { importCanvasFromFile } from "../services/file-operations";
+import {
+  isProjectLimitReached,
+  createProjectWithLimitCheck,
+} from "@/lib/project-storage";
+import { useRouter } from "next/navigation";
 
 export default function CanvasPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -40,6 +47,9 @@ export default function CanvasPage() {
   const [showGuides, setShowGuides] = useState(true);
   const [selectedTool, setSelectedTool] = useState<ToolType>(null);
   const [layersOpen, setLayersOpen] = useState(true);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importData, setImportData] = useState<any>(null);
+  const router = useRouter();
 
   // Use optimized selectors to prevent unnecessary re-renders
   const elements = useElements();
@@ -65,6 +75,7 @@ export default function CanvasPage() {
 
   const fileActions = useCanvasStore(
     useShallow((state) => ({
+      importElements: state.importElements,
       importCanvas: state.importCanvas,
       saveCanvas: state.saveCanvas,
       loadCanvas: state.loadCanvas,
@@ -465,19 +476,125 @@ export default function CanvasPage() {
       return;
     }
 
-    // Handle JSON canvas files
-    try {
-      const result = await fileActions.importCanvas(file);
-      if (!result.success) {
+    // Handle JSON canvas/project files
+    if (file.type.includes("json")) {
+      try {
+        const result = await importCanvasFromFile(file);
+        if (result.success && result.elements) {
+          // Check if this looks like a project file (has project metadata or artboard settings)
+          const hasProjectMetadata = result.projectName || result.artboard;
+
+          if (hasProjectMetadata) {
+            // Show import dialog for project files
+            setImportData({
+              elements: result.elements,
+              artboardDimensions: result.artboardDimensions,
+              version: result.version,
+              timestamp: result.timestamp,
+              projectName: result.projectName,
+              artboard: result.artboard,
+            });
+            setShowImportDialog(true);
+          } else {
+            // For basic canvas files without project metadata, import as elements directly
+            const importResult = await fileActions.importCanvas(file);
+            if (!importResult.success) {
+              toast.error("Failed to import canvas elements.");
+            }
+          }
+        } else {
+          toast.error(
+            "Failed to import file. Please make sure it's a valid canvas or project file."
+          );
+        }
+      } catch (error) {
+        console.error("Error importing file:", error);
         toast.error(
-          "Failed to import canvas. Please make sure it's a valid canvas file."
+          "Failed to import file. Please make sure it's a valid canvas or project file."
         );
       }
-    } catch (error) {
-      console.error("Error importing canvas:", error);
-      toast.error(
-        "Failed to import canvas. Please make sure it's a valid canvas file."
-      );
+      return;
+    }
+
+    // Unsupported file type
+    toast.error(
+      "Unsupported file type. Please drop an image or JSON project file."
+    );
+  };
+
+  // Handle import choice from dialog
+  const handleImportChoice = async (choice: ImportChoice) => {
+    if (choice.type === "elements") {
+      // Import as elements to current canvas using a safer approach
+      try {
+        // Add a small delay to prevent rapid state changes
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Use the safe importElements action from the store
+        const result = fileActions.importElements(choice.data.elements);
+
+        if (!result.success) {
+          toast.error("Failed to import elements");
+        }
+      } catch (error) {
+        console.error("Error importing elements:", error);
+        toast.error("Failed to import elements");
+      }
+    } else if (choice.type === "project") {
+      // Create new project
+      const projectLimitReached = isProjectLimitReached();
+
+      // Prepare project data
+      const projectData = {
+        elements: choice.data.elements,
+        artboardDimensions: choice.data.artboardDimensions,
+      };
+
+      if (projectLimitReached) {
+        // Auto-remove oldest project and create new one
+        const result = createProjectWithLimitCheck(
+          undefined,
+          choice.data.projectName || `Imported Project`,
+          projectData
+        );
+
+        if (result.project) {
+          if (result.autoRemoved && result.removedProjects) {
+            toast.info(
+              `Removed oldest project "${result.removedProjects[0].name}" to make room`
+            );
+          }
+          // Store artboard settings for the canvas page to apply
+          if (choice.data.artboard) {
+            sessionStorage.setItem(
+              `import-artboard-${result.project.id}`,
+              JSON.stringify(choice.data.artboard)
+            );
+          }
+          router.push(`/canvas/${result.project.id}`);
+        } else {
+          toast.error("Failed to create project");
+        }
+      } else {
+        const result = createProjectWithLimitCheck(
+          undefined,
+          choice.data.projectName || `Imported Project`,
+          projectData
+        );
+
+        if (result.project) {
+          // Store artboard settings for the canvas page to apply
+          if (choice.data.artboard) {
+            sessionStorage.setItem(
+              `import-artboard-${result.project.id}`,
+              JSON.stringify(choice.data.artboard)
+            );
+          }
+          router.push(`/canvas/${result.project.id}`);
+        } else {
+          toast.error("Failed to create project");
+        }
+      }
     }
   };
 
@@ -538,6 +655,15 @@ export default function CanvasPage() {
 
       {/* Auto Save */}
       <AutoSave />
+
+      {/* Import Project Dialog */}
+      <ImportProjectDialog
+        isOpen={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        onChoice={handleImportChoice}
+        projectData={importData}
+        isProjectLimitReached={isProjectLimitReached()}
+      />
     </ColorPickerProvider>
   );
 }
