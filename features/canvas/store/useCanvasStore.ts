@@ -49,6 +49,7 @@ import {
 import {
   exportCanvasToJSON,
   exportProjectToJSON,
+  exportCanvasToSVG,
   importCanvasFromFile,
 } from "../services/file-operations";
 import {
@@ -1403,6 +1404,11 @@ export const useCanvasStore = create<CanvasStore>()(
           },
           filename
         );
+      },
+
+      exportCanvasAsSVG: (filename?: string) => {
+        const state = get();
+        exportCanvasToSVG(state.elements, state.artboardDimensions, filename);
       },
 
       importElements: (elements: any[]) => {

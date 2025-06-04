@@ -115,53 +115,8 @@ export default function ToolSidebar({
 
   const handleDownloadAsSVG = () => {
     try {
-      // Get the artboard element
-      const artboard = document.querySelector('[data-artboard="true"]');
-      if (!artboard) {
-        toast.error("Artboard not found");
-        return;
-      }
-
-      // Create SVG content
-      const svgContent = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${
-          artboardDimensions.width
-        }" height="${artboardDimensions.height}" viewBox="0 0 ${
-        artboardDimensions.width
-      } ${artboardDimensions.height}">
-          ${elements
-            .map((element) => {
-              if (element.type === "rectangle") {
-                return `<rect x="${element.x}" y="${element.y}" width="${
-                  element.width
-                }" height="${element.height}" fill="${element.color}" rx="${
-                  element.cornerRadius || 0
-                }" />`;
-              } else if (element.type === "text") {
-                return `<text x="${element.x}" y="${
-                  element.y + (element.fontSize || 16)
-                }" font-size="${element.fontSize || 16}" fill="${
-                  element.color
-                }">${element.content || ""}</text>`;
-              }
-              return "";
-            })
-            .join("")}
-        </svg>
-      `;
-
-      // Create and download the file
-      const blob = new Blob([svgContent], { type: "image/svg+xml" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `canvas-${Date.now()}.svg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up
-      URL.revokeObjectURL(url);
+      fileActions.exportCanvasAsSVG();
+      toast.success("SVG exported successfully");
     } catch (error) {
       console.error("Error downloading SVG:", error);
       toast.error("Failed to download SVG. Please try again.");

@@ -1,4 +1,14 @@
 import React, { useState } from "react";
+
+// Utility function to clear text selection
+const clearTextSelection = () => {
+  if (window.getSelection) {
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
+  }
+};
 import type { ToolType } from "../types/props";
 import type { ElementType } from "../types";
 import Artboard from "./Artboard";
@@ -177,7 +187,7 @@ export default function CanvasViewport({
 
   return (
     <div
-      className="z-10 flex-1 relative overflow-hidden"
+      className="z-10 flex-1 relative overflow-hidden canvas-viewport"
       ref={canvasRef}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

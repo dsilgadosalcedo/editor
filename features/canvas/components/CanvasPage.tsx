@@ -40,6 +40,16 @@ import {
 } from "@/lib/project-storage";
 import { useRouter } from "next/navigation";
 
+// Utility function to clear text selection
+const clearTextSelection = () => {
+  if (window.getSelection) {
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
+  }
+};
+
 export default function CanvasPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const artboardRef = useRef<HTMLDivElement>(null);
@@ -330,6 +340,9 @@ export default function CanvasPage() {
 
   // Combined mouse handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Clear any existing text selection to prevent browser text selection during canvas interactions
+    clearTextSelection();
+
     // Always try pan handling first (especially for middle mouse button)
     if (handlePanMouseDown(e)) {
       return; // Pan handler handled it (middle mouse or hand tool)

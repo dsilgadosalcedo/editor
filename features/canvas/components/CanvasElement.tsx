@@ -45,6 +45,16 @@ import {
 
 import { useCanvasStore } from "../store/useCanvasStore";
 
+// Utility function to clear text selection
+const clearTextSelection = () => {
+  if (window.getSelection) {
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
+  }
+};
+
 export default function CanvasElement({
   element,
   onSelect,
@@ -361,6 +371,11 @@ export default function CanvasElement({
       return;
     }
 
+    // Clear any existing text selection to prevent browser text selection during canvas interactions
+    if (!isEditing) {
+      clearTextSelection();
+    }
+
     // Select the element if not already selected
     if (!element.selected) {
       onSelect(e.shiftKey || e.ctrlKey || e.metaKey);
@@ -395,7 +410,11 @@ export default function CanvasElement({
     <>
       <div
         ref={elementRef}
-        className={getElementContainerClasses(element)}
+        className={cn(
+          getElementContainerClasses(element),
+          "canvas-element",
+          isEditing && "canvas-element-editing"
+        )}
         style={getElementContainerStyles(element, zoom)}
         onMouseDown={handleElementMouseDown}
         onTouchStart={handleElementTouchStart}
@@ -467,7 +486,7 @@ export default function CanvasElement({
       {element.selected && (
         <>
           <div
-            className="absolute pointer-events-none"
+            className="absolute pointer-events-none canvas-selection-controls"
             style={getSelectionContainerStyles(element)}
           >
             {/* Selection border */}
@@ -489,7 +508,7 @@ export default function CanvasElement({
                           <div
                             key={direction}
                             data-handle={`resize-${direction}`}
-                            className={`absolute w-4 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                            className={`absolute w-4 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs canvas-resize-handle ${getRotatedCursor(
                               direction,
                               element.rotation || 0
                             )}`}
@@ -519,7 +538,7 @@ export default function CanvasElement({
                           <div
                             key={direction}
                             data-handle={`resize-${direction}`}
-                            className={`absolute w-2 h-4 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                            className={`absolute w-2 h-4 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs canvas-resize-handle ${getRotatedCursor(
                               direction,
                               element.rotation || 0
                             )}`}
@@ -550,7 +569,7 @@ export default function CanvasElement({
                             <div
                               key={direction}
                               data-handle={`resize-${direction}`}
-                              className={`absolute ${
+                              className={`absolute canvas-resize-handle ${
                                 ["nw", "ne", "sw", "se"].includes(direction)
                                   ? "w-2 h-2 rounded-full"
                                   : direction === "n" || direction === "s"
@@ -597,7 +616,7 @@ export default function CanvasElement({
                       <div
                         key={direction}
                         data-handle={`resize-${direction}`}
-                        className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                        className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs canvas-resize-handle ${getRotatedCursor(
                           direction,
                           element.rotation || 0
                         )}`}
@@ -625,7 +644,7 @@ export default function CanvasElement({
                     <div
                       key={position}
                       data-handle={`rotation-${position}`}
-                      className="absolute w-8 h-8 rounded-full cursor-crosshair"
+                      className="absolute w-8 h-8 rounded-full cursor-crosshair canvas-rotation-handle"
                       style={getRotationHandleStyles(element, zoom, position)}
                       onMouseDown={rotationHandlers.handleRotationStart}
                       title="Drag to rotate"

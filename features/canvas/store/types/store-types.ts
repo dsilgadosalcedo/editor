@@ -219,6 +219,7 @@ export interface AlignmentActions {
 export interface FileActions {
   exportCanvas: (filename?: string) => void;
   exportProject: (filename?: string) => void;
+  exportCanvasAsSVG: (filename?: string) => void;
   importElements: (elements: any[]) => {
     success: boolean;
     importedCount?: number;
