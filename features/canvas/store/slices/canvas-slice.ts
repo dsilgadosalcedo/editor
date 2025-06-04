@@ -499,6 +499,14 @@ export const createCanvasSlice: StateCreator<
     }));
   },
 
+  updateImageElement: (id, updates) => {
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, ...updates } : el
+      ),
+    }));
+  },
+
   toggleElementVisibility: (id) => {
     set((state) => ({
       elements: toggleElementVisibilityService(state.elements, id),

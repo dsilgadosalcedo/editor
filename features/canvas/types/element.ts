@@ -34,6 +34,8 @@ export interface CanvasElementData {
   inIsolatedGroup?: boolean;
   isInIsolationMode?: boolean;
   isSelectableInIsolation?: boolean;
+  // Loading state for images
+  loading?: boolean;
 }
 
 export interface SavedCanvasData {

@@ -128,7 +128,75 @@ export const createElement = (
 };
 
 /**
- * Create image element with automatic dimension calculation
+ * Create image element immediately with placeholder dimensions
+ */
+export const createImageElementImmediate = (
+  options: CreateImageElementOptions
+): CanvasElementData => {
+  const { src, artboardWidth, artboardHeight, position } = options;
+
+  // Create placeholder with standard dimensions
+  const placeholderWidth = 300;
+  const placeholderHeight = 200;
+
+  const element: CanvasElementData = {
+    id: `image-${Date.now()}`,
+    type: "image",
+    x: position
+      ? Math.round(position.x - placeholderWidth / 2)
+      : Math.round(artboardWidth / 2 - placeholderWidth / 2),
+    y: position
+      ? Math.round(position.y - placeholderHeight / 2)
+      : Math.round(artboardHeight / 2 - placeholderHeight / 2),
+    width: placeholderWidth,
+    height: placeholderHeight,
+    src,
+    color: "transparent",
+    selected: true,
+    visible: true,
+    rotation: 0,
+    loading: true, // Mark as loading
+  };
+
+  return element;
+};
+
+/**
+ * Load image and return updated dimensions
+ */
+export const loadImageDimensions = (
+  src: string,
+  maxWidth = 400,
+  maxHeight = 300
+): Promise<{ width: number; height: number; src: string }> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onload = () => {
+      // Calculate dimensions maintaining aspect ratio
+      let width = img.naturalWidth;
+      let height = img.naturalHeight;
+
+      if (width > maxWidth || height > maxHeight) {
+        const scale = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+
+      resolve({ width, height, src });
+    };
+
+    img.onerror = () => {
+      // Fallback dimensions if image fails to load
+      resolve({ width: 300, height: 200, src });
+    };
+
+    img.src = src;
+  });
+};
+
+/**
+ * Create image element with automatic dimension calculation (legacy)
  */
 export const createImageElement = (
   options: CreateImageElementOptions

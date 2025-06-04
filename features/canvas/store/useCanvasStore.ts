@@ -8,6 +8,8 @@ import { CanvasElementData, ElementType } from "../types";
 import {
   createElement,
   createImageElement,
+  createImageElementImmediate,
+  loadImageDimensions,
   CreateElementOptions,
   CreateImageElementOptions,
 } from "../services/element-operations";
@@ -117,6 +119,7 @@ export const useCanvasStore = create<CanvasStore>()(
             })),
             newElement,
           ],
+          selectedElements: [newElement.id],
         }));
       },
 
@@ -138,6 +141,7 @@ export const useCanvasStore = create<CanvasStore>()(
             })),
             newElement,
           ],
+          selectedElements: [newElement.id],
         }));
       },
 
@@ -150,18 +154,37 @@ export const useCanvasStore = create<CanvasStore>()(
           position: x !== undefined && y !== undefined ? { x, y } : undefined,
         };
 
-        createImageElement(options).then((newElement) => {
-          set((state) => ({
-            ...get().getHistoryUpdate(),
-            elements: [
-              ...state.elements.map((el: CanvasElementData) => ({
-                ...el,
-                selected: false,
-              })),
-              newElement,
-            ],
-          }));
-        });
+        // Create element immediately with loading state
+        const newElement = createImageElementImmediate(options);
+
+        set((state) => ({
+          ...get().getHistoryUpdate(),
+          elements: [
+            ...state.elements.map((el: CanvasElementData) => ({
+              ...el,
+              selected: false,
+            })),
+            newElement,
+          ],
+          selectedElements: [newElement.id],
+        }));
+
+        // Load actual image dimensions in background
+        loadImageDimensions(src)
+          .then((dimensions) => {
+            get().updateImageElement(newElement.id, {
+              width: dimensions.width,
+              height: dimensions.height,
+              loading: false,
+            });
+          })
+          .catch((error) => {
+            console.warn("Failed to load image dimensions:", error);
+            // Remove loading state even if failed
+            get().updateImageElement(newElement.id, {
+              loading: false,
+            });
+          });
       },
 
       deleteElement: (id) => {
@@ -600,6 +623,16 @@ export const useCanvasStore = create<CanvasStore>()(
         );
         set({
           ...state.getHistoryUpdate(),
+          elements: updatedElements,
+        });
+      },
+
+      updateImageElement: (id, updates) => {
+        const state = get();
+        const updatedElements = state.elements.map((el) =>
+          el.id === id ? { ...el, ...updates } : el
+        );
+        set({
           elements: updatedElements,
         });
       },

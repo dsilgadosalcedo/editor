@@ -366,13 +366,27 @@ export default function CanvasElement({
       >
         {/* Image rendering */}
         {element.type === "image" && (
-          <img
-            src={element.src}
-            alt="Canvas element"
-            className="w-full h-full object-cover"
-            style={getImageStyles(element)}
-            draggable={false}
-          />
+          <div className="relative w-full h-full">
+            <img
+              src={element.src}
+              alt="Canvas element"
+              className="w-full h-full object-cover"
+              style={getImageStyles(element)}
+              draggable={false}
+            />
+
+            {/* Loading overlay */}
+            {element.loading && (
+              <div className="absolute inset-0 bg-gray-100/80 dark:bg-gray-800/80 flex items-center justify-center backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">
+                    Loading...
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Text rendering */}

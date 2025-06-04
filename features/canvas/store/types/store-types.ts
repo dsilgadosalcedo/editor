@@ -103,6 +103,7 @@ export interface CanvasActions {
 
   // Image properties
   updateImageSrc: (id: string, src: string) => void;
+  updateImageElement: (id: string, updates: Partial<CanvasElementData>) => void;
 
   // Element state
   toggleElementVisibility: (id: string) => void;
