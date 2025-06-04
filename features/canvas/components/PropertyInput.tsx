@@ -12,6 +12,7 @@ type PropertyInputProps = {
   step?: number;
   tabIndex?: number;
   icon?: React.ReactNode;
+  allowFloat?: boolean; // New prop to control integer vs float behavior
 };
 
 export const PropertyInput: React.FC<PropertyInputProps> = ({
@@ -25,61 +26,69 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
   step = 1,
   tabIndex = 0,
   icon,
+  allowFloat = false, // Default to integer behavior for backward compatibility
   ...rest
 }) => {
-  // Always ensure value is an integer
-  const integerValue = Math.round(value);
+  // Conditionally ensure value is an integer or keep as float
+  const processedValue = allowFloat ? value : Math.round(value);
   const [internalValue, setInternalValue] = useState<string>(
-    integerValue.toString()
+    processedValue.toString()
   );
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const lastPropValue = useRef<number>(integerValue);
+  const lastPropValue = useRef<number>(processedValue);
   const dragStartX = useRef<number>(0);
   const dragStartValue = useRef<number>(0);
 
+  // Helper function to process numeric values based on allowFloat
+  const processNumericValue = (num: number): number => {
+    return allowFloat ? num : Math.round(num);
+  };
+
   // Sync internal value if prop changes from outside
   React.useEffect(() => {
-    const roundedValue = Math.round(value);
+    const roundedValue = processNumericValue(value);
     if (roundedValue !== lastPropValue.current) {
       setInternalValue(roundedValue.toString());
       lastPropValue.current = roundedValue;
     }
-  }, [value]);
+  }, [value, allowFloat]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInternalValue(e.target.value);
   };
 
   const handleBlur = () => {
-    const num = Math.round(Number(internalValue));
-    if (!isNaN(num) && num !== integerValue) {
+    const num = processNumericValue(Number(internalValue));
+    if (!isNaN(num) && num !== processedValue) {
       onChange(num);
     } else {
-      setInternalValue(integerValue.toString()); // Reset if invalid
+      setInternalValue(processedValue.toString()); // Reset if invalid
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
-      let newValue = Math.round(Number(internalValue));
-      if (isNaN(newValue)) newValue = integerValue;
-      if (e.key === "ArrowUp") newValue += Math.round(step);
-      if (e.key === "ArrowDown") newValue -= Math.round(step);
-      if (typeof min === "number" && newValue < min) newValue = Math.round(min);
-      if (typeof max === "number" && newValue > max) newValue = Math.round(max);
+      let newValue = processNumericValue(Number(internalValue));
+      if (isNaN(newValue)) newValue = processedValue;
+      if (e.key === "ArrowUp") newValue += processNumericValue(step);
+      if (e.key === "ArrowDown") newValue -= processNumericValue(step);
+      if (typeof min === "number" && newValue < min)
+        newValue = processNumericValue(min);
+      if (typeof max === "number" && newValue > max)
+        newValue = processNumericValue(max);
 
-      // Ensure the result is always an integer
-      newValue = Math.round(newValue);
+      // Process the result based on allowFloat
+      newValue = processNumericValue(newValue);
 
       setInternalValue(newValue.toString());
       onInstantChange(newValue);
     } else if (e.key === "Enter") {
-      const num = Math.round(Number(internalValue));
-      if (!isNaN(num) && num !== integerValue) {
+      const num = processNumericValue(Number(internalValue));
+      if (!isNaN(num) && num !== processedValue) {
         onChange(num);
       } else {
-        setInternalValue(integerValue.toString());
+        setInternalValue(processedValue.toString());
       }
       (e.target as HTMLInputElement).blur();
     }
@@ -89,7 +98,8 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
     e.preventDefault();
     setIsDragging(true);
     dragStartX.current = e.clientX;
-    dragStartValue.current = Math.round(Number(internalValue)) || integerValue;
+    dragStartValue.current =
+      processNumericValue(Number(internalValue)) || processedValue;
 
     // Add cursor style to body during drag
     document.body.style.cursor = "ew-resize";
@@ -99,15 +109,17 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
       const deltaX = e.clientX - dragStartX.current;
       // Sensitivity: 1 pixel = 0.1 steps, adjust as needed
       const sensitivity = 0.1;
-      const valueChange = deltaX * sensitivity * Math.round(step);
+      const valueChange = deltaX * sensitivity * processNumericValue(step);
       let newValue = dragStartValue.current + valueChange;
 
       // Apply min/max constraints
-      if (typeof min === "number" && newValue < min) newValue = Math.round(min);
-      if (typeof max === "number" && newValue > max) newValue = Math.round(max);
+      if (typeof min === "number" && newValue < min)
+        newValue = processNumericValue(min);
+      if (typeof max === "number" && newValue > max)
+        newValue = processNumericValue(max);
 
-      // Always ensure the result is an integer
-      newValue = Math.round(newValue);
+      // Process the result based on allowFloat
+      newValue = processNumericValue(newValue);
 
       setInternalValue(newValue.toString());
       onInstantChange(newValue);
@@ -119,8 +131,8 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
       document.body.style.userSelect = "";
 
       // Trigger onChange on drag end
-      const finalValue = Math.round(Number(internalValue));
-      if (!isNaN(finalValue) && finalValue !== integerValue) {
+      const finalValue = processNumericValue(Number(internalValue));
+      if (!isNaN(finalValue) && finalValue !== processedValue) {
         onChange(finalValue);
       }
 
@@ -157,7 +169,7 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
         <Input
           type="text"
           inputMode="numeric"
-          pattern="[0-9]*"
+          pattern={allowFloat ? "[0-9]*\\.?[0-9]*" : "[0-9]*"}
           value={internalValue}
           onChange={handleInputChange}
           onBlur={handleBlur}
@@ -177,7 +189,7 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
     <Input
       type="text"
       inputMode="numeric"
-      pattern="[0-9]*"
+      pattern={allowFloat ? "[0-9]*\\.?[0-9]*" : "[0-9]*"}
       value={internalValue}
       onChange={handleInputChange}
       onBlur={handleBlur}

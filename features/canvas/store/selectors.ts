@@ -10,6 +10,8 @@ export const useArtboardDimensions = () =>
   useCanvasStore((state) => state.artboardDimensions);
 export const useArtboardAspectRatio = () =>
   useCanvasStore((state) => state.artboardAspectRatio);
+export const useIsCustomAspectRatio = () =>
+  useCanvasStore((state) => state.isCustomAspectRatio);
 
 // Selection selectors
 export const useSelectedElements = () =>
@@ -57,6 +59,7 @@ export const useCanvasState = () =>
       elements: state.elements,
       artboardDimensions: state.artboardDimensions,
       artboardAspectRatio: state.artboardAspectRatio,
+      isCustomAspectRatio: state.isCustomAspectRatio,
     }))
   );
 

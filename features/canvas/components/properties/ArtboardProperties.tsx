@@ -14,6 +14,7 @@ import { Lock, Unlock } from "lucide-react";
 import {
   useArtboardDimensions,
   useArtboardAspectRatio,
+  useIsCustomAspectRatio,
   useProjectName,
   usePanSensitivity,
   useZoomSensitivity,
@@ -24,6 +25,7 @@ export function ArtboardProperties() {
   // Use optimized selectors to prevent unnecessary re-renders
   const artboardDimensions = useArtboardDimensions();
   const artboardAspectRatio = useArtboardAspectRatio();
+  const isCustomAspectRatio = useIsCustomAspectRatio();
   const projectName = useProjectName();
   const panSensitivity = usePanSensitivity();
   const zoomSensitivity = useZoomSensitivity();
@@ -33,6 +35,7 @@ export function ArtboardProperties() {
     useShallow((state) => ({
       setArtboardDimensions: state.setArtboardDimensions,
       setArtboardAspectRatio: state.setArtboardAspectRatio,
+      setCustomAspectRatio: state.setCustomAspectRatio,
       setProjectName: state.setProjectName,
       setPanSensitivity: state.setPanSensitivity,
       setZoomSensitivity: state.setZoomSensitivity,
@@ -47,6 +50,7 @@ export function ArtboardProperties() {
     } else {
       // Custom ratio - allow free resizing
       artboardActions.setArtboardDimensions({ ...artboardDimensions, width });
+      // Keep custom mode when manually adjusting dimensions in custom mode
     }
   };
 
@@ -58,6 +62,7 @@ export function ArtboardProperties() {
     } else {
       // Custom ratio - allow free resizing
       artboardActions.setArtboardDimensions({ ...artboardDimensions, height });
+      // Keep custom mode when manually adjusting dimensions in custom mode
     }
   };
 
@@ -87,6 +92,8 @@ export function ArtboardProperties() {
               currentDimensions={artboardDimensions}
               onDimensionsChange={artboardActions.setArtboardDimensions}
               onAspectRatioChange={artboardActions.setArtboardAspectRatio}
+              isCustomAspectRatio={isCustomAspectRatio}
+              onCustomAspectRatioChange={artboardActions.setCustomAspectRatio}
               variant="default"
             />
           </PropertyField>
@@ -147,6 +154,7 @@ export function ArtboardProperties() {
                 min={0.1}
                 max={5.0}
                 step={0.1}
+                allowFloat={true}
                 onChange={(val) => artboardActions.setPanSensitivity(val)}
                 onInstantChange={(val) =>
                   artboardActions.setPanSensitivity(val)
@@ -162,6 +170,7 @@ export function ArtboardProperties() {
                 min={0.1}
                 max={3.0}
                 step={0.1}
+                allowFloat={true}
                 onChange={(val) => artboardActions.setZoomSensitivity(val)}
                 onInstantChange={(val) =>
                   artboardActions.setZoomSensitivity(val)

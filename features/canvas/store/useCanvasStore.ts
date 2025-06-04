@@ -71,6 +71,7 @@ export const useCanvasStore = create<CanvasStore>()(
       elements: [],
       artboardDimensions: { width: 1024, height: 576 },
       artboardAspectRatio: 16 / 9,
+      isCustomAspectRatio: false,
 
       // Selection state
       selectedElements: [],
@@ -100,6 +101,10 @@ export const useCanvasStore = create<CanvasStore>()(
 
       setArtboardAspectRatio: (ratio) => {
         set({ artboardAspectRatio: ratio });
+      },
+
+      setCustomAspectRatio: (isCustom) => {
+        set({ isCustomAspectRatio: isCustom });
       },
 
       addElement: (type) => {

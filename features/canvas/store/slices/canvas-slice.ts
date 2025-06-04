@@ -38,6 +38,7 @@ export const createCanvasSlice: StateCreator<
   elements: [],
   artboardDimensions: { width: 1024, height: 576 },
   artboardAspectRatio: 16 / 9,
+  isCustomAspectRatio: false,
 
   // Actions
   setArtboardDimensions: (dims) => {
@@ -46,6 +47,10 @@ export const createCanvasSlice: StateCreator<
 
   setArtboardAspectRatio: (ratio) => {
     set({ artboardAspectRatio: ratio });
+  },
+
+  setCustomAspectRatio: (isCustom) => {
+    set({ isCustomAspectRatio: isCustom });
   },
 
   addElement: (type) => {

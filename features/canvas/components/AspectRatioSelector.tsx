@@ -73,6 +73,8 @@ interface AspectRatioSelectorProps {
   currentDimensions: { width: number; height: number };
   onDimensionsChange: (dimensions: { width: number; height: number }) => void;
   onAspectRatioChange?: (ratio: number | null) => void;
+  isCustomAspectRatio?: boolean;
+  onCustomAspectRatioChange?: (isCustom: boolean) => void;
   variant?: "default" | "compact";
   showIcons?: boolean;
 }
@@ -81,12 +83,20 @@ export const AspectRatioSelector: React.FC<AspectRatioSelectorProps> = ({
   currentDimensions,
   onDimensionsChange,
   onAspectRatioChange,
+  isCustomAspectRatio = false,
+  onCustomAspectRatioChange,
   variant = "default",
   showIcons = true,
 }) => {
   const currentRatio = currentDimensions.width / currentDimensions.height;
 
   const getCurrentSelection = (): string => {
+    // If user explicitly selected custom mode, return "custom" regardless of dimensions
+    if (isCustomAspectRatio) {
+      return "custom";
+    }
+
+    // Otherwise, check if current dimensions match a predefined ratio
     const matchingOption = aspectRatioOptions.find(
       (option) => Math.abs(option.ratio - currentRatio) < 0.01
     );
@@ -96,6 +106,7 @@ export const AspectRatioSelector: React.FC<AspectRatioSelectorProps> = ({
   const handleRatioChange = (value: string) => {
     if (value === "custom") {
       onAspectRatioChange?.(null); // Unlock aspect ratio for custom
+      onCustomAspectRatioChange?.(true); // Mark as explicitly custom
       return;
     }
 
@@ -108,6 +119,7 @@ export const AspectRatioSelector: React.FC<AspectRatioSelectorProps> = ({
         height: selectedOption.height,
       });
       onAspectRatioChange?.(selectedOption.ratio); // Lock aspect ratio
+      onCustomAspectRatioChange?.(false); // Clear custom mode
     }
   };
 

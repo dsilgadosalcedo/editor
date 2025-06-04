@@ -404,13 +404,8 @@ export default function CanvasElement({
               isEditing ? "bg-transparent" : ""
             )}
             style={getTextStyles(element, isEditing)}
-            {...(!isEditing && {
-              dangerouslySetInnerHTML: {
-                __html: element.content || "Text",
-              },
-            })}
           >
-            {isEditing ? element.content || "Text" : null}
+            {element.content || "Text"}
           </div>
         )}
 

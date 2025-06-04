@@ -6,6 +6,7 @@ export interface CanvasState {
   elements: CanvasElementData[];
   artboardDimensions: { width: number; height: number };
   artboardAspectRatio: number | null;
+  isCustomAspectRatio: boolean;
 }
 
 export interface SelectionState {
@@ -118,6 +119,7 @@ export interface CanvasActions {
   // Artboard
   setArtboardDimensions: (dims: { width: number; height: number }) => void;
   setArtboardAspectRatio: (ratio: number | null) => void;
+  setCustomAspectRatio: (isCustom: boolean) => void;
 }
 
 export interface SelectionActions {
