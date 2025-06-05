@@ -543,12 +543,24 @@ export const useCanvasStore = create<CanvasStore>()(
       // Text properties
       updateFontSize: (id, fontSize) => {
         const state = get();
-        const updatedElements = updateElementProperty(
-          state.elements,
-          id,
-          "fontSize",
-          fontSize
-        );
+        const updatedElements = state.elements.map((el) => {
+          if (el.id === id && el.type === "text") {
+            const newFontSize = Math.max(1, fontSize);
+            const currentFontSize = el.fontSize || 16; // Default font size if not set
+            const currentLineHeight = el.lineHeight || currentFontSize * 1.2; // Default line height if not set
+
+            // Calculate the difference and apply it to line height
+            const fontSizeDifference = newFontSize - currentFontSize;
+            const newLineHeight = currentLineHeight + fontSizeDifference;
+
+            return {
+              ...el,
+              fontSize: newFontSize,
+              lineHeight: Math.max(1, newLineHeight), // Ensure line height is at least 1
+            };
+          }
+          return el;
+        });
         set({
           ...state.getHistoryUpdate(),
           elements: updatedElements,
