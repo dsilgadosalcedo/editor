@@ -186,6 +186,42 @@
     height: 100dvh;
     position: relative;
   }
+
+  /* Canvas-specific styles to prevent text selection */
+  .canvas-container,
+  .canvas-viewport,
+  .canvas-artboard {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  /* Prevent text selection on canvas elements unless they're in edit mode */
+  .canvas-element:not(.canvas-element-editing) {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  /* Allow text selection only when text element is being edited */
+  .canvas-element-editing [contenteditable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+  }
+
+  /* Prevent selection on canvas controls and handles */
+  .canvas-selection-controls,
+  .canvas-resize-handle,
+  .canvas-rotation-handle {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
 }
 
 @theme {

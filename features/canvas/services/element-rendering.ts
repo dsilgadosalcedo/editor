@@ -144,7 +144,7 @@ export const getElementContainerStyles = (
       element.type !== "image"
         ? element.borderColor ??
           (element.type === "group" && element.selected
-            ? "#3b82f6"
+            ? "#121268"
             : "transparent")
         : undefined,
     // Only apply shadow to non-image elements (images get shadow applied directly)

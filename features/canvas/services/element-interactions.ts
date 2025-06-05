@@ -316,13 +316,21 @@ export const createElementResizeHandlers = (
 
       onResize(newWidth, newHeight, e.shiftKey);
 
-      // For text elements: automatically change to "fixed" when manually resized (Figma behavior)
+      // For text elements: intelligently change text resizing mode based on which dimension is being resized
       if (
         element.type === "text" &&
         element.textResizing !== "fixed" &&
         onTextResizingChange
       ) {
-        onTextResizingChange("fixed");
+        // Only change to "fixed" if resizing the auto dimension
+        if (
+          element.textResizing === "auto-height" &&
+          (direction.includes("n") || direction.includes("s"))
+        ) {
+          // Auto-height text: change to fixed only when resizing height (top/bottom handles)
+          onTextResizingChange("fixed");
+        }
+        // Otherwise, keep the current auto mode when resizing the non-auto dimension
       }
 
       onAddToHistory?.();
@@ -414,13 +422,21 @@ export const createElementResizeHandlers = (
 
       onResize(newWidth, newHeight, false);
 
-      // For text elements: automatically change to "fixed" when manually resized (Figma behavior)
+      // For text elements: intelligently change text resizing mode based on which dimension is being resized
       if (
         element.type === "text" &&
         element.textResizing !== "fixed" &&
         onTextResizingChange
       ) {
-        onTextResizingChange("fixed");
+        // Only change to "fixed" if resizing the auto dimension
+        if (
+          element.textResizing === "auto-height" &&
+          (direction.includes("n") || direction.includes("s"))
+        ) {
+          // Auto-height text: change to fixed only when resizing height (top/bottom handles)
+          onTextResizingChange("fixed");
+        }
+        // Otherwise, keep the current auto mode when resizing the non-auto dimension
       }
 
       onAddToHistory?.();

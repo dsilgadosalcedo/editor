@@ -51,7 +51,7 @@ export const createElement = (
           : Math.round(artboardHeight / 2 - height / 2),
         width,
         height,
-        color: "#3b82f6",
+        color: "#121268",
       };
     }
 

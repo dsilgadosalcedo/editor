@@ -49,6 +49,7 @@ import {
 import {
   exportCanvasToJSON,
   exportProjectToJSON,
+  exportCanvasToSVG,
   importCanvasFromFile,
 } from "../services/file-operations";
 import {
@@ -444,12 +445,20 @@ export const useCanvasStore = create<CanvasStore>()(
 
       updateBorderWidth: (id, width) => {
         const state = get();
-        const updatedElements = updateElementProperty(
-          state.elements,
-          id,
-          "borderWidth",
-          width
-        );
+
+        // Update border width and automatically set border color if width > 0
+        const updatedElements = state.elements.map((el) => {
+          if (el.id === id) {
+            const updatedElement = { ...el, borderWidth: width };
+            // If width is being set to a value > 0 and no border color exists, set it to professional gray
+            if (width > 0 && !el.borderColor) {
+              updatedElement.borderColor = "#374151";
+            }
+            return updatedElement;
+          }
+          return el;
+        });
+
         set({
           ...state.getHistoryUpdate(),
           elements: updatedElements,
@@ -477,9 +486,9 @@ export const useCanvasStore = create<CanvasStore>()(
         const updatedElements = state.elements.map((el) => {
           if (el.id === id) {
             const updatedElement = { ...el, shadowBlur: blur };
-            // If blur is being set to a value > 0 and no shadow color exists, set it to black
+            // If blur is being set to a value > 0 and no shadow color exists, set it to professional gray
             if (blur > 0 && !el.shadowColor) {
-              updatedElement.shadowColor = "#000000";
+              updatedElement.shadowColor = "#374151";
             }
             return updatedElement;
           }
@@ -534,12 +543,24 @@ export const useCanvasStore = create<CanvasStore>()(
       // Text properties
       updateFontSize: (id, fontSize) => {
         const state = get();
-        const updatedElements = updateElementProperty(
-          state.elements,
-          id,
-          "fontSize",
-          fontSize
-        );
+        const updatedElements = state.elements.map((el) => {
+          if (el.id === id && el.type === "text") {
+            const newFontSize = Math.max(1, fontSize);
+            const currentFontSize = el.fontSize || 16; // Default font size if not set
+            const currentLineHeight = el.lineHeight || currentFontSize * 1.2; // Default line height if not set
+
+            // Calculate the difference and apply it to line height
+            const fontSizeDifference = newFontSize - currentFontSize;
+            const newLineHeight = currentLineHeight + fontSizeDifference;
+
+            return {
+              ...el,
+              fontSize: newFontSize,
+              lineHeight: Math.max(1, newLineHeight), // Ensure line height is at least 1
+            };
+          }
+          return el;
+        });
         set({
           ...state.getHistoryUpdate(),
           elements: updatedElements,
@@ -1403,6 +1424,11 @@ export const useCanvasStore = create<CanvasStore>()(
           },
           filename
         );
+      },
+
+      exportCanvasAsSVG: (filename?: string) => {
+        const state = get();
+        exportCanvasToSVG(state.elements, state.artboardDimensions, filename);
       },
 
       importElements: (elements: any[]) => {

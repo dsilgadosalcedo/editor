@@ -106,7 +106,37 @@ export const useTextEditing = ({
 
   const startEditing = useCallback(() => {
     setIsEditing(true);
-  }, []);
+
+    // Focus the text element after it becomes editable
+    setTimeout(() => {
+      if (textRef.current) {
+        textRef.current.focus();
+
+        // Ensure cursor is visible and positioned correctly
+        const selection = window.getSelection();
+        if (selection) {
+          const range = document.createRange();
+          const content = element.content || "";
+
+          if (
+            textRef.current.firstChild &&
+            textRef.current.firstChild.nodeType === Node.TEXT_NODE
+          ) {
+            // Place cursor at the end of existing text
+            range.setStart(textRef.current.firstChild, content.length);
+            range.setEnd(textRef.current.firstChild, content.length);
+          } else {
+            // Empty text or no text node, place cursor at the beginning
+            range.setStart(textRef.current, 0);
+            range.setEnd(textRef.current, 0);
+          }
+
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+    }, 0);
+  }, [element.content]);
 
   const stopEditing = useCallback(() => {
     setIsEditing(false);

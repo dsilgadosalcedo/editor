@@ -248,6 +248,7 @@ export const useFileActions = () =>
     useShallow((state) => ({
       exportCanvas: state.exportCanvas,
       exportProject: state.exportProject,
+      exportCanvasAsSVG: state.exportCanvasAsSVG,
       importCanvas: state.importCanvas,
       importProject: state.importProject,
       saveCanvas: state.saveCanvas,

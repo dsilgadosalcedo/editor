@@ -6,6 +6,16 @@ import MultiSelectionUI from "./MultiSelectionUI";
 import { useCanvasStore } from "../store/useCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 
+// Utility function to clear text selection
+const clearTextSelection = () => {
+  if (window.getSelection) {
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
+  }
+};
+
 interface ArtboardProps {
   artboardDimensions: { width: number; height: number };
   zoom: number;
@@ -206,7 +216,7 @@ const Artboard: React.FC<ArtboardProps> = ({
   return (
     <div
       ref={canvasContainerRef}
-      className="absolute"
+      className="absolute canvas-container"
       style={{
         transform: `translate(${canvasPosition.x}px, ${canvasPosition.y}px)`,
         transition: "transform 0.1s ease",
@@ -216,7 +226,7 @@ const Artboard: React.FC<ArtboardProps> = ({
     >
       <div
         ref={artboardRef}
-        className="bg-card/50 relative mx-auto my-auto"
+        className="bg-card/50 relative mx-auto my-auto canvas-artboard"
         style={{
           width: `${artboardDimensions.width}px`,
           height: `${artboardDimensions.height}px`,
@@ -234,6 +244,9 @@ const Artboard: React.FC<ArtboardProps> = ({
           // Don't clear if clicking on an element or its controls
           const target = e.target as HTMLElement;
           if (target === e.currentTarget) {
+            // Clear text selection when clicking on artboard
+            clearTextSelection();
+
             // Don't clear selection when in isolation mode to prevent accidental exit
             if (!isolatedGroupId) {
               onSelectElement(null);

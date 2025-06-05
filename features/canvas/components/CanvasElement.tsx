@@ -45,6 +45,16 @@ import {
 
 import { useCanvasStore } from "../store/useCanvasStore";
 
+// Utility function to clear text selection
+const clearTextSelection = () => {
+  if (window.getSelection) {
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
+  }
+};
+
 export default function CanvasElement({
   element,
   onSelect,
@@ -197,8 +207,33 @@ export default function CanvasElement({
   useEffect(() => {
     if (isEditing && element.type === "text" && textRef.current) {
       // Ensure the contentEditable div has the current content when entering edit mode
-      if (textRef.current.textContent !== element.content) {
-        textRef.current.textContent = element.content || "";
+      const currentContent = textRef.current.textContent || "";
+      const elementContent = element.content || "";
+
+      if (currentContent !== elementContent) {
+        textRef.current.textContent = elementContent;
+
+        // Ensure cursor is positioned correctly after content update
+        setTimeout(() => {
+          if (textRef.current && document.activeElement === textRef.current) {
+            const selection = window.getSelection();
+            if (selection) {
+              const range = document.createRange();
+              if (textRef.current.firstChild) {
+                range.setStart(
+                  textRef.current.firstChild,
+                  elementContent.length
+                );
+                range.setEnd(textRef.current.firstChild, elementContent.length);
+              } else {
+                range.setStart(textRef.current, 0);
+                range.setEnd(textRef.current, 0);
+              }
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          }
+        }, 0);
       }
     }
   }, [isEditing, element.content, element.type]);
@@ -361,6 +396,16 @@ export default function CanvasElement({
       return;
     }
 
+    // Don't handle drag when text is being edited
+    if (isEditing && element.type === "text") {
+      return;
+    }
+
+    // Clear any existing text selection to prevent browser text selection during canvas interactions
+    if (!isEditing) {
+      clearTextSelection();
+    }
+
     // Select the element if not already selected
     if (!element.selected) {
       onSelect(e.shiftKey || e.ctrlKey || e.metaKey);
@@ -395,13 +440,17 @@ export default function CanvasElement({
     <>
       <div
         ref={elementRef}
-        className={getElementContainerClasses(element)}
+        className={cn(
+          getElementContainerClasses(element),
+          "canvas-element",
+          isEditing && "canvas-element-editing"
+        )}
         style={getElementContainerStyles(element, zoom)}
         onMouseDown={handleElementMouseDown}
         onTouchStart={handleElementTouchStart}
         onDoubleClick={
           element.type === "text"
-            ? textEditingHandlers.handleTextDoubleClick
+            ? undefined
             : groupInteractionHandlers.handleGeneralDoubleClick
         }
       >
@@ -441,10 +490,17 @@ export default function CanvasElement({
             onKeyDown={textEditingHandlers.handleTextKeyDown}
             onCompositionStart={textEditingHandlers.handleCompositionStart}
             onCompositionEnd={textEditingHandlers.handleCompositionEnd}
+            onDoubleClick={textEditingHandlers.handleTextDoubleClick}
+            onClick={
+              isEditing ? textEditingHandlers.handleTextClick : undefined
+            }
+            onMouseDown={
+              isEditing ? textEditingHandlers.handleTextMouseDown : undefined
+            }
             className={cn(
               "w-full h-full flex outline-none overflow-hidden",
               getTextAlignmentClasses(element),
-              isEditing ? "bg-transparent" : ""
+              isEditing ? "bg-transparent cursor-text" : "cursor-move"
             )}
             style={getTextStyles(element, isEditing)}
           >
@@ -467,7 +523,7 @@ export default function CanvasElement({
       {element.selected && (
         <>
           <div
-            className="absolute pointer-events-none"
+            className="absolute pointer-events-none canvas-selection-controls"
             style={getSelectionContainerStyles(element)}
           >
             {/* Selection border */}
@@ -483,33 +539,8 @@ export default function CanvasElement({
                   // Text elements: Show appropriate resize handles based on text resizing mode
                   <>
                     {element.textResizing === "auto-width" && (
-                      // Auto-width: Only show top and bottom handles (height only)
-                      <>
-                        {["n", "s"].map((direction) => (
-                          <div
-                            key={direction}
-                            data-handle={`resize-${direction}`}
-                            className={`absolute w-4 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
-                              direction,
-                              element.rotation || 0
-                            )}`}
-                            style={getResizeHandleStyles(
-                              element,
-                              zoom,
-                              direction
-                            )}
-                            onMouseDown={(e) =>
-                              resizeHandlers.handleResizeStart(direction, e)
-                            }
-                            onTouchStart={(e) =>
-                              resizeHandlers.handleResizeTouchStart(
-                                direction,
-                                e
-                              )
-                            }
-                          />
-                        ))}
-                      </>
+                      // Auto-width: No resize handles (both width and height are automatic)
+                      <></>
                     )}
 
                     {element.textResizing === "auto-height" && (
@@ -519,7 +550,7 @@ export default function CanvasElement({
                           <div
                             key={direction}
                             data-handle={`resize-${direction}`}
-                            className={`absolute w-2 h-4 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                            className={`absolute w-2 h-4 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-sm shadow-sm hover:scale-110 transition-transform ease-out backdrop-blur-xs canvas-resize-handle ${getRotatedCursor(
                               direction,
                               element.rotation || 0
                             )}`}
@@ -550,7 +581,7 @@ export default function CanvasElement({
                             <div
                               key={direction}
                               data-handle={`resize-${direction}`}
-                              className={`absolute ${
+                              className={`absolute canvas-resize-handle ${
                                 ["nw", "ne", "sw", "se"].includes(direction)
                                   ? "w-2 h-2 rounded-full"
                                   : direction === "n" || direction === "s"
@@ -597,7 +628,7 @@ export default function CanvasElement({
                       <div
                         key={direction}
                         data-handle={`resize-${direction}`}
-                        className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs ${getRotatedCursor(
+                        className={`absolute w-2 h-2 border-[0.5px] border-blue-100 inset-shadow-xs inset-shadow-blue-400/50 bg-blue-400/70 rounded-full shadow-sm hover:scale-140 transition-transform ease-out backdrop-blur-xs canvas-resize-handle ${getRotatedCursor(
                           direction,
                           element.rotation || 0
                         )}`}
@@ -625,7 +656,7 @@ export default function CanvasElement({
                     <div
                       key={position}
                       data-handle={`rotation-${position}`}
-                      className="absolute w-8 h-8 rounded-full cursor-crosshair"
+                      className="absolute w-8 h-8 rounded-full cursor-crosshair canvas-rotation-handle"
                       style={getRotationHandleStyles(element, zoom, position)}
                       onMouseDown={rotationHandlers.handleRotationStart}
                       title="Drag to rotate"

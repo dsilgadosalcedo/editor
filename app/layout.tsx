@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Comprame",
-  description: "The best e-commerce creation tool",
+  title: "Arrecifes Editor",
+  description: "An AI driven canvas editor",
 };
 
 export const viewport: Viewport = {

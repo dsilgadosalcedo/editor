@@ -360,7 +360,7 @@ export const createCanvasSlice: StateCreator<
         if (el.id === id) {
           const updatedElement = { ...el, borderWidth };
           if (borderWidth > 0 && !el.borderColor) {
-            updatedElement.borderColor = "#000000";
+            updatedElement.borderColor = "#374151"; // Professional gray color
           }
           return updatedElement;
         }
@@ -387,7 +387,7 @@ export const createCanvasSlice: StateCreator<
         if (el.id === id) {
           const updatedElement = { ...el, shadowBlur };
           if (shadowBlur > 0 && !el.shadowColor) {
-            updatedElement.shadowColor = "#000000";
+            updatedElement.shadowColor = "#374151"; // Professional gray color
           }
           return updatedElement;
         }
@@ -410,11 +410,24 @@ export const createCanvasSlice: StateCreator<
     const { getHistoryUpdate } = get();
     set((state) => ({
       ...getHistoryUpdate(),
-      elements: state.elements.map((el) =>
-        el.id === id && el.type === "text"
-          ? { ...el, fontSize: Math.max(1, fontSize) }
-          : el
-      ),
+      elements: state.elements.map((el) => {
+        if (el.id === id && el.type === "text") {
+          const newFontSize = Math.max(1, fontSize);
+          const currentFontSize = el.fontSize || 16; // Default font size if not set
+          const currentLineHeight = el.lineHeight || currentFontSize * 1.2; // Default line height if not set
+
+          // Calculate the difference and apply it to line height
+          const fontSizeDifference = newFontSize - currentFontSize;
+          const newLineHeight = currentLineHeight + fontSizeDifference;
+
+          return {
+            ...el,
+            fontSize: newFontSize,
+            lineHeight: Math.max(1, newLineHeight), // Ensure line height is at least 1
+          };
+        }
+        return el;
+      }),
     }));
   },
 
