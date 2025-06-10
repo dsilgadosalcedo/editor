@@ -197,10 +197,12 @@ export const createElementResizeHandlers = (
     maintainAspectRatio?: boolean
   ) => void,
   onResizeNoHistory: (width: number, height: number) => void,
+  onMove: (dx: number, dy: number) => void,
+  onMoveNoHistory: (dx: number, dy: number) => void,
   onAddToHistory: (() => void) | undefined,
   zoom: number,
   setResizeState: React.Dispatch<React.SetStateAction<ResizeState>>,
-  calculateRotatedResize: (
+  transformRotatedResize: (
     dx: number,
     dy: number,
     direction: string,
@@ -214,10 +216,12 @@ export const createElementResizeHandlers = (
 
     const startX = e.clientX;
     const startY = e.clientY;
-    const startWidth = element.width;
-    const startHeight = element.height;
-    const startElementX = element.x;
-    const startElementY = element.y;
+    const {
+      width: startWidth,
+      height: startHeight,
+      x: startElementX,
+      y: startElementY,
+    } = element;
 
     setResizeState({
       isResizing: true,
@@ -228,13 +232,16 @@ export const createElementResizeHandlers = (
       startY: startElementY,
     });
 
+    let lastMoveX = 0;
+    let lastMoveY = 0;
+
     const handleMouseMove = (e: MouseEvent) => {
       let rawDx = (e.clientX - startX) / (zoom / 100);
       let rawDy = (e.clientY - startY) / (zoom / 100);
 
       // Apply rotation transformation if element is rotated
       if (element.rotation) {
-        const rotated = calculateRotatedResize(
+        const rotated = transformRotatedResize(
           rawDx,
           rawDy,
           direction,
@@ -271,68 +278,28 @@ export const createElementResizeHandlers = (
         }
       }
 
+      let totalMoveX = 0;
+      let totalMoveY = 0;
+      if (direction.includes("w")) {
+        totalMoveX = startWidth - newWidth;
+      }
+      if (direction.includes("n")) {
+        totalMoveY = startHeight - newHeight;
+      }
+
+      const incrementalMoveX = totalMoveX - lastMoveX;
+      const incrementalMoveY = totalMoveY - lastMoveY;
+      lastMoveX = totalMoveX;
+      lastMoveY = totalMoveY;
+
+      if (incrementalMoveX !== 0 || incrementalMoveY !== 0) {
+        onMoveNoHistory(incrementalMoveX, incrementalMoveY);
+      }
+
       onResizeNoHistory(newWidth, newHeight);
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
-      let rawDx = (e.clientX - startX) / (zoom / 100);
-      let rawDy = (e.clientY - startY) / (zoom / 100);
-
-      if (element.rotation) {
-        const rotated = calculateRotatedResize(
-          rawDx,
-          rawDy,
-          direction,
-          element.rotation
-        );
-        rawDx = rotated.dx;
-        rawDy = rotated.dy;
-      }
-
-      let newWidth = startWidth;
-      let newHeight = startHeight;
-
-      if (direction.includes("e")) newWidth = Math.max(10, startWidth + rawDx);
-      if (direction.includes("w")) newWidth = Math.max(10, startWidth - rawDx);
-      if (direction.includes("s"))
-        newHeight = Math.max(10, startHeight + rawDy);
-      if (direction.includes("n"))
-        newHeight = Math.max(10, startHeight - rawDy);
-
-      if (
-        e.shiftKey &&
-        (direction === "nw" ||
-          direction === "ne" ||
-          direction === "sw" ||
-          direction === "se")
-      ) {
-        const aspectRatio = startWidth / startHeight;
-        if (Math.abs(rawDx) > Math.abs(rawDy)) {
-          newHeight = newWidth / aspectRatio;
-        } else {
-          newWidth = newHeight * aspectRatio;
-        }
-      }
-
-      onResize(newWidth, newHeight, e.shiftKey);
-
-      // For text elements: intelligently change text resizing mode based on which dimension is being resized
-      if (
-        element.type === "text" &&
-        element.textResizing !== "fixed" &&
-        onTextResizingChange
-      ) {
-        // Only change to "fixed" if resizing the auto dimension
-        if (
-          element.textResizing === "auto-height" &&
-          (direction.includes("n") || direction.includes("s"))
-        ) {
-          // Auto-height text: change to fixed only when resizing height (top/bottom handles)
-          onTextResizingChange("fixed");
-        }
-        // Otherwise, keep the current auto mode when resizing the non-auto dimension
-      }
-
+    const handleMouseUp = () => {
       onAddToHistory?.();
       setResizeState((prev) => ({ ...prev, isResizing: false }));
 
@@ -351,10 +318,12 @@ export const createElementResizeHandlers = (
     const touch = e.touches[0];
     const startX = touch.clientX;
     const startY = touch.clientY;
-    const startWidth = element.width;
-    const startHeight = element.height;
-    const startElementX = element.x;
-    const startElementY = element.y;
+    const {
+      width: startWidth,
+      height: startHeight,
+      x: startElementX,
+      y: startElementY,
+    } = element;
 
     setResizeState({
       isResizing: true,
@@ -365,13 +334,16 @@ export const createElementResizeHandlers = (
       startY: startElementY,
     });
 
+    let lastMoveX = 0;
+    let lastMoveY = 0;
+
     const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
       let rawDx = (touch.clientX - startX) / (zoom / 100);
       let rawDy = (touch.clientY - startY) / (zoom / 100);
 
       if (element.rotation) {
-        const rotated = calculateRotatedResize(
+        const rotated = transformRotatedResize(
           rawDx,
           rawDy,
           direction,
@@ -390,55 +362,29 @@ export const createElementResizeHandlers = (
         newHeight = Math.max(10, startHeight + rawDy);
       if (direction.includes("n"))
         newHeight = Math.max(10, startHeight - rawDy);
+
+      let totalMoveX = 0;
+      let totalMoveY = 0;
+      if (direction.includes("w")) {
+        totalMoveX = startWidth - newWidth;
+      }
+      if (direction.includes("n")) {
+        totalMoveY = startHeight - newHeight;
+      }
+
+      const incrementalMoveX = totalMoveX - lastMoveX;
+      const incrementalMoveY = totalMoveY - lastMoveY;
+      lastMoveX = totalMoveX;
+      lastMoveY = totalMoveY;
+
+      if (incrementalMoveX !== 0 || incrementalMoveY !== 0) {
+        onMoveNoHistory(incrementalMoveX, incrementalMoveY);
+      }
 
       onResizeNoHistory(newWidth, newHeight);
     };
 
-    const handleTouchEnd = (e: TouchEvent) => {
-      const touch = e.changedTouches[0];
-      let rawDx = (touch.clientX - startX) / (zoom / 100);
-      let rawDy = (touch.clientY - startY) / (zoom / 100);
-
-      if (element.rotation) {
-        const rotated = calculateRotatedResize(
-          rawDx,
-          rawDy,
-          direction,
-          element.rotation
-        );
-        rawDx = rotated.dx;
-        rawDy = rotated.dy;
-      }
-
-      let newWidth = startWidth;
-      let newHeight = startHeight;
-
-      if (direction.includes("e")) newWidth = Math.max(10, startWidth + rawDx);
-      if (direction.includes("w")) newWidth = Math.max(10, startWidth - rawDx);
-      if (direction.includes("s"))
-        newHeight = Math.max(10, startHeight + rawDy);
-      if (direction.includes("n"))
-        newHeight = Math.max(10, startHeight - rawDy);
-
-      onResize(newWidth, newHeight, false);
-
-      // For text elements: intelligently change text resizing mode based on which dimension is being resized
-      if (
-        element.type === "text" &&
-        element.textResizing !== "fixed" &&
-        onTextResizingChange
-      ) {
-        // Only change to "fixed" if resizing the auto dimension
-        if (
-          element.textResizing === "auto-height" &&
-          (direction.includes("n") || direction.includes("s"))
-        ) {
-          // Auto-height text: change to fixed only when resizing height (top/bottom handles)
-          onTextResizingChange("fixed");
-        }
-        // Otherwise, keep the current auto mode when resizing the non-auto dimension
-      }
-
+    const handleTouchEnd = () => {
       onAddToHistory?.();
       setResizeState((prev) => ({ ...prev, isResizing: false }));
 

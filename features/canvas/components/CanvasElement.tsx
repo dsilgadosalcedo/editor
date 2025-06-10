@@ -300,6 +300,8 @@ export default function CanvasElement({
     element,
     onResize,
     onResizeNoHistory,
+    onMove,
+    onMoveNoHistory,
     onAddToHistory,
     zoom,
     setResizeState,

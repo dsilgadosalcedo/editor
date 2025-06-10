@@ -15,6 +15,8 @@ interface UseElementResizeProps {
     maintainAspectRatio?: boolean
   ) => void;
   onResizeNoHistory: (id: string, width: number, height: number) => void;
+  onMove: (id: string, dx: number, dy: number) => void;
+  onMoveNoHistory: (id: string, dx: number, dy: number) => void;
   onAddToHistory?: () => void;
   zoom: number;
 }
@@ -23,6 +25,8 @@ export const useElementResize = ({
   element,
   onResize,
   onResizeNoHistory,
+  onMove,
+  onMoveNoHistory,
   onAddToHistory,
   zoom,
 }: UseElementResizeProps) => {
@@ -50,11 +54,27 @@ export const useElementResize = ({
     [element.id, onResizeNoHistory]
   );
 
+  const handleMove = useCallback(
+    (dx: number, dy: number) => {
+      onMove(element.id, dx, dy);
+    },
+    [element.id, onMove]
+  );
+
+  const handleMoveNoHistory = useCallback(
+    (dx: number, dy: number) => {
+      onMoveNoHistory(element.id, dx, dy);
+    },
+    [element.id, onMoveNoHistory]
+  );
+
   // Create resize handlers using the service
   const resizeHandlers = createElementResizeHandlers(
     element,
     handleResize,
     handleResizeNoHistory,
+    handleMove,
+    handleMoveNoHistory,
     onAddToHistory,
     zoom,
     setResizeState,
