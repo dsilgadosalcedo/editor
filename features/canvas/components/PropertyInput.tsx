@@ -1,11 +1,13 @@
 import React, { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type PropertyInputProps = {
   value: number;
   onChange: (value: number) => void; // Called on blur
   onInstantChange: (value: number) => void; // Called on left/right arrow
   className?: string;
+  wrapperClassName?: string;
   "aria-label"?: string;
   min?: number;
   max?: number;
@@ -20,6 +22,7 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
   onChange,
   onInstantChange,
   className = "",
+  wrapperClassName,
   "aria-label": ariaLabel,
   min,
   max,
@@ -146,7 +149,9 @@ export const PropertyInput: React.FC<PropertyInputProps> = ({
 
   if (icon) {
     return (
-      <div className="relative flex items-center max-w-37">
+      <div
+        className={cn("relative flex items-center max-w-37", wrapperClassName)}
+      >
         <div
           className={`absolute left-2 z-10 text-properties-text/70 dark:text-foreground/70 cursor-ew-resize select-none ${
             isDragging

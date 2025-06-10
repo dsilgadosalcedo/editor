@@ -7,7 +7,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import { Blend } from "lucide-react";
+import { Blend, Palette } from "lucide-react";
 import CustomColorPicker from "./CustomColorPicker";
 import OpacityPicker from "./OpacityPicker";
 
@@ -225,6 +225,7 @@ interface ColorPickerProps {
   propertyName?: string;
   showHex?: boolean;
   showOpacity?: boolean;
+  showIcon?: boolean;
 }
 
 export const ColorPicker: React.FC<ColorPickerProps> = ({
@@ -236,6 +237,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   propertyName,
   showHex = true,
   showOpacity = true,
+  showIcon = false,
 }) => {
   const { openColorPicker, openOpacityPicker } = useColorPicker();
   const colorButtonRef = useRef<HTMLButtonElement>(null);
@@ -353,13 +355,15 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   };
 
   return (
-    <div className="flex gap-1 max-w-37 w-full">
+    <div className={cn("flex gap-1 max-w-37", showHex && "w-full")}>
       <Button
         ref={colorButtonRef}
         data-color-picker-trigger
         onClick={handleColorClick}
+        size={!showHex ? "icon" : "default"}
         className={cn(
-          "flex items-center rounded-md border border-input transition-colors hover:bg-transparent hover:cursor-pointer flex-1",
+          "flex items-center rounded-md border border-input transition-colors hover:bg-transparent hover:cursor-pointer",
+          showHex && "flex-1",
           className
         )}
         variant="ghost"
@@ -371,6 +375,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
             {getHexDisplay(value)}
           </span>
         )}
+        {showIcon && <Palette className="text-muted-foreground" />}
       </Button>
       {showOpacity && (
         <Button

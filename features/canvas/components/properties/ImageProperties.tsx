@@ -18,6 +18,7 @@ import {
   CornerUpLeft,
   Square,
   Zap,
+  Maximize,
 } from "lucide-react";
 
 interface ImagePropertiesProps {
@@ -67,6 +68,8 @@ export function ImageProperties({
   onShadowColorChange,
   onToggleAspectRatioLock,
 }: ImagePropertiesProps) {
+  const maxCornerRadius = Math.floor(Math.min(width, height) / 2);
+
   return (
     <>
       <PropertySection>
@@ -144,84 +147,72 @@ export function ImageProperties({
 
       <PropertySection>
         <PropertyTitle>Appearance</PropertyTitle>
-        <PropertyField>
-          <PropertyLabel>Radius</PropertyLabel>
-          <PropertyInput
-            value={cornerRadius || 0}
-            min={0}
-            max={Math.floor(Math.min(width, height) / 2)}
-            onChange={(val) =>
-              onCornerRadiusChange(
-                Math.max(
-                  0,
-                  Math.min(val, Math.floor(Math.min(width, height) / 2))
-                )
-              )
-            }
-            onInstantChange={(val) =>
-              onCornerRadiusInstantChange(
-                Math.max(
-                  0,
-                  Math.min(val, Math.floor(Math.min(width, height) / 2))
-                )
-              )
-            }
-            icon={<CornerUpLeft className="h-3 w-3" />}
-            aria-label="Corner radius"
-          />
-        </PropertyField>
-      </PropertySection>
-
-      <PropertySection>
-        <PropertyTitle>Border</PropertyTitle>
         <PropertyStack distribution="column">
           <PropertyField>
-            <PropertyLabel>Width</PropertyLabel>
+            <PropertyLabel>Radius</PropertyLabel>
             <PropertyInput
-              value={borderWidth || 0}
+              value={cornerRadius || 0}
               min={0}
-              onChange={onBorderWidthChange}
-              onInstantChange={onBorderWidthChange}
-              icon={<Square className="h-3 w-3" />}
-              aria-label="Border width"
+              max={maxCornerRadius}
+              onChange={(val) =>
+                onCornerRadiusChange(
+                  Math.max(0, Math.min(val, maxCornerRadius))
+                )
+              }
+              onInstantChange={(val) =>
+                onCornerRadiusInstantChange(
+                  Math.max(0, Math.min(val, maxCornerRadius))
+                )
+              }
+              icon={<Maximize className="h-3 w-3" />}
+              aria-label="Corner radius"
             />
           </PropertyField>
           <PropertyField>
-            <PropertyLabel>Color</PropertyLabel>
-            <ColorPicker
-              value={borderColor || "#000000"}
-              onChange={(color) => onBorderColorChange(color)}
-              aria-label="Border color"
-              layerName={name || "Image"}
-              propertyName="Border"
-            />
-          </PropertyField>
-        </PropertyStack>
-      </PropertySection>
-
-      <PropertySection>
-        <PropertyTitle>Shadow</PropertyTitle>
-        <PropertyStack distribution="column">
-          <PropertyField>
-            <PropertyLabel>Blur</PropertyLabel>
-            <PropertyInput
-              value={shadowBlur || 0}
-              min={0}
-              onChange={onShadowBlurChange}
-              onInstantChange={onShadowBlurChange}
-              icon={<Zap className="h-3 w-3" />}
-              aria-label="Shadow blur"
-            />
+            <PropertyLabel>Border</PropertyLabel>
+            <div className="flex items-center gap-x-1">
+              <PropertyInput
+                value={borderWidth || 0}
+                min={0}
+                onChange={onBorderWidthChange}
+                onInstantChange={onBorderWidthChange}
+                icon={<Square className="h-3 w-3" />}
+                aria-label="Border width"
+                wrapperClassName="w-17"
+              />
+              <ColorPicker
+                value={borderColor || "#000000"}
+                onChange={(color) => onBorderColorChange(color)}
+                aria-label="Border color"
+                layerName={name || "Image"}
+                propertyName="Border"
+                showHex={false}
+                showIcon={true}
+              />
+            </div>
           </PropertyField>
           <PropertyField>
-            <PropertyLabel>Color</PropertyLabel>
-            <ColorPicker
-              value={shadowColor || "#000000"}
-              onChange={(color) => onShadowColorChange(color)}
-              aria-label="Shadow color"
-              layerName={name || "Image"}
-              propertyName="Shadow"
-            />
+            <PropertyLabel>Shadow</PropertyLabel>
+            <div className="flex items-center gap-x-1">
+              <PropertyInput
+                value={shadowBlur || 0}
+                min={0}
+                onChange={onShadowBlurChange}
+                onInstantChange={onShadowBlurChange}
+                icon={<Zap className="h-3 w-3" />}
+                aria-label="Shadow blur"
+                wrapperClassName="w-17"
+              />
+              <ColorPicker
+                value={shadowColor || "#000000"}
+                onChange={(color) => onShadowColorChange(color)}
+                aria-label="Shadow color"
+                layerName={name || "Image"}
+                propertyName="Shadow"
+                showHex={false}
+                showIcon={true}
+              />
+            </div>
           </PropertyField>
         </PropertyStack>
       </PropertySection>

@@ -16,9 +16,14 @@ import {
   Scan,
   Square,
   Zap,
+  CornerUpLeft,
+  Trash2,
+  Type,
+  Maximize,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface RectanglePropertiesProps {
   id: string;
@@ -137,7 +142,7 @@ export function RectangleProperties({
       {/* Appearance Section */}
       <PropertySection>
         <PropertyTitle>Appearance</PropertyTitle>
-        <PropertyStack>
+        <PropertyStack distribution="column">
           <PropertyField>
             <PropertyLabel>Background</PropertyLabel>
             <ColorPicker
@@ -164,65 +169,55 @@ export function RectangleProperties({
                   Math.max(0, Math.min(val, maxCornerRadius))
                 )
               }
-              icon={<Scan className="h-3 w-3" />}
+              icon={<Maximize className="h-3 w-3" />}
               aria-label="Corner radius"
             />
           </PropertyField>
-        </PropertyStack>
-      </PropertySection>
-
-      {/* Border Section */}
-      <PropertySection>
-        <PropertyTitle>Border</PropertyTitle>
-        <PropertyStack distribution="column">
           <PropertyField>
-            <PropertyLabel>Width</PropertyLabel>
-            <PropertyInput
-              value={borderWidth}
-              min={0}
-              onChange={onBorderWidthChange}
-              onInstantChange={onBorderWidthChange}
-              icon={<Square className="h-3 w-3" />}
-              aria-label="Border width"
-            />
+            <PropertyLabel>Border</PropertyLabel>
+            <div className="flex items-center gap-x-1">
+              <PropertyInput
+                value={borderWidth}
+                min={0}
+                onChange={onBorderWidthChange}
+                onInstantChange={onBorderWidthChange}
+                icon={<Square className="h-3 w-3" />}
+                aria-label="Border width"
+                wrapperClassName="w-17"
+              />
+              <ColorPicker
+                value={borderColor}
+                onChange={onBorderColorChange}
+                aria-label="Border color"
+                layerName={name || "Rectangle"}
+                propertyName="Border"
+                showHex={false}
+                showIcon={true}
+              />
+            </div>
           </PropertyField>
           <PropertyField>
-            <PropertyLabel>Color</PropertyLabel>
-            <ColorPicker
-              value={borderColor}
-              onChange={onBorderColorChange}
-              aria-label="Border color"
-              layerName={name || "Rectangle"}
-              propertyName="Border"
-            />
-          </PropertyField>
-        </PropertyStack>
-      </PropertySection>
-
-      {/* Shadow Section */}
-      <PropertySection>
-        <PropertyTitle>Shadow</PropertyTitle>
-        <PropertyStack distribution="column">
-          <PropertyField>
-            <PropertyLabel>Blur</PropertyLabel>
-            <PropertyInput
-              value={shadowBlur}
-              min={0}
-              onChange={onShadowBlurChange}
-              onInstantChange={onShadowBlurChange}
-              icon={<Zap className="h-3 w-3" />}
-              aria-label="Shadow blur"
-            />
-          </PropertyField>
-          <PropertyField>
-            <PropertyLabel>Color</PropertyLabel>
-            <ColorPicker
-              value={shadowColor}
-              onChange={onShadowColorChange}
-              aria-label="Shadow color"
-              layerName={name || "Rectangle"}
-              propertyName="Shadow"
-            />
+            <PropertyLabel>Shadow</PropertyLabel>
+            <div className="flex items-center gap-x-1">
+              <PropertyInput
+                value={shadowBlur}
+                min={0}
+                onChange={onShadowBlurChange}
+                onInstantChange={onShadowBlurChange}
+                icon={<Zap className="h-3 w-3" />}
+                aria-label="Shadow blur"
+                wrapperClassName="w-17"
+              />
+              <ColorPicker
+                value={shadowColor}
+                onChange={onShadowColorChange}
+                aria-label="Shadow color"
+                layerName={name || "Rectangle"}
+                propertyName="Shadow"
+                showHex={false}
+                showIcon={true}
+              />
+            </div>
           </PropertyField>
         </PropertyStack>
       </PropertySection>
