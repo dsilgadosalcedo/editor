@@ -69,7 +69,7 @@ export default function PropertiesPanel() {
   return (
     <div
       className={`z-50 transition-all duration-300 p-1 bg-sidebar/80 rounded-[1.25rem] shadow flex flex-col backdrop-blur-sm ${
-        rightSidebarDocked ? "m-4" : "rounded-r-none"
+        rightSidebarDocked ? "rounded-r-none" : "m-4"
       }`}
     >
       <Card

@@ -17,7 +17,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (
   get
 ) => ({
   // Initial state
-  rightSidebarDocked: true,
+  rightSidebarDocked: false,
   panSensitivity: 1.6,
   zoomSensitivity: 0.6,
 

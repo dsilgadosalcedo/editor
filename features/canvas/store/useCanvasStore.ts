@@ -92,7 +92,7 @@ export const useCanvasStore = create<CanvasStore>()(
       projectId: null,
 
       // UI state
-      rightSidebarDocked: true,
+      rightSidebarDocked: false,
       panSensitivity: 1.6,
       zoomSensitivity: 0.6,
 

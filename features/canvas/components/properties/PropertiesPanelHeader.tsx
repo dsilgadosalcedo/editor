@@ -36,9 +36,9 @@ export function PropertiesPanelHeader({
               }
             >
               {rightSidebarDocked ? (
-                <PanelLeftOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
-              ) : (
                 <PanelRightOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
+              ) : (
+                <PanelLeftOpen className="opacity-70 hover:opacity-100 transition-opacity duration-200" />
               )}
             </Button>
           </TooltipTrigger>
