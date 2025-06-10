@@ -223,70 +223,49 @@ export const getResizeHandleStyles = (
   zoom: number,
   direction: string
 ): React.CSSProperties => {
-  const baseSize = 2; // Handle size in pixels
-  const offset = 4.25; // Offset from element edge
   const scaleFactor = 100 / zoom;
+
+  // Handle dimensions in pre-scaled pixels (rem values converted to px, e.g., w-2 -> 8px)
+  let handleWidth = 8;
+  let handleHeight = 8;
+  if (direction === "n" || direction === "s") {
+    handleWidth = 16;
+  } else if (direction === "e" || direction === "w") {
+    handleHeight = 16;
+  }
+
+  // The final, on-screen dimensions of the handle after scaling
+  const scaledWidth = handleWidth * scaleFactor;
+  const scaledHeight = handleHeight * scaleFactor;
 
   let left = 0;
   let top = 0;
 
-  // Calculate position based on direction
-  switch (direction) {
-    // Corner handles
-    case "nw":
-      left = -element.width / 2 - (offset + 1 / 2) * scaleFactor;
-      top = -element.height / 2 - (offset + 1 / 2) * scaleFactor;
-      break;
-    case "ne":
-      left = element.width / 2 - (offset - 1 / 2) * scaleFactor;
-      top = -element.height / 2 - (offset + 1 / 2) * scaleFactor;
-      break;
-    case "sw":
-      left = -element.width / 2 - (offset + 1 / 2) * scaleFactor;
-      top = element.height / 2 - (offset - 1 / 2) * scaleFactor;
-      break;
-    case "se":
-      left = element.width / 2 - (offset - 1 / 2) * scaleFactor;
-      top = element.height / 2 - (offset - 1 / 2) * scaleFactor;
-      break;
-    // Edge handles
-    case "n":
-      left = 0; // Center horizontally
-      top = -element.height / 2 - (offset + 1) * scaleFactor;
-      break;
-    case "s":
-      left = 0; // Center horizontally
-      top = element.height / 2 - (offset - 1) * scaleFactor;
-      break;
-    case "e":
-      left = element.width / 2 - (offset - 1) * scaleFactor;
-      top = 0; // Center vertically
-      break;
-    case "w":
-      left = -element.width / 2 - (offset + 1) * scaleFactor;
-      top = 0; // Center vertically
-      break;
-    default:
-      // Fallback for old logic
-      if (direction.includes("w")) {
-        left = -element.width / 2 - (offset + 1 / 2) * scaleFactor;
-      } else if (direction.includes("e")) {
-        left = element.width / 2 - (offset - 1 / 2) * scaleFactor;
-      }
+  // Position the handle's CENTER on the desired point of the selection box.
+  // We calculate the required top-left position to achieve this.
+  if (direction.includes("w")) {
+    left = -element.width / 2 - scaledWidth / 2;
+  } else if (direction.includes("e")) {
+    left = element.width / 2 - scaledWidth / 2;
+  } else {
+    // For n and s handles, center horizontally
+    left = 0 - scaledWidth / 2;
+  }
 
-      if (direction.includes("n")) {
-        top = -element.height / 2 - (offset + 1 / 2) * scaleFactor;
-      } else if (direction.includes("s")) {
-        top = element.height / 2 - (offset - 1 / 2) * scaleFactor;
-      }
-      break;
+  if (direction.includes("n")) {
+    top = -element.height / 2 - scaledHeight / 2;
+  } else if (direction.includes("s")) {
+    top = element.height / 2 - scaledHeight / 2;
+  } else {
+    // For w and e handles, center vertically
+    top = 0 - scaledHeight / 2;
   }
 
   return {
     left: `${left}px`,
     top: `${top}px`,
     transform: `scale(${scaleFactor})`,
-    transformOrigin: "center center",
+    transformOrigin: "top left", // Scale from top-left, so the `left` and `top` properties are not affected by the scale.
     pointerEvents: "auto",
     zIndex: 9998,
   };
