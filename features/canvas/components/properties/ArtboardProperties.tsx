@@ -69,20 +69,6 @@ export function ArtboardProperties() {
   return (
     <div>
       <div className="grid gap-5">
-        <PropertySection>
-          <PropertyTitle>Project Name</PropertyTitle>
-          <PropertyField>
-            <Input
-              value={projectName}
-              onChange={(e) => artboardActions.setProjectName(e.target.value)}
-              aria-label="Project name"
-              placeholder="Enter project name"
-            />
-          </PropertyField>
-        </PropertySection>
-
-        <Separator />
-
         <span className="text-foreground font-medium">Artboard</span>
 
         <PropertySection>
