@@ -2,7 +2,6 @@
 export type {
   ElementType,
   CanvasElementData,
-  SavedCanvasData,
   AspectRatioOption,
 } from "./element";
 

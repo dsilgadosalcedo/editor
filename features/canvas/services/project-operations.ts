@@ -3,7 +3,7 @@
  * Handles project loading, saving, and management logic
  */
 
-import { CanvasElementData, SavedCanvasData } from "../types";
+import { CanvasElementData } from "../types";
 
 export interface ProjectData {
   projectId: string | null;

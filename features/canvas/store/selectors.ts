@@ -251,8 +251,5 @@ export const useFileActions = () =>
       exportCanvasAsSVG: state.exportCanvasAsSVG,
       importCanvas: state.importCanvas,
       importProject: state.importProject,
-      saveCanvas: state.saveCanvas,
-      loadCanvas: state.loadCanvas,
-      listCanvases: state.listCanvases,
     }))
   );

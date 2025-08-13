@@ -1,4 +1,4 @@
-import { CanvasElementData, ElementType, SavedCanvasData } from "../../types";
+import { CanvasElementData, ElementType } from "../../types";
 import { Project } from "@/lib/project-storage";
 
 // Base state interfaces
@@ -233,9 +233,7 @@ export interface FileActions {
     projectCreated?: boolean;
     projectId?: string;
   }>;
-  saveCanvas: (title?: string) => Promise<string | null>;
-  loadCanvas: (id: string) => Promise<boolean>;
-  listCanvases: () => Promise<SavedCanvasData[]>;
+  // Legacy canvas API removed; use project CRUD exclusively
 }
 
 // Combined store interface

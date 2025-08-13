@@ -35,24 +35,9 @@ export const useAuthStateHandler = () => {
       return;
     }
 
-    // On first load, if user is not signed in, clear any existing projects immediately
+    // On first load, just record state; do not clear local projects for anonymous users
     if (!hasInitialized.current) {
       hasInitialized.current = true;
-
-      if (isSignedIn === false) {
-        console.log(
-          "🧹 Initial load: User not signed in, clearing any existing local projects..."
-        );
-        const result = clearAllProjects();
-        clearCurrentProject();
-
-        if (result.success && result.cleared > 0) {
-          console.log(
-            `✅ Cleared ${result.cleared} existing projects on initial load`
-          );
-        }
-      }
-
       previousSignedInState.current = isSignedIn;
       return;
     }
@@ -90,16 +75,5 @@ export const useAuthStateHandler = () => {
     previousSignedInState.current = isSignedIn;
   }, [isSignedIn, isLoaded, clearCurrentProject]);
 
-  // Additional effect to handle immediate clearing when not signed in
-  useEffect(() => {
-    if (isLoaded && isSignedIn === false && hasInitialized.current) {
-      // This ensures projects are cleared immediately when auth state becomes false
-      // This runs on every render when user is not signed in, but clearAllProjects
-      // is safe to call multiple times
-      const result = clearAllProjects();
-      if (result.cleared > 0) {
-        console.log(`🧹 Immediate cleanup: Cleared ${result.cleared} projects`);
-      }
-    }
-  }, [isSignedIn, isLoaded]);
+  // Remove over-eager clearing for anonymous state; only clear on real sign-out above
 };

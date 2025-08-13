@@ -45,6 +45,7 @@ import {
   getElementDescendants,
   getTopLevelElements,
   getElementChildren,
+  reorderElementsHierarchical as reorderElementsHierarchicalService,
 } from "../services/grouping";
 import {
   exportCanvasToJSON,
@@ -1281,8 +1282,21 @@ export const useCanvasStore = create<CanvasStore>()(
         targetElementId: string,
         position: "before" | "after" | "inside"
       ) => {
-        // Placeholder implementation
-        console.log("reorderElementsHierarchical not implemented yet");
+        const state = get();
+        const result = reorderElementsHierarchicalService(
+          {
+            elements: state.elements,
+            selectedElements: state.selectedElements,
+          },
+          draggedElementId,
+          targetElementId,
+          position
+        );
+        set({
+          ...state.getHistoryUpdate(),
+          elements: result.elements,
+          selectedElements: result.selectedElements,
+        });
       },
 
       updateElementParenting: () => {
@@ -1439,7 +1453,7 @@ export const useCanvasStore = create<CanvasStore>()(
             const timestamp = Date.now();
             const newId = `${el.type}-${timestamp}-${index}-${Math.random()
               .toString(36)
-              .substr(2, 5)}`;
+              .slice(2, 2 + 5)}`;
             return {
               ...el,
               id: newId,
@@ -1507,76 +1521,7 @@ export const useCanvasStore = create<CanvasStore>()(
       },
 
       // API functions (these would need to be implemented based on your backend)
-      saveCanvas: async (title?: string) => {
-        const state = get();
-        try {
-          const response = await fetch("/api/canvas/save", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              canvasData: {
-                elements: state.elements,
-                artboardDimensions: state.artboardDimensions,
-              },
-              title,
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error("Failed to save canvas");
-          }
-
-          const result = await response.json();
-          return result.canvasId;
-        } catch (error) {
-          console.error("Error saving canvas:", error);
-          return null;
-        }
-      },
-
-      loadCanvas: async (id: string) => {
-        try {
-          const response = await fetch(`/api/canvas/load/${id}`);
-
-          if (!response.ok) {
-            throw new Error("Failed to load canvas");
-          }
-
-          const result = await response.json();
-          const { elements, artboardDimensions } = result.canvas.data;
-
-          set({
-            elements,
-            artboardDimensions,
-            selectedElements: [],
-            past: [],
-            future: [],
-          });
-
-          return true;
-        } catch (error) {
-          console.error("Error loading canvas:", error);
-          return false;
-        }
-      },
-
-      listCanvases: async () => {
-        try {
-          const response = await fetch("/api/canvas/list");
-
-          if (!response.ok) {
-            throw new Error("Failed to list canvases");
-          }
-
-          const result = await response.json();
-          return result.canvases;
-        } catch (error) {
-          console.error("Error listing canvases:", error);
-          return [];
-        }
-      },
+      // Removed legacy canvas API operations in favor of project CRUD
     })),
     {
       name: "canvas-store",

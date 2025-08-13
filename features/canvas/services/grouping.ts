@@ -206,6 +206,17 @@ export const reorderElementsHierarchical = (
 
   if (!draggedElement || !targetElement) return state;
 
+  // Prevent creating cycles: cannot drop an element into its own descendant
+  if (position === "inside" && targetElement.type === "group") {
+    const draggedDescendants = getElementDescendants(
+      elements,
+      draggedElementId
+    );
+    if (draggedDescendants.includes(targetElementId)) {
+      return state;
+    }
+  }
+
   let updatedElements = [...elements];
 
   // Only remove from parent if we are actually moving to a new position
@@ -234,58 +245,79 @@ export const reorderElementsHierarchical = (
     });
   }
 
-  // Move element to the same level as target (before or after)
-  const targetParentId = targetElement.parentId;
-
-  updatedElements = updatedElements.map((el) => {
-    if (el.id === draggedElementId) {
-      return { ...el, parentId: targetParentId };
-    }
-    return el;
-  });
-
-  // If target has a parent, update the parent's children array
-  if (targetParentId) {
+  if (position === "inside" && targetElement.type === "group") {
+    // Move element inside the group (append at end)
     updatedElements = updatedElements.map((el) => {
-      if (el.id === targetParentId && el.children) {
-        const targetIndex = el.children.indexOf(targetElementId);
-        const newChildren = [...el.children];
-
-        if (position === "before") {
-          newChildren.splice(targetIndex, 0, draggedElementId);
-        } else {
-          newChildren.splice(targetIndex + 1, 0, draggedElementId);
+      if (el.id === draggedElementId) {
+        return { ...el, parentId: targetElementId };
+      }
+      if (el.id === targetElementId) {
+        const children = el.children ? [...el.children] : [];
+        // Avoid duplicate if already present (e.g., moving from same group)
+        if (!children.includes(draggedElementId)) {
+          children.push(draggedElementId);
         }
-
-        return { ...el, children: newChildren };
+        return { ...el, children };
       }
       return el;
     });
   } else {
-    // Handle top-level reordering
-    // Remove the dragged element from its current position
-    updatedElements = updatedElements.filter(
-      (el) => el.id !== draggedElementId
-    );
+    // Move element to the same level as target (before or after)
+    const targetParentId = targetElement.parentId;
 
-    // Find the target element's index in the filtered array
-    const targetIndex = updatedElements.findIndex(
-      (el) => el.id === targetElementId
-    );
-
-    if (targetIndex !== -1) {
-      // Insert the dragged element at the appropriate position
-      if (position === "before") {
-        updatedElements.splice(targetIndex, 0, {
-          ...draggedElement,
-          parentId: undefined,
-        });
-      } else {
-        updatedElements.splice(targetIndex + 1, 0, {
-          ...draggedElement,
-          parentId: undefined,
-        });
+    updatedElements = updatedElements.map((el) => {
+      if (el.id === draggedElementId) {
+        return { ...el, parentId: targetParentId };
       }
+      return el;
+    });
+
+    // If target has a parent, update the parent's children array
+    if (targetParentId) {
+      updatedElements = updatedElements.map((el) => {
+        if (el.id === targetParentId) {
+          const children = el.children ? [...el.children] : [];
+          // First remove dragged if present to avoid duplicates
+          const filtered = children.filter((id) => id !== draggedElementId);
+          const targetIndex = filtered.indexOf(targetElementId);
+          if (targetIndex === -1) return el;
+          if (position === "before") {
+            filtered.splice(targetIndex, 0, draggedElementId);
+          } else {
+            filtered.splice(targetIndex + 1, 0, draggedElementId);
+          }
+          return { ...el, children: filtered };
+        }
+        return el;
+      });
+    } else {
+      // Handle top-level reordering
+      // Remove the dragged element from its current position
+      const withoutDragged = updatedElements.filter(
+        (el) => el.id !== draggedElementId
+      );
+
+      // Find the target element's index in the filtered array
+      const targetIndex = withoutDragged.findIndex(
+        (el) => el.id === targetElementId
+      );
+
+      if (targetIndex !== -1) {
+        // Insert the dragged element at the appropriate position
+        if (position === "before") {
+          withoutDragged.splice(targetIndex, 0, {
+            ...draggedElement,
+            parentId: undefined,
+          });
+        } else {
+          withoutDragged.splice(targetIndex + 1, 0, {
+            ...draggedElement,
+            parentId: undefined,
+          });
+        }
+      }
+
+      updatedElements = withoutDragged;
     }
   }
 

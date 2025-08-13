@@ -200,7 +200,9 @@ export const createProjectInLocal = (
   const projectToCreate: Project = {
     id:
       id ||
-      `project-ulid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Use ULID-like prefix for local-only
+      `project-ulid-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 2 + 9)}`, // Use ULID-like prefix for local-only
     name: projectName,
     data: data || {
       elements: [],

@@ -3,7 +3,7 @@
  * Handles canvas import, export, and file processing logic
  */
 
-import { CanvasElementData, SavedCanvasData } from "../types";
+import { CanvasElementData } from "../types";
 
 export interface CanvasExportData {
   elements: CanvasElementData[];

@@ -87,8 +87,6 @@ export default function CanvasPage() {
     useShallow((state) => ({
       importElements: state.importElements,
       importCanvas: state.importCanvas,
-      saveCanvas: state.saveCanvas,
-      loadCanvas: state.loadCanvas,
     }))
   );
 
@@ -635,7 +633,7 @@ export default function CanvasPage() {
         />
 
         {/* Layers Panel */}
-        {/* {layersOpen && <LayersPanel />} */}
+        {layersOpen && <LayersPanel />}
 
         {/* Canvas Toolbar */}
         <CanvasToolbar
