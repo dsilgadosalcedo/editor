@@ -12,7 +12,8 @@ export const useCanvasPanZoom = (
   panSensitivity: number = 1.6,
   zoomSensitivity: number = 0.6
 ) => {
-  const [zoom, setZoom] = useState(75);
+  // ZOOM DISABLED - Fixed at 100% to prevent bugs
+  const [zoom] = useState(100); // Fixed at 100%
   const [canvasPosition, setCanvasPosition] = useState({ x: 0, y: 0 });
   const [transformOrigin, setTransformOrigin] =
     useState<string>("center center");
@@ -21,14 +22,11 @@ export const useCanvasPanZoom = (
   const panStartRef = useRef<{ x: number; y: number } | null>(null);
   const gestureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Custom zoom setter that ensures integer values
+  // ZOOM DISABLED - Custom zoom setter that does nothing
   const setZoomInteger = useCallback(
     (newZoom: number | ((prev: number) => number)) => {
-      if (typeof newZoom === "function") {
-        setZoom((prev) => ensureIntegerZoom(newZoom(prev)));
-      } else {
-        setZoom(ensureIntegerZoom(newZoom));
-      }
+      // Do nothing - zoom is fixed at 100%
+      console.log("Zoom disabled - staying at 100%");
     },
     []
   );
@@ -174,18 +172,9 @@ export const useCanvasPanZoom = (
           };
         }
       } else if (touches.length === 2) {
-        // Two fingers - potential pinch zoom
-        const distance = getTouchDistance(touches);
-        const center = getTouchCenter(touches);
-
-        setGestureState("zooming");
-        clearGestureTimeout();
-
-        touchStartRef.current = {
-          x: center.x,
-          y: center.y,
-          distance: distance,
-        };
+        // ZOOM DISABLED - Two fingers - pinch zoom disabled
+        console.log("Pinch zoom disabled - staying at 100%");
+        // Do nothing - zoom is fixed at 100%
       }
     },
     [gestureState, selectedTool, clearGestureTimeout, canvasPosition]
@@ -213,30 +202,10 @@ export const useCanvasPanZoom = (
         touchStartRef.current &&
         touchStartRef.current.distance
       ) {
-        // Handle pinch zoom - optimized with faster scaling
+        // ZOOM DISABLED - Handle pinch zoom disabled
+        console.log("Pinch zoom disabled - staying at 100%");
         e.preventDefault();
-
-        const currentDistance = getTouchDistance(touches);
-        const currentCenter = getTouchCenter(touches);
-        const scale = currentDistance / touchStartRef.current.distance;
-
-        // Calculate new zoom with extended range and faster response
-        const minZoom = 10; // Extended zoom out range
-        const maxZoom = 800; // Extended zoom in range
-        const newZoom = Math.round(
-          Math.min(maxZoom, Math.max(minZoom, zoom * scale))
-        );
-
-        if (Math.abs(newZoom - zoom) > 0.5) {
-          // Only update if change is significant - simple center-based zoom
-          setZoomInteger(newZoom);
-        }
-
-        // Update distance for next move
-        touchStartRef.current = {
-          ...touchStartRef.current,
-          distance: currentDistance,
-        };
+        // Do nothing - zoom is fixed at 100%
       }
 
       lastTouchesRef.current = touches;
@@ -291,49 +260,11 @@ export const useCanvasPanZoom = (
       const hasHorizontalDelta = Math.abs(e.deltaX) > 0;
       const hasVerticalDelta = Math.abs(e.deltaY) > 0;
 
-      // Handle zoom with Ctrl/Cmd + scroll wheel (both trackpad and mouse)
+      // ZOOM DISABLED - Handle zoom with Ctrl/Cmd + scroll wheel disabled
       if (isZoomModifier && hasVerticalDelta) {
-        // Block if panning is in progress
-        if (gestureState === "panning") return;
-
-        // If idle, commit to zooming gesture
-        if (gestureState === "idle") {
-          setGestureState("zooming");
-          clearGestureTimeout();
-        }
-
-        // Only proceed if we're in zooming state
-        if (gestureState !== "zooming") return;
-
-        setTransformOrigin("center center");
-
-        const minZoom = 10; // Extended zoom out range
-        const maxZoom = 800; // Extended zoom in range
-
-        // Zoom steps - trackpad pinch typically has smaller deltaY values
-        const isTrackpadPinch = Math.abs(e.deltaY) < 50; // Trackpad pinch gestures typically have smaller delta values
-        const zoomStep = isTrackpadPinch
-          ? Math.max(1, zoom * 0.15 * zoomSensitivity) // Finer control for trackpad pinch
-          : Math.max(5, zoom * 0.15 * zoomSensitivity); // Faster for mouse wheel
-
-        let newZoom = zoom;
-
-        if (e.deltaY < 0)
-          newZoom = Math.round(Math.min(maxZoom, zoom + zoomStep));
-        else if (e.deltaY > 0)
-          newZoom = Math.round(Math.max(minZoom, zoom - zoomStep));
-
-        if (Math.abs(newZoom - zoom) < 0.1) {
-          // No significant zoom change, reset gesture state
-          resetGestureState();
-          return;
-        }
-
-        // Simple center-based zoom - no pointer-following behavior
-        setZoomInteger(newZoom);
-
-        // Reset gesture state after zoom completes
-        resetGestureState();
+        console.log("Wheel zoom disabled - staying at 100%");
+        e.preventDefault();
+        // Do nothing - zoom is fixed at 100%
         return;
       }
 
@@ -401,7 +332,7 @@ export const useCanvasPanZoom = (
   }, [clearGestureTimeout]);
 
   return {
-    zoom,
+    zoom: 100, // ZOOM DISABLED - Always return 100%
     setZoom: setZoomInteger,
     canvasPosition,
     setCanvasPosition,
