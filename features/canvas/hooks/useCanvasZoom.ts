@@ -7,58 +7,61 @@ interface UseCanvasZoomProps {
   step?: number;
 }
 
+// ZOOM DISABLED - Fixed at 100% to prevent bugs
 export const useCanvasZoom = ({
-  initialZoom = 75,
-  minZoom = 10,
-  maxZoom = 500,
+  initialZoom = 100, // Changed from 75 to 100
+  minZoom = 100, // Changed from 10 to 100
+  maxZoom = 100, // Changed from 500 to 100
   step = 25,
 }: UseCanvasZoomProps = {}) => {
-  const [zoom, setZoom] = useState(initialZoom);
+  // Fixed zoom at 100% - no state changes allowed
+  const [zoom] = useState(100); // Fixed at 100%
 
-  // Ensure zoom is always an integer within bounds
+  // Disabled zoom functions - all return fixed 100% zoom
   const ensureIntegerZoom = useCallback(
     (value: number): number => {
-      return Math.max(minZoom, Math.min(maxZoom, Math.round(value)));
+      return 100; // Always return 100%
     },
-    [minZoom, maxZoom]
+    []
   );
 
-  // Custom zoom setter that ensures integer values
   const setZoomInteger = useCallback(
     (newZoom: number | ((prev: number) => number)) => {
-      if (typeof newZoom === "function") {
-        setZoom((prev) => ensureIntegerZoom(newZoom(prev)));
-      } else {
-        setZoom(ensureIntegerZoom(newZoom));
-      }
+      // Do nothing - zoom is fixed at 100%
+      console.log("Zoom disabled - staying at 100%");
     },
-    [ensureIntegerZoom]
+    []
   );
 
   const zoomIn = useCallback(() => {
-    setZoomInteger((prev) => prev + step);
-  }, [setZoomInteger, step]);
+    // Disabled - zoom stays at 100%
+    console.log("Zoom in disabled - staying at 100%");
+  }, []);
 
   const zoomOut = useCallback(() => {
-    setZoomInteger((prev) => prev - step);
-  }, [setZoomInteger, step]);
+    // Disabled - zoom stays at 100%
+    console.log("Zoom out disabled - staying at 100%");
+  }, []);
 
   const zoomToFit = useCallback(() => {
-    setZoomInteger(100);
-  }, [setZoomInteger]);
+    // Disabled - zoom stays at 100%
+    console.log("Zoom to fit disabled - staying at 100%");
+  }, []);
 
   const zoomTo = useCallback(
     (targetZoom: number) => {
-      setZoomInteger(targetZoom);
+      // Disabled - zoom stays at 100%
+      console.log("Zoom to disabled - staying at 100%");
     },
-    [setZoomInteger]
+    []
   );
 
-  const canZoomIn = zoom < maxZoom;
-  const canZoomOut = zoom > minZoom;
+  // Always false since zoom is fixed
+  const canZoomIn = false;
+  const canZoomOut = false;
 
   return {
-    zoom,
+    zoom: 100, // Always return 100%
     setZoom: setZoomInteger,
     zoomIn,
     zoomOut,
@@ -66,7 +69,7 @@ export const useCanvasZoom = ({
     zoomTo,
     canZoomIn,
     canZoomOut,
-    minZoom,
-    maxZoom,
+    minZoom: 100,
+    maxZoom: 100,
   };
 };

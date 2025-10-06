@@ -133,8 +133,8 @@ export default function CanvasToolbar({
           <Separator orientation="vertical" />
         </div> */}
 
-        {/* Zoom Controls */}
-        <Tooltip>
+        {/* ZOOM DISABLED - Zoom Controls commented out */}
+        {/* <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
@@ -220,9 +220,15 @@ export default function CanvasToolbar({
           <TooltipContent>
             <p>Zoom in</p>
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
+        
+        {/* Fixed Zoom Display */}
+        <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-md text-sm text-muted-foreground">
+          <span>Zoom: 100%</span>
+          <span className="text-xs">(Fixed)</span>
+        </div>
 
-        {/* Reset View */}
+        {/* ZOOM DISABLED - Reset View (position only) */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -230,13 +236,13 @@ export default function CanvasToolbar({
               size="icon"
               onClick={onResetView}
               className="h-8 w-8"
-              aria-label="Reset View to Artboard"
+              aria-label="Reset View Position"
             >
               <Home className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Reset view to artboard</p>
+            <p>Reset view position (zoom fixed at 100%)</p>
           </TooltipContent>
         </Tooltip>
 
